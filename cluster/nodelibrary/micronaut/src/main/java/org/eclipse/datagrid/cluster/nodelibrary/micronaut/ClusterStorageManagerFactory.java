@@ -47,7 +47,6 @@ public class ClusterStorageManagerFactory
 	@Singleton
 	@Bean(preDestroy = "close")
 	@Replaces(StorageManager.class)
-	@Primary
 	public ClusterStorageManager<?> clusterStorageManager(
 		final EmbeddedStorageConfigurationProvider configProvider,
 		@Property(name = "eclipse.datagrid.distribution.kafka.async", defaultValue = "false") final boolean async

@@ -15,9 +15,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.micronaut;
  */
 
 import io.micronaut.context.annotation.EachBean;
-import io.micronaut.context.annotation.Primary;
 import io.micronaut.context.annotation.Replaces;
-import io.micronaut.core.annotation.Order;
 import io.micronaut.eclipsestore.DefaultRootProvider;
 import io.micronaut.eclipsestore.RootProvider;
 import org.eclipse.datagrid.cluster.nodelibrary.common.ClusterStorageManager;
@@ -25,8 +23,6 @@ import org.eclipse.datagrid.cluster.nodelibrary.common.ClusterStorageManager;
 
 @EachBean(ClusterStorageManager.class)
 @Replaces(DefaultRootProvider.class)
-@Primary
-@Order(-10)
 public class ClusterRootProvider<T> implements RootProvider<T>
 {
 	private final ClusterStorageManager<T> storageManager;
