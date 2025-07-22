@@ -6,7 +6,7 @@ This project implements the Eclipse Foundation Security Policy
 
 ## Supported Versions
 
-These versions of Eclipse Store are currently being supported with security
+These versions of Eclipse Data Grid are currently being supported with security
 updates.
 
 | Version | Released | Supported | 
