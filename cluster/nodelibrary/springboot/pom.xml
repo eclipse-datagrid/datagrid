@@ -15,11 +15,7 @@
 	<name>Eclipse DataGrid Cluster Nodelibrary Spring Boot</name>
 	<description>Eclipse DataGrid Cluster Nodelibrary Spring Boot Implementation</description>
 	<url>https://projects.eclipse.org/projects/technology.datagrid</url>
-	
-	<properties>
-		<java.version>17</java.version>
-	</properties>
-	
+
 	<dependencyManagement>
 	    <dependencies>
 		    <dependency>

@@ -18,8 +18,6 @@
 
 	<properties>
 		<packaging>jar</packaging>
-		<jdk.version>17</jdk.version>
-		<release.version>17</release.version>
 		<maven.compiler.parameters>true</maven.compiler.parameters>
 		<micronaut.version>4.3.2</micronaut.version>
 		<micronaut.core.version>4.3.6</micronaut.core.version>
