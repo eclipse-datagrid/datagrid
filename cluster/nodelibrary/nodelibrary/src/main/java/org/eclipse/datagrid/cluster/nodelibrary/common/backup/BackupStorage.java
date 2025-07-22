@@ -252,9 +252,5 @@ public class BackupStorage implements AutoCloseable
 			LOG.warn("Failed to load EclipseStore offset from file", e);
 		}
 	}
-
-	public static long getMicrostreamOffset()
-	{
-		return instance.dataClient.getStorageOffset();
-	}
+	
 }
