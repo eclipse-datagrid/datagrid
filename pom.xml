@@ -11,8 +11,8 @@
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
-	<name>Eclipse DataGrid</name>
-	<description>Eclipse DataGrid Project</description>
+	<name>Eclipse Data Grid</name>
+	<description>Eclipse Data Grid Project</description>
 	<url>https://projects.eclipse.org/projects/technology.datagrid</url>
 
 	<organization>
@@ -195,8 +195,8 @@
 						<doclint>none</doclint>
 						<notree>true</notree>
 						<source>8</source>
-						<doctitle>Eclipse DataGrid API</doctitle>
-						<windowtitle>Eclipse DataGrid API</windowtitle>
+						<doctitle>Eclipse Data Grid API</doctitle>
+						<windowtitle>Eclipse Data Grid API</windowtitle>
 						<archive>
 							<manifestEntries>
 								<built-by>${project.organization.name}</built-by>
@@ -333,7 +333,7 @@
 						<includeLicenseText>false</includeLicenseText>
 						<outputReactorProjects>true</outputReactorProjects>
 						<outputFormat>all</outputFormat>
-						<outputName>Eclipse-DataGrid-Sbom</outputName>
+						<outputName>Eclipse-Data-Grid-Sbom</outputName>
 						<outputDirectory>${project.build.directory}/sbom</outputDirectory>
 					</configuration>
 				</plugin>

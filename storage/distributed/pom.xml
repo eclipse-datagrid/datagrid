@@ -16,8 +16,8 @@
 	<artifactId>storage-distributed-parent</artifactId>
 	<packaging>pom</packaging>
 
-	<name>Eclipse DataGrid Storage Distributed Parent</name>
-	<description>Eclipse DataGrid Storage Distributed Project</description>
+	<name>Eclipse Data Grid Storage Distributed Parent</name>
+	<description>Eclipse Data Grid Storage Distributed Project</description>
 	<url>https://projects.eclipse.org/projects/technology.datagrid</url>
 
 	<modules>

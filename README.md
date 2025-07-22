@@ -1,6 +1,6 @@
 
-# Eclipse DataGrid
+# Eclipse Data Grid
 
 ## License
 
-Eclipse DataGrid is available under [Eclipse Public License - v 2.0](LICENSE).
+Eclipse Data Grid is available under [Eclipse Public License - v 2.0](LICENSE).

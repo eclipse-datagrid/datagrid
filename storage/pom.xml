@@ -16,8 +16,8 @@
 	<artifactId>storage-parent</artifactId>
 	<packaging>pom</packaging>
 
-	<name>Eclipse DataGrid Storage Parent</name>
-	<description>Eclipse DataGrid Storage Project</description>
+	<name>Eclipse Data Grid Storage Parent</name>
+	<description>Eclipse Data Grid Storage Project</description>
 	<url>https://projects.eclipse.org/projects/technology.datagrid</url>
 
 	<modules>

@@ -2,7 +2,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.springboot;
 
 /*-
  * #%L
- * Eclipse DataGrid Cluster Nodelibrary Spring Boot
+ * Eclipse Data Grid Cluster Nodelibrary Spring Boot
  * %%
  * Copyright (C) 2025 MicroStream Software
  * %%

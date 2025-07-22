@@ -14,8 +14,8 @@
 
 	<artifactId>cluster-nodelibrary-helidon</artifactId>
 
-	<name>Eclipse DataGrid Cluster Nodelibrary Helidon</name>
-	<description>Eclipse DataGrid Cluster Nodelibrary Helidon Implementation</description>
+	<name>Eclipse Data Grid Cluster Nodelibrary Helidon</name>
+	<description>Eclipse Data Grid Cluster Nodelibrary Helidon Implementation</description>
 	<url>https://projects.eclipse.org/projects/technology.datagrid</url>
 
     <dependencyManagement>

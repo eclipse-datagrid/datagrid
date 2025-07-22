@@ -2,7 +2,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.micronaut;
 
 /*-
  * #%L
- * Eclipse DataGrid Cluster Nodelibrary Micronaut
+ * Eclipse Data Grid Cluster Nodelibrary Micronaut
  * %%
  * Copyright (C) 2025 MicroStream Software
  * %%

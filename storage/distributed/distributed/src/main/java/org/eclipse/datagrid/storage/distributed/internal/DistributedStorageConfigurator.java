@@ -2,7 +2,7 @@ package org.eclipse.datagrid.storage.distributed.internal;
 
 /*-
  * #%L
- * Eclipse DataGrid Storage Distributed
+ * Eclipse Data Grid Storage Distributed
  * %%
  * Copyright (C) 2025 MicroStream Software
  * %%

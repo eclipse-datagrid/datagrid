@@ -2,7 +2,7 @@ package org.eclipse.datagrid.storage.distributed.kafka.types;
 
 /*-
  * #%L
- * Eclipse DataGrid Storage Distributed Kafka
+ * Eclipse Data Grid Storage Distributed Kafka
  * %%
  * Copyright (C) 2025 MicroStream Software
  * %%

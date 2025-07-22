@@ -14,8 +14,8 @@
 
 	<artifactId>storage-distributed</artifactId>
 
-	<name>Eclipse DataGrid Storage Distributed</name>
-	<description>Eclipse DataGrid Storage Distributed Implementation</description>
+	<name>Eclipse Data Grid Storage Distributed</name>
+	<description>Eclipse Data Grid Storage Distributed Implementation</description>
 	<url>https://projects.eclipse.org/projects/technology.datagrid</url>
 
 	<dependencies>

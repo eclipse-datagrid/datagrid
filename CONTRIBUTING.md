@@ -1,4 +1,4 @@
-# Contributing to Eclipse DataGrid
+# Contributing to Eclipse Data Grid
 
 Thank you for your interest in this project!
 
@@ -17,8 +17,8 @@ Search the [issue tracker](https://github.com/eclipse-datagrid/datagrid/issues) 
 
 ## Build
 
-To build Eclipse DataGrid you need
-- Java 11 or higher
+To build Eclipse Data Grid you need
+- Java 17 or higher
 - Maven 3.8.1 or higher
 
 ```

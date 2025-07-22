@@ -14,8 +14,8 @@
 
 	<artifactId>storage-distributed-kafka</artifactId>
 
-	<name>Eclipse DataGrid Storage Distributed Kafka</name>
-	<description>Eclipse DataGrid Storage Distributed Kafka Implementation</description>
+	<name>Eclipse Data Grid Storage Distributed Kafka</name>
+	<description>Eclipse Data Grid Storage Distributed Kafka Implementation</description>
 	<url>https://projects.eclipse.org/projects/technology.datagrid</url>
     
 	<dependencies>

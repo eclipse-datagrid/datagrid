@@ -2,7 +2,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.helidon;
 
 /*-
  * #%L
- * Eclipse DataGrid Cluster Nodelibrary Helidon
+ * Eclipse Data Grid Cluster Nodelibrary Helidon
  * %%
  * Copyright (C) 2025 MicroStream Software
  * %%

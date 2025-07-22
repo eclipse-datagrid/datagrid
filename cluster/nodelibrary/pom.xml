@@ -16,8 +16,8 @@
 	<artifactId>cluster-nodelibrary-parent</artifactId>
 	<packaging>pom</packaging>
 
-	<name>Eclipse DataGrid Cluster Nodelibrary Parent</name>
-	<description>Eclipse DataGrid Cluster Nodelibrary Project</description>
+	<name>Eclipse Data Grid Cluster Nodelibrary Parent</name>
+	<description>Eclipse Data Grid Cluster Nodelibrary Project</description>
 	<url>https://projects.eclipse.org/projects/technology.datagrid</url>
 
 	<modules>
@@ -72,7 +72,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-shade-plugin</artifactId>
-						<version>3.2.4</version>
+						<version>3.6.0</version>
 						<executions>
 							<execution>
 								<phase>package</phase>
@@ -92,12 +92,6 @@
 									</excludes>
 								</filter>
 							</filters>
-							<transformers>
-								<transformer
-									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>${main.class}</mainClass>
-								</transformer>
-							</transformers>
 						</configuration>
 					</plugin>
 				</plugins>

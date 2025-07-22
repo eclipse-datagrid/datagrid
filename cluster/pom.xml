@@ -16,8 +16,8 @@
 	<artifactId>cluster-parent</artifactId>
 	<packaging>pom</packaging>
 
-	<name>Eclipse DataGrid Cluster Parent</name>
-	<description>Eclipse DataGrid Cluster Project</description>
+	<name>Eclipse Data Grid Cluster Parent</name>
+	<description>Eclipse Data Grid Cluster Project</description>
 	<url>https://projects.eclipse.org/projects/technology.datagrid</url>
 
 	<modules>

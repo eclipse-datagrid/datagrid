@@ -1,12 +1,12 @@
-# Notices for Eclipse DataGrid
+# Notices for Eclipse Data Grid
 
-This content is produced and maintained by the Eclipse DataGrid project.
+This content is produced and maintained by the Eclipse Data Grid project.
 
 * Project home: https://projects.eclipse.org/projects/technology.datagrid
 
 ## Trademarks
 
- Eclipse DataGrid is a trademark of the Eclipse Foundation.
+ Eclipse Data Grid is a trademark of the Eclipse Foundation.
 
 ## Copyright
 
