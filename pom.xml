@@ -40,8 +40,8 @@
 		<maven.compiler.release>17</maven.compiler.release>
 		<maven.version.minimum>3.8.1</maven.version.minimum>
 		<maven.java.version.minimum>17</maven.java.version.minimum>
-		<eclipse-store.version>2.1.3</eclipse-store.version>
-		<eclipse-serializer.version>2.1.3</eclipse-serializer.version>
+		<eclipse-store.version>3.0.0</eclipse-store.version>
+		<eclipse-serializer.version>3.0.0</eclipse-serializer.version>
 		<license.inceptionYear>2025</license.inceptionYear>
 		<license.licenseName>epl_only_v2</license.licenseName>
 		<license.licenceFile>${basedir}/LICENSE</license.licenceFile>
