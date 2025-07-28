@@ -51,10 +51,15 @@ public abstract class StorageClusterControllerBase
 	{
 		return this.impl.distributionActive();
 	}
-
-	protected void internalActivateDistributor()
+	
+	protected void internalStartDistributorActivation()
 	{
-		this.impl.activateDistributor();
+		this.impl.startDistributorActivation();
+	}
+	
+	protected boolean internalFinishDistributorActivation()
+	{
+		return this.impl.finishDistributorActivation();
 	}
 
 	protected void internalUploadStorage(final InputStream storage) throws IOException
@@ -71,15 +76,25 @@ public abstract class StorageClusterControllerBase
 	{
 		this.impl.createBackupNow();
 	}
-
-	protected void internalStopUpdates()
+	
+	protected void internalPostStopUpdates()
 	{
-		this.impl.stopUpdates();
+		this.impl.postStopUpdates();
+	}
+	
+	protected boolean internalGetStopUpdates()
+	{
+		return this.impl.getStopUpdates();
 	}
 
 	protected void internalCallGc()
 	{
 		this.impl.callGc();
+	}
+	
+	protected boolean internalIsGcRunning()
+	{
+		return this.impl.isGcRunning();
 	}
 
 	protected String internalGetUsedUpStorageBytes()
@@ -97,18 +112,24 @@ public abstract class StorageClusterControllerBase
 	public interface Impl
 	{
 		boolean distributionActive();
-
-		void activateDistributor();
+		
+		void startDistributorActivation();
+		
+		boolean finishDistributorActivation();
 
 		void uploadStorage(InputStream storage) throws IOException;
 
 		boolean isReady();
 
 		void createBackupNow();
-
-		void stopUpdates();
+		
+		void postStopUpdates();
+		
+		boolean getStopUpdates();
 
 		void callGc();
+		
+		boolean isGcRunning();
 	}
 	
 }

@@ -14,6 +14,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.helidon;
  * #L%
  */
 
+import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,15 +25,32 @@ import org.eclipse.datagrid.cluster.nodelibrary.common.impl._default.BackupDefau
 import org.eclipse.datagrid.cluster.nodelibrary.common.impl._default.NodeDefaultClusterStorageManager;
 import org.eclipse.datagrid.cluster.nodelibrary.common.impl.dev.DevClusterStorageManager;
 import org.eclipse.datagrid.cluster.nodelibrary.common.impl.micro.MicroClusterStorageManager;
+import org.eclipse.serializer.concurrency.LockedExecutor;
+
 
 @ApplicationScoped
 public class EclipseDataGridCluster
 {
+	@ApplicationScoped
+	@Produces
+	public ObjectGraphUpdateHandler objectGraphUpdateHandler(final LockedExecutor executor)
+	{
+		return updater -> executor.write(updater::updateObjectGraph);
+	}
+	
+	@ApplicationScoped
+	@Produces
+	public LockedExecutor lockedExecutor()
+	{
+		return LockedExecutor.New();
+	}
+	
 	@SuppressWarnings("rawtypes")
 	@ApplicationScoped
 	@Produces
 	public ClusterStorageManager clusterStorageManager(
 		final RootProvider rootProvider,
+		final ObjectGraphUpdateHandler objectGraphUpdateHandler,
 		@ConfigProperty(name = "eclipse.datagrid.distribution.kafka.async", defaultValue = "false") final boolean async
 	)
 	{
@@ -40,7 +58,7 @@ public class EclipseDataGridCluster
 		
 		if (!ClusterEnv.isProdMode())
 		{
-			sm =  new DevClusterStorageManager<>(rootProvider::root);
+			sm = new DevClusterStorageManager<>(rootProvider::root);
 		}
 		else if (ClusterEnv.isMicro())
 		{
@@ -52,7 +70,7 @@ public class EclipseDataGridCluster
 		}
 		else
 		{
-			sm = new NodeDefaultClusterStorageManager<>(rootProvider::root, async);
+			sm = new NodeDefaultClusterStorageManager<>(rootProvider::root, objectGraphUpdateHandler, async);
 		}
 
 		Runtime.getRuntime().addShutdownHook(new Thread(sm::close, "ShutdownCluster"));

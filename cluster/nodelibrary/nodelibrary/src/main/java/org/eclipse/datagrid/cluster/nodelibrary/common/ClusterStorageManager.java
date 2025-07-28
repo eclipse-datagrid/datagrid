@@ -15,6 +15,8 @@ package org.eclipse.datagrid.cluster.nodelibrary.common;
  */
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -25,17 +27,7 @@ import org.eclipse.serializer.meta.NotImplementedYetError;
 import org.eclipse.serializer.persistence.binary.types.Binary;
 import org.eclipse.serializer.persistence.types.*;
 import org.eclipse.serializer.reference.Lazy;
-import org.eclipse.store.storage.types.Database;
-import org.eclipse.store.storage.types.StorageConfiguration;
-import org.eclipse.store.storage.types.StorageConnection;
-import org.eclipse.store.storage.types.StorageEntityCacheEvaluator;
-import org.eclipse.store.storage.types.StorageEntityTypeExportFileProvider;
-import org.eclipse.store.storage.types.StorageEntityTypeExportStatistics;
-import org.eclipse.store.storage.types.StorageEntityTypeHandler;
-import org.eclipse.store.storage.types.StorageLiveFileProvider;
-import org.eclipse.store.storage.types.StorageManager;
-import org.eclipse.store.storage.types.StorageRawFileStatistics;
-import org.eclipse.store.storage.types.StorageTypeDictionary;
+import org.eclipse.store.storage.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +35,9 @@ import org.eclipse.datagrid.cluster.nodelibrary.common.exception.StorageLimitRea
 
 public interface ClusterStorageManager<T> extends StorageManager
 {
-	void activateDistribution();
+	void startDistributionActivation();
+	
+	boolean finishDistributionActivation();
 
 	boolean isReady();
 
@@ -165,7 +159,7 @@ public interface ClusterStorageManager<T> extends StorageManager
 		{
 			return this.delegate().initializationTime();
 		}
-
+		
 		@Override
 		public boolean isAcceptingTasks()
 		{
@@ -227,6 +221,12 @@ public interface ClusterStorageManager<T> extends StorageManager
 		public void issueTransactionsLogCleanup()
 		{
 			this.delegate().issueTransactionsLogCleanup();
+		}
+		
+		@Override
+		public List<StorageAdjacencyDataExporter.AdjacencyFiles> exportAdjacencyData(final Path path)
+		{
+			return this.delegate().exportAdjacencyData(path);
 		}
 
 		@Override
@@ -363,7 +363,13 @@ public interface ClusterStorageManager<T> extends StorageManager
 			{
 				return this.storer.store(instance);
 			}
-
+			
+			@Override
+			public long store(final Object instance, final long objectId)
+			{
+				return this.storer.store(instance, objectId);
+			}
+			
 			@Override
 			public long[] storeAll(final Object... instances)
 			{

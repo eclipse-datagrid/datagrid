@@ -33,8 +33,11 @@ public class BackupDefaultClusterStorageManager<T> extends DefaultClusterStorage
 	{
 		this(rootSupplier, EmbeddedStorageConfiguration.Builder());
 	}
-
-	public BackupDefaultClusterStorageManager(final Supplier<T> rootSupplier, final EmbeddedStorageConfigurationBuilder config)
+	
+	public BackupDefaultClusterStorageManager(
+		final Supplier<T> rootSupplier,
+		final EmbeddedStorageConfigurationBuilder config
+	)
 	{
 		BackupStorage.setRootSupplier(rootSupplier);
 		BackupStorage.setBackupStorageManagerConfig(config);
@@ -64,9 +67,15 @@ public class BackupDefaultClusterStorageManager<T> extends DefaultClusterStorage
 	{
 		return null;
 	}
-
+	
 	@Override
-	public void activateDistribution()
+	public void startDistributionActivation()
+	{
+		throw new UnsupportedOperationException("Backup Nodes don't support distribution");
+	}
+	
+	@Override
+	public boolean finishDistributionActivation()
 	{
 		throw new UnsupportedOperationException("Backup Nodes don't support distribution");
 	}
@@ -117,6 +126,16 @@ public class BackupDefaultClusterStorageManager<T> extends DefaultClusterStorage
 	public Storer createStorer()
 	{
 		throw new UnsupportedOperationException(NO_STORE_CALLS);
+	}
+	
+	@Override
+	public boolean shutdown()
+	{
+		if (BackupStorage.isRunning())
+		{
+			BackupStorage.get().close();
+		}
+		return true;
 	}
 
 	@Override

@@ -75,11 +75,17 @@ public class MicroStorageClusterControllerBase implements StorageClusterControll
 	{
 		return this.storage.isDistributor();
 	}
-
+	
 	@Override
-	public void activateDistributor()
+	public void startDistributorActivation()
 	{
-		this.storage.activateDistribution();
+		this.storage.startDistributionActivation();
+	}
+	
+	@Override
+	public boolean finishDistributorActivation()
+	{
+		return this.storage.finishDistributionActivation();
 	}
 
 	@Override
@@ -112,13 +118,25 @@ public class MicroStorageClusterControllerBase implements StorageClusterControll
 	}
 
 	@Override
-	public void stopUpdates()
+	public void postStopUpdates()
+	{
+		throw new UnsupportedOperationException("Unsupported logic for micro nodes");
+	}
+	
+	@Override
+	public boolean getStopUpdates()
 	{
 		throw new UnsupportedOperationException("Unsupported logic for micro nodes");
 	}
 
 	@Override
 	public void callGc()
+	{
+		throw new UnsupportedOperationException("Unsupported logic for micro nodes");
+	}
+	
+	@Override
+	public boolean isGcRunning()
 	{
 		throw new UnsupportedOperationException("Unsupported logic for micro nodes");
 	}

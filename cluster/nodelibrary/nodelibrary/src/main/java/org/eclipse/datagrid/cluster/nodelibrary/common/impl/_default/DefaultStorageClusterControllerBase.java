@@ -37,9 +37,11 @@ import org.eclipse.datagrid.cluster.nodelibrary.common.util.GzipUtils;
 public class DefaultStorageClusterControllerBase implements StorageClusterControllerBase.Impl
 {
 	private static final Logger LOG = LoggerFactory.getLogger(StorageClusterControllerBase.class);
-
+	
 	private final ClusterStorageManager<?> storage;
-
+	
+	private Thread garbageCollectionThread;
+	
 	public DefaultStorageClusterControllerBase(
 		final Optional<Supplier<ClusterStorageManager<?>>> clusterStorageManagerSupplier
 	)
@@ -51,19 +53,25 @@ public class DefaultStorageClusterControllerBase implements StorageClusterContro
 				.provideClusterStorageManager()
 		).get();
 	}
-
+	
 	@Override
 	public boolean distributionActive()
 	{
 		return this.storage.isDistributor();
 	}
-
+	
 	@Override
-	public void activateDistributor()
+	public void startDistributorActivation()
 	{
-		this.storage.activateDistribution();
+		this.storage.startDistributionActivation();
 	}
-
+	
+	@Override
+	public boolean finishDistributorActivation()
+	{
+		return this.storage.finishDistributionActivation();
+	}
+	
 	@Override
 	public void uploadStorage(final InputStream storage) throws IOException
 	{
@@ -71,32 +79,32 @@ public class DefaultStorageClusterControllerBase implements StorageClusterContro
 		{
 			throw new UnsupportedOperationException("Only Backup Nodes support this feature");
 		}
-
+		
 		synchronized (BackupStorage.SYNC_KEY)
 		{
 			final var storagePath = Paths.get("/storage/storage");
-
+			
 			BackupStorage.stop();
-
+			
 			if (Files.isDirectory(storagePath))
 			{
 				LOG.info("Deleting {}", storagePath);
 				FileUtils.deleteDirectory(storagePath.toFile());
 			}
-
+			
 			GzipUtils.extractTarGZ(storage);
-
+			
 			BackupStorage.get();
 			LOG.info("Backup node is now running the new storage.");
 		}
 	}
-
+	
 	@Override
 	public boolean isReady()
 	{
 		return this.storage.isReady();
 	}
-
+	
 	@Override
 	public void createBackupNow()
 	{
@@ -104,7 +112,7 @@ public class DefaultStorageClusterControllerBase implements StorageClusterContro
 		{
 			throw new UnsupportedOperationException("Only Backup Nodes support this feature");
 		}
-
+		
 		final StorageBackupManager backupManager = BackupStorage.getStorageBackupManager();
 		if (backupManager == null)
 		{
@@ -112,21 +120,49 @@ public class DefaultStorageClusterControllerBase implements StorageClusterContro
 		}
 		backupManager.createBackupNow();
 	}
-
+	
 	@Override
-	public void stopUpdates()
+	public void postStopUpdates()
 	{
 		if (!ClusterEnv.isBackupNode())
 		{
 			throw new UnsupportedOperationException("Only Backup Nodes support this feature");
 		}
-
+		
 		BackupStorage.get().stopAtLatestOffset();
 	}
-
+	
+	@Override
+	public boolean getStopUpdates()
+	{
+		if (!ClusterEnv.isBackupNode())
+		{
+			throw new UnsupportedOperationException("Only Backup Nodes support this feature");
+		}
+		
+		return BackupStorage.get().dataClientHasFinished();
+	}
+	
 	@Override
 	public void callGc()
 	{
-		this.storage.issueFullGarbageCollection();
+		if (this.garbageCollectionThread == null)
+		{
+			this.garbageCollectionThread = new Thread(
+				this.storage::issueFullGarbageCollection,
+				"EclipseStore-GarbageCollection-Issuer"
+			);
+			this.garbageCollectionThread.start();
+		}
+	}
+	
+	@Override
+	public boolean isGcRunning()
+	{
+		if (this.garbageCollectionThread != null && !this.garbageCollectionThread.isAlive())
+		{
+			this.garbageCollectionThread = null;
+		}
+		return this.garbageCollectionThread != null;
 	}
 }

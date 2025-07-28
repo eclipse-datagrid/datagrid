@@ -54,7 +54,13 @@ public class DevClusterStorageManager<T> extends ClusterStorageManager.Abstract<
 	}
 
 	@Override
-	public void activateDistribution()
+	public void startDistributionActivation()
+	{
+		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	public boolean finishDistributionActivation()
 	{
 		throw new UnsupportedOperationException();
 	}

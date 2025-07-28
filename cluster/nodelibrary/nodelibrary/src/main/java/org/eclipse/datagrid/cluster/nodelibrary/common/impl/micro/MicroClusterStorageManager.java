@@ -86,8 +86,7 @@ public class MicroClusterStorageManager<T> extends ClusterStorageManager.Abstrac
 	public boolean shutdown()
 	{
 		this.logger.info("Disposing Cluster Resources");
-		this.storage.close();
-		return super.shutdown();
+		return this.storage.shutdown();
 	}
 
 	private void initStorageLimitChecker()
@@ -124,11 +123,17 @@ public class MicroClusterStorageManager<T> extends ClusterStorageManager.Abstrac
 	{
 		throw new UnsupportedOperationException("Only backup nodes support this feature!");
 	}
-
+	
 	@Override
-	public void activateDistribution()
+	public void startDistributionActivation()
 	{
-		throw new UnsupportedOperationException("Unsupported logic for micro nodes");
+		throw new UnsupportedOperationException("Micro Nodes do not need distribution to be activated");
+	}
+	
+	@Override
+	public boolean finishDistributionActivation()
+	{
+		throw new UnsupportedOperationException("Micro Nodes do not need distribution to be activated");
 	}
 
 	@SuppressWarnings("unchecked")

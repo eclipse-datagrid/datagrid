@@ -162,7 +162,10 @@ public class MyStorageBinaryDataClientKafka implements StorageBinaryDataClientKa
 					this.active.set(false);
 
 					this.logger.info("Checking latest storage offset...");
-					final long stopAt = new KafkaOffsetGetter().getLastStorageOffset(this.groupId, this.topicName);
+					final long stopAt = new KafkaOffsetGetter().getLastStorageOffset(
+						this.groupId + "offsetgetter",
+						this.topicName
+					);
 					this.logger.info("Stopping at ms offset {}", stopAt);
 
 					while (this.storageOffset.get() < stopAt)
@@ -182,15 +185,6 @@ public class MyStorageBinaryDataClientKafka implements StorageBinaryDataClientKa
 						{
 							throw new RuntimeException(e);
 						}
-					}
-
-					try
-					{
-						Files.createFile(STOP_FILE_PATH);
-					}
-					catch (final IOException e)
-					{
-						this.logger.error("Failed to create 'stopped' file", e);
 					}
 				}
 				consumer.commitSync();

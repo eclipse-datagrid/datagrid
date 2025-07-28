@@ -28,6 +28,7 @@ import org.eclipse.datagrid.cluster.nodelibrary.common.impl._default.BackupDefau
 import org.eclipse.datagrid.cluster.nodelibrary.common.impl._default.NodeDefaultClusterStorageManager;
 import org.eclipse.datagrid.cluster.nodelibrary.common.impl.dev.DevClusterStorageManager;
 import org.eclipse.datagrid.cluster.nodelibrary.common.impl.micro.MicroClusterStorageManager;
+import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
 import org.eclipse.store.storage.types.StorageManager;
 
 import java.util.function.Supplier;
@@ -49,7 +50,8 @@ public class ClusterStorageManagerFactory
 	@Replaces(StorageManager.class)
 	public ClusterStorageManager<?> clusterStorageManager(
 		final EmbeddedStorageConfigurationProvider configProvider,
-		@Property(name = "eclipse.datagrid.distribution.kafka.async", defaultValue = "false") final boolean async
+		@Property(name = "eclipsestore.distribution.kafka.async", defaultValue = "false") final boolean async,
+		final ObjectGraphUpdateHandler objectGraphUpdateHandler
 	)
 	{
 		final String name = "main";
@@ -92,11 +94,8 @@ public class ClusterStorageManagerFactory
 		}
 		else
 		{
-			sm = new NodeDefaultClusterStorageManager<>(rootSupplier, builder, async);
+			sm = new NodeDefaultClusterStorageManager<>(rootSupplier, builder, objectGraphUpdateHandler, async);
 		}
-
-		// NOTE: For some reason @Bean(preDestroy = "close") does nothing, so we add our own shutdown hook
-		Runtime.getRuntime().addShutdownHook(new Thread(sm::close, "ShutdownCluster"));
 
 		return sm;
 	}

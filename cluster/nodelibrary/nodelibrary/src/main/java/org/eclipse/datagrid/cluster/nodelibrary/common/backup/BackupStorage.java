@@ -220,13 +220,21 @@ public class BackupStorage implements AutoCloseable
 	{
 		this.dataClient.stopAtLatestOffset();
 	}
+	
+	public boolean dataClientHasFinished()
+	{
+		return this.dataClient.isFinished();
+	}
 
 	@Override
 	public void close()
 	{
 		LOG.info("Closing db.");
 		this.dataClient.dispose();
-		this.storage.close();
+		if(this.storage != null)
+		{
+			this.storage.close();
+		}
 	}
 
 	static void loadOffset()

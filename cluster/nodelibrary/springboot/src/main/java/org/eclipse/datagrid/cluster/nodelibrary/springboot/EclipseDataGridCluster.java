@@ -14,6 +14,8 @@ package org.eclipse.datagrid.cluster.nodelibrary.springboot;
  * #L%
  */
 
+import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
+import org.eclipse.serializer.concurrency.LockedExecutor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,8 +33,21 @@ import org.eclipse.datagrid.cluster.nodelibrary.common.impl.micro.MicroClusterSt
 public class EclipseDataGridCluster
 {
 	@Bean
+	public ObjectGraphUpdateHandler objectGraphUpdateHandler(final LockedExecutor executor)
+	{
+		return updater -> executor.write(updater::updateObjectGraph);
+	}
+	
+	@Bean
+	public LockedExecutor lockedExecutor()
+	{
+		return LockedExecutor.New();
+	}
+	
+	@Bean
 	public ClusterStorageManager<?> clusterStorageManager(
 		final RootProvider<?> rootProvider,
+		final ObjectGraphUpdateHandler objectGraphUpdateHandler,
 		@Value("${eclipse.datagrid.distribution.kafka.async:false}") final boolean async
 	)
 	{
@@ -53,6 +68,6 @@ public class EclipseDataGridCluster
 			return new BackupDefaultClusterStorageManager<>(rootProvider::root);
 		}
 
-		return new NodeDefaultClusterStorageManager<>(rootProvider::root, async);
+		return new NodeDefaultClusterStorageManager<>(rootProvider::root, objectGraphUpdateHandler, async);
 	}
 }

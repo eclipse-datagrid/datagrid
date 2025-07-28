@@ -57,11 +57,21 @@ public class StorageClusterController extends StorageClusterControllerBase
 	}
 
 	@POST
-	@Path("/microstream-activate-distributor")
-	public Response activateDistributor()
+	@Path("/microstream-activate-distributor/start")
+	@Consumes(MediaType.WILDCARD)
+	public Response startDistributorActivation()
 	{
-		this.internalActivateDistributor();
+		this.internalStartDistributorActivation();
 		return Response.ok().build();
+	}
+	
+	@POST
+	@Path("/microstream-activate-distributor/finish")
+	@Consumes(MediaType.WILDCARD)
+	public Response finishDistributorActivation()
+	{
+		final boolean finished = this.internalFinishDistributorActivation();
+		return Response.ok(finished).build();
 	}
 
 	@GET
@@ -96,6 +106,7 @@ public class StorageClusterController extends StorageClusterControllerBase
 
 	@POST
 	@Path("/microstream-backup")
+	@Consumes(MediaType.WILDCARD)
 	public Response createBackupNow()
 	{
 		return this.createVoidResponse(this::internalCreateBackupNow);
@@ -103,17 +114,32 @@ public class StorageClusterController extends StorageClusterControllerBase
 
 	@POST
 	@Path("/microstream-updates")
-	@Consumes(MediaType.TEXT_PLAIN)
-	public Response stopUpdates()
+	@Consumes(MediaType.WILDCARD)
+	public Response postStopUpdates()
 	{
-		return this.createVoidResponse(this::internalStopUpdates);
+		return this.createVoidResponse(this::internalPostStopUpdates);
 	}
-
+	
+	@GET
+	@Path("/microstream-updates")
+	public Response getStopUpdates()
+	{
+		return this.createResponse(this::internalGetStopUpdates);
+	}
+	
 	@POST
 	@Path("/microstream-gc")
+	@Consumes(MediaType.WILDCARD)
 	public Response callGc()
 	{
 		return this.createVoidResponse(this::internalCallGc);
+	}
+	
+	@GET
+	@Path("/microstream-gc")
+	public Response isGcRunning()
+	{
+		return this.createResponse(this::internalIsGcRunning);
 	}
 
 	private Response createVoidResponse(final Runnable call)

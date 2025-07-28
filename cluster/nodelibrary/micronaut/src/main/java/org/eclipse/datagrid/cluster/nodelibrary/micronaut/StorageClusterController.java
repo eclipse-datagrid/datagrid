@@ -51,11 +51,17 @@ public class StorageClusterController extends StorageClusterControllerBase
 	{
 		return this.internalDistributionActive();
 	}
-
-	@Post("/microstream-activate-distributor")
-	public void activateDistributor()
+	
+	@Post("/microstream-activate-distributor/start")
+	public void startDistributorActivation()
 	{
-		this.internalActivateDistributor();
+		this.internalStartDistributorActivation();
+	}
+	
+	@Post("/microstream-activate-distributor/finish")
+	public boolean finishDistributorActivation()
+	{
+		return this.internalFinishDistributorActivation();
 	}
 
 	@Get("/microstream-health")
@@ -101,15 +107,26 @@ public class StorageClusterController extends StorageClusterControllerBase
 	}
 
 	@Post("/microstream-updates")
-	@Consumes(MediaType.TEXT_PLAIN)
-	public void stopUpdates()
+	public void postStopUpdates()
 	{
-		this.internalStopUpdates();
+		this.internalPostStopUpdates();
+	}
+	
+	@Get("/microstream-updates")
+	public boolean getStopUpdates()
+	{
+		return this.internalGetStopUpdates();
 	}
 
 	@Post("/microstream-gc")
 	public void callGc()
 	{
 		this.internalCallGc();
+	}
+	
+	@Get("/microstream-gc")
+	public boolean isGcRunning()
+	{
+		return this.internalIsGcRunning();
 	}
 }

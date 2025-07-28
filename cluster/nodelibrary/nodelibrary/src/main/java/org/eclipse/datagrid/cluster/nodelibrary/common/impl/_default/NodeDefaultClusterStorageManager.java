@@ -57,15 +57,20 @@ public class NodeDefaultClusterStorageManager<T> extends DefaultClusterStorageMa
 	private final ClusterStorageBinaryDataDistributorKafka kafkaDistributor;
 	private       boolean                                  isDistributor;
 	private final EmbeddedStorageManager                   storage;
-
-	public NodeDefaultClusterStorageManager(final Supplier<T> rootSupplier, final boolean async)
+	
+	public NodeDefaultClusterStorageManager(
+		final Supplier<T> rootSupplier,
+		final ObjectGraphUpdateHandler objectGraphUpdateHandler,
+		final boolean async
+	)
 	{
-		this(rootSupplier, EmbeddedStorageConfiguration.Builder(), async);
+		this(rootSupplier, EmbeddedStorageConfiguration.Builder(), objectGraphUpdateHandler, async);
 	}
 
 	public NodeDefaultClusterStorageManager(
 		final Supplier<T> rootSupplier,
 		final EmbeddedStorageConfigurationBuilder config,
+		final ObjectGraphUpdateHandler objectGraphUpdateHandler,
 		final boolean async
 	)
 	{
@@ -144,11 +149,7 @@ public class NodeDefaultClusterStorageManager<T> extends DefaultClusterStorageMa
 		}
 
 		this.merger = new ActivatableStorageBinaryDataMerger(
-			StorageBinaryDataMerger.New(
-				foundation.getConnectionFoundation(),
-				this.storage,
-				ObjectGraphUpdateHandler.Synchronized()
-			)
+			StorageBinaryDataMerger.New(foundation.getConnectionFoundation(), this.storage, objectGraphUpdateHandler)
 		);
 
 		this.dataClient = new MyStorageBinaryDataClientKafka(
@@ -192,8 +193,7 @@ public class NodeDefaultClusterStorageManager<T> extends DefaultClusterStorageMa
 		LOG.info("Disposing Cluster Resources");
 		this.dataClient.dispose();
 		this.distributor.dispose();
-		this.storage.close();
-		return super.shutdown();
+		return this.storage.shutdown();
 	}
 
 	@Override
@@ -208,35 +208,48 @@ public class NodeDefaultClusterStorageManager<T> extends DefaultClusterStorageMa
 	{
 		return (Lazy<T>)this.storage.root();
 	}
-
+	
 	@Override
-	public void activateDistribution()
+	public void startDistributionActivation()
 	{
 		if (this.isDistributor())
 		{
 			throw new RuntimeException("Distribution is already enabled.");
 		}
-
-		this.dataClient.unready();
-
-		// Wait for initial messages to be consumed
-		while (!this.dataClient.isReady() && this.dataClient.isActive())
-		{
-			try
-			{
-				Thread.sleep(1000);
-			}
-			catch (final InterruptedException e)
-			{
-				throw new RuntimeException(e);
-			}
-		}
-
+		
 		LOG.info("Turning on distribution.");
+		this.isDistributor = true;
+		this.dataClient.unready();
+	}
+	
+	/**
+	 * `true` when all the messages have been loaded from the distribution backend.
+	 * Finishes up the switch to distribution mode.
+	 */
+	@Override
+	public boolean finishDistributionActivation()
+	{
+		if (!this.isDistributor)
+		{
+			throw new NotADistributorException("Not a distributor");
+		}
+		
+		if(!this.dataClient.isActive())
+		{
+			throw new RuntimeException("Data Client is not active");
+		}
+		
+		if (!this.dataClient.isReady())
+		{
+			return false;
+		}
+		
+		
 		this.merger.setActive(false);
 		this.kafkaDistributor.setStorageOffset(this.dataClient.getStorageOffset());
 		this.distributor.setActive(true);
-		this.isDistributor = true;
+		
+		return true;
 	}
 
 	@Override
@@ -290,7 +303,8 @@ public class NodeDefaultClusterStorageManager<T> extends DefaultClusterStorageMa
 	{
 		return new NodeDefaultClusterStorerAdapter(super.createStorer());
 	}
-
+	
+	
 	private class NodeDefaultClusterStorerAdapter implements Storer
 	{
 		private final Storer storer;
@@ -305,7 +319,13 @@ public class NodeDefaultClusterStorageManager<T> extends DefaultClusterStorageMa
 		{
 			return this.storer.store(instance);
 		}
-
+		
+		@Override
+		public long store(final Object instance, final long objectId)
+		{
+			return this.storer.store(instance, objectId);
+		}
+		
 		@Override
 		public long[] storeAll(final Object... instances)
 		{

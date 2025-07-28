@@ -51,11 +51,17 @@ public class StorageClusterController extends StorageClusterControllerBase
 	{
 		return Boolean.toString(this.internalDistributionActive());
 	}
-
-	@PostMapping("/microstream-activate-distributor")
-	public void activateDistributor()
+	
+	@PostMapping(path = "/microstream-activate-distributor/start", consumes = MediaType.ALL_VALUE)
+	public void startDistributorActivation()
 	{
-		this.internalActivateDistributor();
+		this.internalStartDistributorActivation();
+	}
+	
+	@PostMapping(path = "/microstream-activate-distributor/finish", consumes = MediaType.ALL_VALUE)
+	public boolean finishDistributorActivation()
+	{
+		return this.internalFinishDistributorActivation();
 	}
 
 	@GetMapping("/microstream-health")
@@ -85,8 +91,8 @@ public class StorageClusterController extends StorageClusterControllerBase
 		this.internalUploadStorage(storage);
 		return CompletableFuture.completedFuture(null);
 	}
-
-	@PostMapping(value = "/microstream-backup", produces = MediaType.TEXT_PLAIN_VALUE)
+	
+	@PostMapping(value = "/microstream-backup", produces = MediaType.TEXT_PLAIN_VALUE, consumes = MediaType.ALL_VALUE)
 	public ResponseEntity<String> createBackupNow()
 	{
 		try
@@ -100,16 +106,28 @@ public class StorageClusterController extends StorageClusterControllerBase
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-
-	@PostMapping(value = "/microstream-updates", consumes = MediaType.TEXT_PLAIN_VALUE)
-	public void stopUpdates()
+	
+	@PostMapping(path = "/microstream-updates", consumes = MediaType.ALL_VALUE)
+	public void postStopUpdates()
 	{
-		this.internalStopUpdates();
+		this.internalPostStopUpdates();
 	}
-
-	@PostMapping("/microstream-gc")
+	
+	@GetMapping("/microstream-updates")
+	public ResponseEntity<Boolean> getStopUpdates()
+	{
+		return ResponseEntity.ok(this.internalGetStopUpdates());
+	}
+	
+	@PostMapping(path = "/microstream-gc", consumes = MediaType.ALL_VALUE)
 	public void callGc()
 	{
 		this.internalCallGc();
+	}
+	
+	@GetMapping("/microstream-gc")
+	public ResponseEntity<Boolean> isGcRunning()
+	{
+		return ResponseEntity.ok(this.internalIsGcRunning());
 	}
 }

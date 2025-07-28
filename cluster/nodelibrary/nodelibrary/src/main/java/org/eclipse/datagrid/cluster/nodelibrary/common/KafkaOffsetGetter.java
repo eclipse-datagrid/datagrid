@@ -25,7 +25,7 @@ import static org.apache.kafka.common.IsolationLevel.READ_COMMITTED;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Properties;
 
@@ -36,20 +36,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tool to ask kafka for the last storage offset available
+ * Tool to ask kafka for the last microstream offset available
  */
 public class KafkaOffsetGetter
 {
 	private static final Logger LOG = LoggerFactory.getLogger(KafkaOffsetGetter.class);
-
-	/**
-	 * Creates a new kafka consumer and asks for the last message in the topic,
-	 * returns the storage offset of that message
-	 */
-	public long getLastStorageOffset(final String groupId, final String topic)
+	private static final long PARTITION_ASSIGNMENT_TIMEOUT_MS = 10_000L;
+	private static final long PARTITION_POLL_TIMEOUT_MS = 10_000L;
+	
+	private KafkaConsumer<String, byte[]> createKafkaConsumer(final String groupId)
 	{
-		long lastStorageOffset = Long.MIN_VALUE;
-
 		final Properties properties = KafkaPropertiesProvider.provide();
 		properties.setProperty(GROUP_ID_CONFIG, groupId);
 		properties.setProperty(KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
@@ -58,47 +54,59 @@ public class KafkaOffsetGetter
 		properties.setProperty(AUTO_OFFSET_RESET_CONFIG, "latest");
 		properties.setProperty(ALLOW_AUTO_CREATE_TOPICS_CONFIG, "false");
 		properties.setProperty(ISOLATION_LEVEL_CONFIG, READ_COMMITTED.toString().toLowerCase(Locale.ROOT));
-
-		try (final var consumer = new KafkaConsumer<String, byte[]>(properties))
+		return new KafkaConsumer<>(properties);
+	}
+	
+	/**
+	 * Creates a new kafka consumer and asks for the last message in the topic,
+	 * returns the microstream offset of that message
+	 */
+	public long getLastStorageOffset(final String groupId, final String topic)
+	{
+		long lastMicrostreamOffset = Long.MIN_VALUE;
+		
+		try (final var consumer = this.createKafkaConsumer(groupId))
 		{
-			consumer.subscribe(Arrays.asList(topic));
-
-			// Find the partition with the furthest offset
-			final var furthestPartition = consumer.committed(consumer.assignment())
-				.entrySet()
-				.stream()
-				.max((a, b) -> Long.compare(a.getValue().offset(), b.getValue().offset()))
-				.orElse(null);
-
-			// Nothing here yet
-			if (furthestPartition == null)
+			LOG.trace("Subscribing to topic {}", topic);
+			consumer.subscribe(Collections.singleton(topic));
+			
+			LOG.trace("Polling consumer until we have partitions assigned.");
+			final long startMs = System.currentTimeMillis();
+			while (consumer.assignment().isEmpty())
 			{
-				LOG.warn("Kafka topic {} contains no partitions", topic);
-				return lastStorageOffset;
+				if (System.currentTimeMillis() > startMs + PARTITION_ASSIGNMENT_TIMEOUT_MS)
+				{
+					throw new RuntimeException("Timed out waiting for topic partition assignment");
+				}
+				consumer.poll(Duration.ofMillis(PARTITION_POLL_TIMEOUT_MS));
 			}
-			else if (furthestPartition.getValue().offset() == 0)
+			
+			for (final var partition : consumer.assignment())
 			{
-				LOG.warn("Kafka topic {} contains no commited messages", topic);
-				return lastStorageOffset;
-			}
-
-			// Check out the last message (last commited offset - 1) for the furthest partition
-			consumer.seek(furthestPartition.getKey(), furthestPartition.getValue().offset() - 1);
-
-			final var records = consumer.poll(Duration.ofSeconds(5));
-			if (records.isEmpty())
-			{
-				throw new RuntimeException("Failed to get last commited message from partition");
-			}
-			for (final var rec : records)
-			{
-				final long recordMsOffset = Long.parseLong(
-					new String(rec.headers().lastHeader("storageOffset").value(), StandardCharsets.UTF_8)
+				LOG.trace(
+					"Seeking to end offset for partition {} of topic {}",
+					partition.partition(),
+					partition.topic()
 				);
-				lastStorageOffset = Math.max(lastStorageOffset, recordMsOffset);
+				final long endOffset = consumer.position(partition);
+				if (endOffset > 0)
+				{
+					consumer.seek(partition, endOffset - 1);
+				}
+			}
+			
+			LOG.trace("Polling latest messages for topic {}", topic);
+			for (final var rec : consumer.poll(Duration.ofMillis(PARTITION_POLL_TIMEOUT_MS)))
+			{
+				final byte[] microstreamOffsetRaw = rec.headers().lastHeader("microstreamOffset").value();
+				final long microstreamOffset = Long.parseLong(new String(microstreamOffsetRaw, StandardCharsets.UTF_8));
+				if (microstreamOffset > lastMicrostreamOffset)
+				{
+					lastMicrostreamOffset = microstreamOffset;
+				}
 			}
 		}
-
-		return lastStorageOffset;
+		
+		return lastMicrostreamOffset;
 	}
 }
