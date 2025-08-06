@@ -23,12 +23,10 @@ import org.eclipse.store.storage.embedded.configuration.types.EmbeddedStorageCon
 import org.eclipse.store.storage.embedded.configuration.types.EmbeddedStorageConfigurationBuilder;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
 import org.eclipse.store.storage.types.StorageManager;
-import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.eclipse.datagrid.cluster.nodelibrary.common.ClusterStorageManager;
-import org.eclipse.datagrid.cluster.nodelibrary.common.StorageLimitChecker;
 
 public class MicroClusterStorageManager<T> extends ClusterStorageManager.Abstract<T>
 {
@@ -48,7 +46,7 @@ public class MicroClusterStorageManager<T> extends ClusterStorageManager.Abstrac
 
 		final var storagePath = Paths.get("/storage/storage");
 
-		this.initStorageLimitChecker();
+		this.startStorageLimitChecker();
 		this.storage = this.initStorage(rootSupplier, storagePath, config);
 
 		this.isReady = true;
@@ -86,30 +84,8 @@ public class MicroClusterStorageManager<T> extends ClusterStorageManager.Abstrac
 	public boolean shutdown()
 	{
 		this.logger.info("Disposing Cluster Resources");
+		this.shutdownStorageLimitChecker();
 		return this.storage.shutdown();
-	}
-
-	private void initStorageLimitChecker()
-	{
-		try
-		{
-			StorageLimitChecker.get().start();
-		}
-		catch (final Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-		Runtime.getRuntime().addShutdownHook(new Thread(() ->
-		{
-			try
-			{
-				StorageLimitChecker.get().stop();
-			}
-			catch (final SchedulerException e)
-			{
-				this.logger.error("Failed to shutdown storage limit checker", e);
-			}
-		}));
 	}
 	
 	@Override

@@ -28,6 +28,7 @@ import org.eclipse.serializer.persistence.binary.types.Binary;
 import org.eclipse.serializer.persistence.types.*;
 import org.eclipse.serializer.reference.Lazy;
 import org.eclipse.store.storage.types.*;
+import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,9 +55,32 @@ public interface ClusterStorageManager<T> extends StorageManager
 	public static abstract class Abstract<T> implements ClusterStorageManager<T>
 	{
 		private static final Logger LOG = LoggerFactory.getLogger(ClusterStorageManager.class);
-
+		private final StorageLimitChecker storageLimitChecker;
+		
 		protected Abstract()
 		{
+			super();
+			
+			try
+			{
+				this.storageLimitChecker = ClusterEnv.isBackupNode() ? null : StorageLimitChecker.fromEnv();
+			}
+			catch (final SchedulerException e)
+			{
+				throw new RuntimeException(e);
+			}
+		}
+		
+		protected void startStorageLimitChecker()
+		{
+			try
+			{
+				this.storageLimitChecker.start();
+			}
+			catch (final SchedulerException e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 
 		private <R> R exitOnThrow(final Callable<R> callable)
@@ -87,7 +111,7 @@ public interface ClusterStorageManager<T> extends StorageManager
 
 		private void ensureStorageCapacity()
 		{
-			if (StorageLimitChecker.get().limitReached())
+			if (this.storageLimitChecker.limitReached())
 			{
 				throw new StorageLimitReachedException(
 					"Can not store more objects in storage as the storage limit has been reached"
@@ -245,6 +269,18 @@ public interface ClusterStorageManager<T> extends StorageManager
 		public Object setRoot(final Object newRoot)
 		{
 			return this.delegate().setRoot(newRoot);
+		}
+		
+		protected void shutdownStorageLimitChecker()
+		{
+			try
+			{
+				this.storageLimitChecker.stop();
+			}
+			catch (final SchedulerException e)
+			{
+				LOG.error("Failed to shut down storage limit checker", e);
+			}
 		}
 
 		@Override

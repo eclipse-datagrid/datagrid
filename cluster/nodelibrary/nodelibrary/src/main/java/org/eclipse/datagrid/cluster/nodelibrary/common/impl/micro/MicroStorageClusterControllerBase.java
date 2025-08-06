@@ -104,6 +104,12 @@ public class MicroStorageClusterControllerBase implements StorageClusterControll
 			GzipUtils.extractTarGZ(storage);
 		}
 	}
+	
+	@Override
+	public boolean isHealthy()
+	{
+		return this.storage.isRunning();
+	}
 
 	@Override
 	public boolean isReady()

@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import jakarta.annotation.PreDestroy;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.slf4j.Logger;
@@ -46,6 +47,13 @@ public class StorageClusterController extends StorageClusterControllerBase
 	public StorageClusterController(@SuppressWarnings("rawtypes") final ClusterStorageManager storageManager)
 	{
 		super(Optional.of(() -> storageManager));
+	}
+	
+	@PreDestroy
+	@Override
+	public void close()
+	{
+		super.close();
 	}
 
 	@GET
@@ -78,7 +86,7 @@ public class StorageClusterController extends StorageClusterControllerBase
 	@Path("/microstream-health")
 	public Response checkHealth()
 	{
-		return Response.ok().build();
+		return Response.status(this.isHealthy() ? 200 : 500).build();
 	}
 	
 	@GET

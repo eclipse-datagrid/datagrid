@@ -18,6 +18,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 
+import io.micronaut.http.exceptions.HttpStatusException;
+import jakarta.annotation.PreDestroy;
+import org.eclipse.datagrid.cluster.nodelibrary.common.exception.InternalServerErrorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +48,19 @@ public class StorageClusterController extends StorageClusterControllerBase
 	{
 		super(Optional.of(() -> storageManager));
 	}
+	
+	@io.micronaut.http.annotation.Error(exception = InternalServerErrorException.class)
+	public HttpResponse<Void> handleInternalServerErrors()
+	{
+		return HttpResponse.serverError();
+	}
+	
+	@PreDestroy
+	@Override
+	public void close()
+	{
+		super.close();
+	}
 
 	@Get("/microstream-distributor")
 	public boolean distributionActive()
@@ -65,8 +81,9 @@ public class StorageClusterController extends StorageClusterControllerBase
 	}
 
 	@Get("/microstream-health")
-	public void checkHealth()
+	public HttpResponse<Void> checkHealth()
 	{
+		return HttpResponse.status(this.isHealthy() ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 	
 	@Get("/microstream-storage-bytes")
@@ -75,11 +92,15 @@ public class StorageClusterController extends StorageClusterControllerBase
 	{
 		return this.internalGetUsedUpStorageBytes();
 	}
-
+	
 	@Get("/microstream-health/ready")
-	public HttpResponse<Void> readyCheck()
+	@ExecuteOn(TaskExecutors.BLOCKING)
+	public void readyCheck() throws HttpStatusException
 	{
-		return HttpResponse.status(this.isReady() ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR);
+		if (!this.isReady())
+		{
+			throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Not ready");
+		}
 	}
 
 	@Post("/microstream-uploadStorage")

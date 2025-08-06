@@ -18,7 +18,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
+import jakarta.annotation.PreDestroy;
+import org.eclipse.datagrid.cluster.nodelibrary.common.exception.InternalServerErrorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -34,6 +37,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.eclipse.datagrid.cluster.nodelibrary.common.ClusterStorageManager;
 import org.eclipse.datagrid.cluster.nodelibrary.common.StorageClusterControllerBase;
+import org.springframework.web.server.ResponseStatusException;
+
 
 @RestController
 @RequestMapping(StorageClusterControllerBase.CONTROLLER_PATH)
@@ -44,6 +49,13 @@ public class StorageClusterController extends StorageClusterControllerBase
 	public StorageClusterController(final ClusterStorageManager<?> storageManager)
 	{
 		super(Optional.of(() -> storageManager));
+	}
+	
+	@PreDestroy
+	@Override
+	public void close()
+	{
+		super.close();
 	}
 
 	@GetMapping(value = "/microstream-distributor", produces = MediaType.TEXT_PLAIN_VALUE)
@@ -65,10 +77,15 @@ public class StorageClusterController extends StorageClusterControllerBase
 	}
 
 	@GetMapping("/microstream-health")
-	public void checkHealth()
+	public void checkHealth() throws ResponseStatusException
 	{
+		if (!this.isHealthy())
+		{
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 	}
-
+	
+	
 	@GetMapping(value = "/microstream-storage-bytes", produces = MediaType.TEXT_PLAIN_VALUE)
 	public String storageBytes()
 	{
@@ -76,12 +93,20 @@ public class StorageClusterController extends StorageClusterControllerBase
 	}
 
 	@GetMapping("/microstream-health/ready")
-	public ResponseEntity<Void> readyCheck()
+	@Async
+	public CompletableFuture<Void> readyCheck() throws ResponseStatusException
 	{
-		return new ResponseEntity<>(
-			this.isReady() ? org.springframework.http.HttpStatus.OK
-				: org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
-		);
+		return this.call(() ->
+		{
+			if (this.isReady())
+			{
+				return CompletableFuture.completedFuture(null);
+			}
+			else
+			{
+				throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		});
 	}
 
 	@PostMapping(value = "/microstream-uploadStorage", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
@@ -130,4 +155,17 @@ public class StorageClusterController extends StorageClusterControllerBase
 	{
 		return ResponseEntity.ok(this.internalIsGcRunning());
 	}
+	
+	private <T> T call(final Supplier<T> s)
+	{
+		try
+		{
+			return s.get();
+		}
+		catch (final InternalServerErrorException e)
+		{
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+		}
+	}
+	
 }

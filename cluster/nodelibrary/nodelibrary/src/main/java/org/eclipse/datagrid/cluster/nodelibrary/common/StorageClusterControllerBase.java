@@ -19,13 +19,18 @@ import java.io.InputStream;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.eclipse.datagrid.cluster.nodelibrary.common.exception.InternalServerErrorException;
 import org.eclipse.datagrid.cluster.nodelibrary.common.impl._default.DefaultStorageClusterControllerBase;
 import org.eclipse.datagrid.cluster.nodelibrary.common.impl.micro.MicroStorageClusterControllerBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public abstract class StorageClusterControllerBase
+
+public abstract class StorageClusterControllerBase implements AutoCloseable
 {
-	public static final String CONTROLLER_PATH = "/microstream-cluster-controller";
-
+	public static final  String CONTROLLER_PATH = "/microstream-cluster-controller";
+	private static final Logger LOG             = LoggerFactory.getLogger(StorageClusterControllerBase.class);
+	
 	private final Impl impl;
 
 	protected StorageClusterControllerBase()
@@ -66,8 +71,13 @@ public abstract class StorageClusterControllerBase
 	{
 		this.impl.uploadStorage(storage);
 	}
-
-	protected boolean isReady()
+	
+	protected boolean isHealthy()
+	{
+		return this.impl.isHealthy();
+	}
+	
+	protected boolean isReady() throws InternalServerErrorException
 	{
 		return this.impl.isReady();
 	}
@@ -105,11 +115,19 @@ public abstract class StorageClusterControllerBase
 				+ "cluster_storage_used_bytes{namespace=\"%s\",pod=\"%s\"} %s",
 			ClusterEnv.myNamespace(),
 			ClusterEnv.myPodName(),
-			StorageLimitChecker.get().currentStorageDirectorySizeBytes().toString()
+			StorageLimitChecker.currentStorageDirectorySizeBytes().toString()
 		);
 	}
-
-	public interface Impl
+	
+	@Override
+	public void close()
+	{
+		LOG.info("Closing storage cluster controller base");
+		this.impl.close();
+	}
+	
+	
+	public interface Impl extends AutoCloseable
 	{
 		boolean distributionActive();
 		
@@ -118,7 +136,9 @@ public abstract class StorageClusterControllerBase
 		boolean finishDistributorActivation();
 
 		void uploadStorage(InputStream storage) throws IOException;
-
+		
+		boolean isHealthy();
+		
 		boolean isReady();
 
 		void createBackupNow();
@@ -130,6 +150,12 @@ public abstract class StorageClusterControllerBase
 		void callGc();
 		
 		boolean isGcRunning();
+		
+		@Override
+		default void close()
+		{
+			// Does nothing by default
+		}
 	}
 	
 }

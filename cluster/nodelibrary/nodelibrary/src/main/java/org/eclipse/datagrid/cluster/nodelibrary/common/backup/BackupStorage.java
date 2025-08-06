@@ -69,7 +69,7 @@ public class BackupStorage implements AutoCloseable
 
 	public static boolean isRunning()
 	{
-		return instance != null;
+		return instance != null && instance.storage.isRunning();
 	}
 
 	public static void restart()
@@ -255,7 +255,7 @@ public class BackupStorage implements AutoCloseable
 				Files.writeString(offsetPath, Long.toString(offset), StandardOpenOption.CREATE);
 			}
 		}
-		catch (NumberFormatException | IOException e)
+		catch (final NumberFormatException | IOException e)
 		{
 			LOG.warn("Failed to load EclipseStore offset from file", e);
 		}

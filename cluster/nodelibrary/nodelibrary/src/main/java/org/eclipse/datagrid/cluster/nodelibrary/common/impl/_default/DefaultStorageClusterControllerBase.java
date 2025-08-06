@@ -23,6 +23,9 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.kafka.common.KafkaException;
+import org.eclipse.datagrid.cluster.nodelibrary.common.StorageKafkaReadiness;
+import org.eclipse.datagrid.cluster.nodelibrary.common.exception.InternalServerErrorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,13 +41,14 @@ public class DefaultStorageClusterControllerBase implements StorageClusterContro
 {
 	private static final Logger LOG = LoggerFactory.getLogger(StorageClusterControllerBase.class);
 	
+	private final StorageKafkaReadiness    readiness;
 	private final ClusterStorageManager<?> storage;
 	
 	private Thread garbageCollectionThread;
 	
 	public DefaultStorageClusterControllerBase(
 		final Optional<Supplier<ClusterStorageManager<?>>> clusterStorageManagerSupplier
-	)
+	) throws KafkaException
 	{
 		this.storage = clusterStorageManagerSupplier.orElse(
 			() -> ServiceLoader.load(ClusterStorageManagerProvider.class)
@@ -52,6 +56,8 @@ public class DefaultStorageClusterControllerBase implements StorageClusterContro
 				.get()
 				.provideClusterStorageManager()
 		).get();
+		this.readiness = StorageKafkaReadiness.fromEnv(this.storage);
+		this.readiness.init();
 	}
 	
 	@Override
@@ -100,9 +106,23 @@ public class DefaultStorageClusterControllerBase implements StorageClusterContro
 	}
 	
 	@Override
-	public boolean isReady()
+	public boolean isHealthy()
 	{
-		return this.storage.isReady();
+		return this.storage.isRunning() && this.readiness.isActive();
+	}
+	
+	@Override
+	public boolean isReady() throws InternalServerErrorException
+	{
+		try
+		{
+			return this.readiness.isReady();
+		}
+		catch (final KafkaException e)
+		{
+			LOG.error("Failed to check for readiness", e);
+			throw new InternalServerErrorException();
+		}
 	}
 	
 	@Override
@@ -164,5 +184,18 @@ public class DefaultStorageClusterControllerBase implements StorageClusterContro
 			this.garbageCollectionThread = null;
 		}
 		return this.garbageCollectionThread != null;
+	}
+	
+	@Override
+	public void close()
+	{
+		try
+		{
+			this.readiness.close();
+		}
+		catch (final Exception e)
+		{
+			LOG.error("Failed to close storage kafka readiness", e);
+		}
 	}
 }

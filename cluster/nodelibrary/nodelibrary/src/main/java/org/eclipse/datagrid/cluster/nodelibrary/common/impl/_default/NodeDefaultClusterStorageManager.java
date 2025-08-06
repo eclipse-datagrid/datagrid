@@ -30,12 +30,10 @@ import org.eclipse.store.storage.embedded.configuration.types.EmbeddedStorageCon
 import org.eclipse.store.storage.embedded.configuration.types.EmbeddedStorageConfigurationBuilder;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
 import org.eclipse.store.storage.types.StorageManager;
-import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.eclipse.datagrid.cluster.nodelibrary.common.ClusterEnv;
-import org.eclipse.datagrid.cluster.nodelibrary.common.StorageLimitChecker;
 import org.eclipse.datagrid.cluster.nodelibrary.common.exception.NotADistributorException;
 import org.eclipse.datagrid.cluster.nodelibrary.common.storage.ActivatableStorageBinaryDataDistributor;
 import org.eclipse.datagrid.cluster.nodelibrary.common.storage.ActivatableStorageBinaryDataMerger;
@@ -75,26 +73,9 @@ public class NodeDefaultClusterStorageManager<T> extends DefaultClusterStorageMa
 	)
 	{
 		LOG.info("Initializing storage.");
-
-		try
-		{
-			StorageLimitChecker.get().start();
-		}
-		catch (final Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-		Runtime.getRuntime().addShutdownHook(new Thread(() ->
-		{
-			try
-			{
-				StorageLimitChecker.get().stop();
-			}
-			catch (final SchedulerException e)
-			{
-				LOG.error("Failed to shutdown storage limit checker.", e);
-			}
-		}));
+		
+		this.startStorageLimitChecker();
+		
 		final var storagePath = Paths.get("/storage/storage");
 		final long storageOffset;
 
@@ -191,6 +172,7 @@ public class NodeDefaultClusterStorageManager<T> extends DefaultClusterStorageMa
 	public boolean shutdown()
 	{
 		LOG.info("Disposing Cluster Resources");
+		this.shutdownStorageLimitChecker();
 		this.dataClient.dispose();
 		this.distributor.dispose();
 		return this.storage.shutdown();

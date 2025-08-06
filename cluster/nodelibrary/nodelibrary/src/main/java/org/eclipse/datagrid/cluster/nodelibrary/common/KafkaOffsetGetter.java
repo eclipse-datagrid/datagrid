@@ -14,13 +14,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.common;
  * #L%
  */
 
-import static org.apache.kafka.clients.consumer.ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.GROUP_ID_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.ISOLATION_LEVEL_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
+import static org.apache.kafka.clients.consumer.ConsumerConfig.*;
 import static org.apache.kafka.common.IsolationLevel.READ_COMMITTED;
 
 import java.nio.charset.StandardCharsets;
@@ -30,6 +24,8 @@ import java.util.Locale;
 import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
@@ -38,16 +34,32 @@ import org.slf4j.LoggerFactory;
 /**
  * Tool to ask kafka for the last microstream offset available
  */
-public class KafkaOffsetGetter
+public class KafkaOffsetGetter implements AutoCloseable
 {
+	public static KafkaOffsetGetter forTopic(final String topic)
+	{
+		return new KafkaOffsetGetter(topic, topic + "-offsetgetter");
+	}
+	
 	private static final Logger LOG = LoggerFactory.getLogger(KafkaOffsetGetter.class);
 	private static final long PARTITION_ASSIGNMENT_TIMEOUT_MS = 10_000L;
-	private static final long PARTITION_POLL_TIMEOUT_MS = 10_000L;
+	private static final Duration POLL_TIMEOUT = Duration.ofMillis(250L);
 	
-	private KafkaConsumer<String, byte[]> createKafkaConsumer(final String groupId)
+	private final KafkaConsumer<String, byte[]> kafka;
+	private final String topic;
+	
+	public KafkaOffsetGetter(final String topic, final String groupInstanceId)
+	{
+		this.topic = topic;
+		this.kafka = this.createKafkaConsumer(groupInstanceId);
+	}
+	
+	private KafkaConsumer<String, byte[]> createKafkaConsumer(final String groupInstanceId)
 	{
 		final Properties properties = KafkaPropertiesProvider.provide();
-		properties.setProperty(GROUP_ID_CONFIG, groupId);
+		properties.setProperty(GROUP_ID_CONFIG, groupInstanceId);
+		properties.setProperty(GROUP_INSTANCE_ID_CONFIG, groupInstanceId);
+		properties.setProperty(CLIENT_ID_CONFIG, groupInstanceId);
 		properties.setProperty(KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 		properties.setProperty(VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 		properties.setProperty(ENABLE_AUTO_COMMIT_CONFIG, "false");
@@ -57,56 +69,68 @@ public class KafkaOffsetGetter
 		return new KafkaConsumer<>(properties);
 	}
 	
+	@Override
+	public void close() throws InterruptException, KafkaException
+	{
+		this.kafka.close();
+	}
+	
+	public void init() throws KafkaException
+	{
+		LOG.trace("Subscribing to topic {}", this.topic);
+		this.kafka.subscribe(Collections.singleton(this.topic));
+		
+		LOG.trace("Polling consumer until we have partitions assigned.");
+		final long startMs = System.currentTimeMillis();
+		final long endMs = startMs + PARTITION_ASSIGNMENT_TIMEOUT_MS;
+		while (this.kafka.assignment().isEmpty())
+		{
+			if (System.currentTimeMillis() > endMs)
+			{
+				throw new RuntimeException("Timed out waiting for topic partition assignment");
+			}
+			this.kafka.poll(POLL_TIMEOUT);
+		}
+	}
+	
 	/**
 	 * Creates a new kafka consumer and asks for the last message in the topic,
 	 * returns the microstream offset of that message
 	 */
-	public long getLastStorageOffset(final String groupId, final String topic)
+	public long getLastMicrostreamOffset() throws KafkaException
 	{
 		long lastMicrostreamOffset = Long.MIN_VALUE;
 		
-		try (final var consumer = this.createKafkaConsumer(groupId))
+		this.seekToLastOffsets();
+		
+		LOG.trace("Polling latest messages for topic {}", this.topic);
+		for (final var rec : this.kafka.poll(POLL_TIMEOUT))
 		{
-			LOG.trace("Subscribing to topic {}", topic);
-			consumer.subscribe(Collections.singleton(topic));
-			
-			LOG.trace("Polling consumer until we have partitions assigned.");
-			final long startMs = System.currentTimeMillis();
-			while (consumer.assignment().isEmpty())
+			final byte[] microstreamOffsetRaw = rec.headers().lastHeader("microstreamOffset").value();
+			final long microstreamOffset = Long.parseLong(new String(microstreamOffsetRaw, StandardCharsets.UTF_8));
+			if (microstreamOffset > lastMicrostreamOffset)
 			{
-				if (System.currentTimeMillis() > startMs + PARTITION_ASSIGNMENT_TIMEOUT_MS)
-				{
-					throw new RuntimeException("Timed out waiting for topic partition assignment");
-				}
-				consumer.poll(Duration.ofMillis(PARTITION_POLL_TIMEOUT_MS));
-			}
-			
-			for (final var partition : consumer.assignment())
-			{
-				LOG.trace(
-					"Seeking to end offset for partition {} of topic {}",
-					partition.partition(),
-					partition.topic()
-				);
-				final long endOffset = consumer.position(partition);
-				if (endOffset > 0)
-				{
-					consumer.seek(partition, endOffset - 1);
-				}
-			}
-			
-			LOG.trace("Polling latest messages for topic {}", topic);
-			for (final var rec : consumer.poll(Duration.ofMillis(PARTITION_POLL_TIMEOUT_MS)))
-			{
-				final byte[] microstreamOffsetRaw = rec.headers().lastHeader("microstreamOffset").value();
-				final long microstreamOffset = Long.parseLong(new String(microstreamOffsetRaw, StandardCharsets.UTF_8));
-				if (microstreamOffset > lastMicrostreamOffset)
-				{
-					lastMicrostreamOffset = microstreamOffset;
-				}
+				lastMicrostreamOffset = microstreamOffset;
 			}
 		}
 		
 		return lastMicrostreamOffset;
+	}
+	
+	private void seekToLastOffsets() throws KafkaException
+	{
+		LOG.trace("Seeking to last partition messages");
+		this.kafka.poll(POLL_TIMEOUT); // Polling to update assignments
+		final var partitions = this.kafka.assignment();
+		this.kafka.seekToEnd(partitions);
+		for (final var partition : partitions)
+		{
+			LOG.debug("Seeking to end offset for partition {} of topic {}", partition.partition(), partition.topic());
+			final long endOffset = this.kafka.position(partition);
+			if (endOffset > 0)
+			{
+				this.kafka.seek(partition, endOffset - 1);
+			}
+		}
 	}
 }

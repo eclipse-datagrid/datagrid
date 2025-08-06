@@ -35,36 +35,32 @@ import org.slf4j.LoggerFactory;
 
 public class StorageLimitChecker
 {
-	private static final AtomicBoolean LIMIT_REACHED = new AtomicBoolean();
-	private static final StorageLimitChecker INST = new StorageLimitChecker();
-
-	public static StorageLimitChecker get()
+	public static StorageLimitChecker fromEnv() throws SchedulerException
 	{
-		return INST;
+		final double storageLimitPercent = ClusterEnv.storageLimitCheckerPercent();
+		final double storageLimitGb = Double.parseDouble(ClusterEnv.storageLimitGB().replace("G", ""));
+		
+		final int storageErrorGb = (int)Math.round(storageLimitGb / 100.0 * storageLimitPercent);
+		final int intervalMinutes = ClusterEnv.storageLimitCheckerIntervalMinutes();
+		
+		return new StorageLimitChecker(intervalMinutes, storageErrorGb);
 	}
-
+	
+	private static final AtomicBoolean LIMIT_REACHED = new AtomicBoolean();
+	private static final String STORAGE_ERROR_JOB_DATA_KEY = "storageErrorGb";
+	
 	private final Logger logger = LoggerFactory.getLogger(StorageLimitChecker.class);
 	private final Scheduler scheduler;
 	private final int intervalMinutes;
 	private final int storageErrorGb;
-
-	private StorageLimitChecker()
+	
+	private StorageLimitChecker(final int intervalMinutes, final int storageErrorGb) throws SchedulerException
 	{
-		this.intervalMinutes = ClusterEnv.storageLimitCheckerIntervalMinutes();
-		final double storageLimitPercent = ClusterEnv.storageLimitCheckerPercent();
-		final double storageLimitGb = Double.parseDouble(ClusterEnv.storageLimitGB().replace("G", ""));
-		this.storageErrorGb = (int)Math.round(storageLimitGb / 100.0 * storageLimitPercent);
-
-		try
-		{
-			this.scheduler = StdSchedulerFactory.getDefaultScheduler();
-		}
-		catch (final SchedulerException e)
-		{
-			throw new RuntimeException(e);
-		}
+		this.intervalMinutes = intervalMinutes;
+		this.storageErrorGb = storageErrorGb;
+		this.scheduler = StdSchedulerFactory.getDefaultScheduler();
 	}
-
+	
 	public void start() throws SchedulerException
 	{
 		this.logger.info(
@@ -72,61 +68,61 @@ public class StorageLimitChecker
 			this.storageErrorGb,
 			this.intervalMinutes
 		);
-
+		
 		final JobDetail job = JobBuilder.newJob(StorageLimitCheckerJob.class)
 			.withIdentity("StorageLimitChecker")
-			.usingJobData("storageErrorGb", this.storageErrorGb)
+			.usingJobData(STORAGE_ERROR_JOB_DATA_KEY, this.storageErrorGb)
 			.build();
-
+		
 		final Trigger trigger = TriggerBuilder.newTrigger()
 			.withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(this.intervalMinutes))
-			.usingJobData("storageErrorGb", this.storageErrorGb)
+			.usingJobData(STORAGE_ERROR_JOB_DATA_KEY, this.storageErrorGb)
 			.startNow()
 			.build();
-
+		
 		this.scheduler.scheduleJob(job, trigger);
 		this.scheduler.start();
 	}
-
+	
 	public void stop() throws SchedulerException
 	{
 		this.scheduler.shutdown();
 	}
-
+	
 	public boolean limitReached()
 	{
 		return LIMIT_REACHED.get();
 	}
-
-	public BigInteger currentStorageDirectorySizeBytes()
+	
+	public static BigInteger currentStorageDirectorySizeBytes()
 	{
 		return FileUtils.sizeOfDirectoryAsBigInteger(Paths.get("/storage").toFile());
 	}
-
+	
 	public static class StorageLimitCheckerJob implements Job
 	{
-		private final Logger logger = LoggerFactory.getLogger(StorageLimitCheckerJob.class);
-
+		private static final Logger LOG = LoggerFactory.getLogger(StorageLimitCheckerJob.class);
+		
 		@Override
 		public void execute(final JobExecutionContext context) throws JobExecutionException
 		{
-			this.logger.trace("Checking storage size...");
-
-			final int storageErrorGb = context.getJobDetail().getJobDataMap().getInt("storageErrorGb");
+			LOG.trace("Checking storage size...");
+			
+			final int storageErrorGb = context.getJobDetail().getJobDataMap().getInt(STORAGE_ERROR_JOB_DATA_KEY);
 			final var usedUpStorageBytes = FileUtils.sizeOfDirectoryAsBigInteger(Paths.get("/storage").toFile());
 			final int storageSizeGb = usedUpStorageBytes.divide(BigInteger.valueOf(1_000_000_000L)).intValueExact();
-
-			this.logger.info(
+			
+			LOG.info(
 				"ErrorGB: {}, StorageSizeGB: {} (Bytes: {}), LimitReached: {}",
 				storageErrorGb,
 				storageSizeGb,
 				usedUpStorageBytes.toString(),
 				storageSizeGb >= storageErrorGb
 			);
-
+			
 			if (storageSizeGb >= storageErrorGb)
 			{
-				this.logger.warn("Storage limit reached! No more data will be stored!");
+				LOG.warn("Storage limit reached! No more data will be stored!");
 				LIMIT_REACHED.set(true);
 			}
 		}

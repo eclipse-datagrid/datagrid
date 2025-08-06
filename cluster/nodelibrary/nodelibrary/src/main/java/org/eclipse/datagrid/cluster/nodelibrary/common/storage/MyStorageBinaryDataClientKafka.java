@@ -23,10 +23,8 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.common.IsolationLevel.READ_COMMITTED;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -162,10 +160,12 @@ public class MyStorageBinaryDataClientKafka implements StorageBinaryDataClientKa
 					this.active.set(false);
 
 					this.logger.info("Checking latest storage offset...");
-					final long stopAt = new KafkaOffsetGetter().getLastStorageOffset(
-						this.groupId + "offsetgetter",
-						this.topicName
-					);
+					final long stopAt;
+					try (final var offsetGetter = KafkaOffsetGetter.forTopic(this.topicName))
+					{
+						offsetGetter.init();
+						stopAt = offsetGetter.getLastMicrostreamOffset();
+					}
 					this.logger.info("Stopping at ms offset {}", stopAt);
 
 					while (this.storageOffset.get() < stopAt)
