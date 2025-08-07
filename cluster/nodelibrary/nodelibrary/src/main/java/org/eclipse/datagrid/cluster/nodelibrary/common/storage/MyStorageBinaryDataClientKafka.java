@@ -28,12 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -142,7 +137,7 @@ public class MyStorageBinaryDataClientKafka implements StorageBinaryDataClientKa
 
 		try (final KafkaConsumer<String, byte[]> consumer = new KafkaConsumer<>(properties))
 		{
-			consumer.subscribe(Arrays.asList(this.topicName));
+			consumer.subscribe(Collections.singletonList(this.topicName));
 			while (this.active.get())
 			{
 				if (!this.stopAtLatestOffset)

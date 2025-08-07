@@ -19,11 +19,7 @@ import static org.eclipse.serializer.util.X.notNull;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -117,7 +113,7 @@ public interface StorageBinaryDataClientKafka extends StorageBinaryDataClient
 			
 			try(final KafkaConsumer<String, byte[]> consumer = new KafkaConsumer<>(properties))
 			{
-				consumer.subscribe(Arrays.asList(this.topicName));
+				consumer.subscribe(Collections.singletonList(this.topicName));
 				while(this.active.get())
 				{
 					this.consume(consumer.poll(Duration.ofMillis(Long.MAX_VALUE)));
