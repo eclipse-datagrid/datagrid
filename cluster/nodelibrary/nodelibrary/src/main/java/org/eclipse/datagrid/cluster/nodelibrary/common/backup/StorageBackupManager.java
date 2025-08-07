@@ -129,7 +129,7 @@ public class StorageBackupManager
 	{
 		final List<BackupListItem> backupList = this.client.listBackups();
 
-		if (backupList.size() == 0 || backupList.size() < keptBackupsCount)
+		if (backupList.isEmpty() || backupList.size() < keptBackupsCount)
 		{
 			return;
 		}
