@@ -129,10 +129,9 @@ public interface StorageBinaryDataClientKafka extends StorageBinaryDataClient
 		private void consume(final ConsumerRecords<String, byte[]> records)
 		{
 			final List<StorageBinaryDataPacket>            packets  = new ArrayList<>();
-			final Iterator<ConsumerRecord<String, byte[]>> iterator   = records.iterator();
-			while(iterator.hasNext())
+			for(final ConsumerRecord<String, byte[]> record : records)
 			{
-				packets.add(this.createDataPacket(iterator.next()));
+				packets.add(this.createDataPacket(record));
 			}
 			if(!packets.isEmpty())
 			{

@@ -199,17 +199,15 @@ public class MyStorageBinaryDataClientKafka implements StorageBinaryDataClientKa
 	private void consume(final ConsumerRecords<String, byte[]> records)
 	{
 		final List<StorageBinaryDataPacket> packets = new ArrayList<>();
-		final Iterator<ConsumerRecord<String, byte[]>> iterator = records.iterator();
-		while (iterator.hasNext())
+		for(final ConsumerRecord<String, byte[]> record : records)
 		{
-			final ConsumerRecord<String, byte[]> record = iterator.next();
-			if (record.serializedValueSize() >= 0)
+			if(record.serializedValueSize() >= 0)
 			{
 				final Headers headers = record.headers();
 				final long offset = Long.parseLong(
 					new String(headers.lastHeader("storageOffset").value(), StandardCharsets.UTF_8)
 				);
-				if (offset > this.storageOffset.get())
+				if(offset > this.storageOffset.get())
 				{
 					this.storageOffset.set(offset);
 					packets.add(this.createDataPacket(record, headers));
