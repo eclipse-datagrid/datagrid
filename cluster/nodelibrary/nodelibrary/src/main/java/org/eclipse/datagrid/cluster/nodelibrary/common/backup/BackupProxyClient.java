@@ -59,7 +59,7 @@ public class BackupProxyClient
 				);
 			}
 		}
-		catch (IOException | InterruptedException | URISyntaxException e)
+		catch (final IOException | InterruptedException | URISyntaxException e)
 		{
 			throw new BackupProxyRequestException("failed to upload backup", e);
 		}
@@ -106,7 +106,7 @@ public class BackupProxyClient
 				);
 			}
 		}
-		catch (IOException | InterruptedException | URISyntaxException e)
+		catch (final IOException | InterruptedException | URISyntaxException e)
 		{
 			throw new BackupProxyRequestException("failed to upload backup", e);
 		}
