@@ -94,7 +94,7 @@ public final class GzipUtils
 				else
 				{
 					int count;
-					final byte data[] = new byte[bufferSize];
+					final byte[] data = new byte[bufferSize];
 
 					final String parent = new File(entry.getName().replaceFirst("storage", "/storage")).getParent();
 					if (parent != null)
