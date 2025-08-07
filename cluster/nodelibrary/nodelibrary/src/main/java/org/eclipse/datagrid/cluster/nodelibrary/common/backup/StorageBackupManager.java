@@ -129,7 +129,7 @@ public class StorageBackupManager
 	{
 		final List<BackupListItem> backupList = this.client.listBackups();
 
-		if (backupList.size() == 0 || backupList.size() < keptBackupsCount)
+		if (backupList.isEmpty() || backupList.size() < keptBackupsCount)
 		{
 			return;
 		}
@@ -137,7 +137,7 @@ public class StorageBackupManager
 		final BackupListItem oldestBackup = backupList.stream()
 			.map(b -> Pair.of(Instant.parse(b.getName()), b))
 			.sorted((a, b) -> b.left().compareTo(a.left()))
-			.map(b -> b.right())
+			.map(Pair::right)
 			.findFirst()
 			.get();
 

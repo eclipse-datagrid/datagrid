@@ -42,9 +42,9 @@ public final class GzipUtils
 	public static void compressTarGzip(final Path inputPath, final Path outputFile) throws ArchiveException
 	{
 		try (
-			OutputStream outputStream = Files.newOutputStream(outputFile);
-			GzipCompressorOutputStream gzipOut = new GzipCompressorOutputStream(outputStream);
-			TarArchiveOutputStream tarOut = new TarArchiveOutputStream(gzipOut);
+			final OutputStream outputStream = Files.newOutputStream(outputFile);
+			final GzipCompressorOutputStream gzipOut = new GzipCompressorOutputStream(outputStream);
+			final TarArchiveOutputStream tarOut = new TarArchiveOutputStream(gzipOut);
 			final Stream<Path> walk = Files.walk(inputPath)
 		)
 		{
@@ -71,14 +71,14 @@ public final class GzipUtils
 
 	public static void extractTarGZ(final InputStream in) throws IOException
 	{
-		try (TarArchiveInputStream tarIn = new TarArchiveInputStream(new GzipCompressorInputStream(in)))
+		try (final TarArchiveInputStream tarIn = new TarArchiveInputStream(new GzipCompressorInputStream(in)))
 		{
 			final int bufferSize = 1024;
 			TarArchiveEntry entry;
 
-			while ((entry = (TarArchiveEntry)tarIn.getNextEntry()) != null)
+			while ((entry = tarIn.getNextEntry()) != null)
 			{
-				/** If the entry is a directory, create the directory. **/
+				/* If the entry is a directory, create the directory. */
 				if (entry.isDirectory())
 				{
 					final File f = Paths.get("/storage", entry.getName()).toFile();
@@ -94,7 +94,7 @@ public final class GzipUtils
 				else
 				{
 					int count;
-					final byte data[] = new byte[bufferSize];
+					final byte[] data = new byte[bufferSize];
 
 					final String parent = new File(entry.getName().replaceFirst("storage", "/storage")).getParent();
 					if (parent != null)
@@ -106,7 +106,7 @@ public final class GzipUtils
 						entry.getName().replaceFirst("storage", "/storage"),
 						false
 					);
-					try (BufferedOutputStream dest = new BufferedOutputStream(fos, bufferSize))
+					try (final BufferedOutputStream dest = new BufferedOutputStream(fos, bufferSize))
 					{
 						while ((count = tarIn.read(data, 0, bufferSize)) != -1)
 						{

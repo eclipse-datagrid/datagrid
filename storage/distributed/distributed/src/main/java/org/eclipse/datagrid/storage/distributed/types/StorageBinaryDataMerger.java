@@ -110,7 +110,7 @@ public interface StorageBinaryDataMerger extends StorageBinaryDataReceiver
 				final PersistenceTypeDefinition localType = localTypeDictionary .lookupTypeById(remoteType.typeId());
 				if(localType == null)
 				{
-					logger.debug("New type: " + remoteType.typeName());
+					logger.debug("New type: {}", remoteType.typeName());
 					this.foundation.getTypeHandlerManager().ensureTypeHandler(remoteType);
 					
 				}
