@@ -78,7 +78,7 @@ public final class GzipUtils
 
 			while ((entry = tarIn.getNextEntry()) != null)
 			{
-				/** If the entry is a directory, create the directory. **/
+				/* If the entry is a directory, create the directory. */
 				if (entry.isDirectory())
 				{
 					final File f = Paths.get("/storage", entry.getName()).toFile();
