@@ -76,7 +76,7 @@ public final class GzipUtils
 			final int bufferSize = 1024;
 			TarArchiveEntry entry;
 
-			while ((entry = (TarArchiveEntry)tarIn.getNextEntry()) != null)
+			while ((entry = tarIn.getNextEntry()) != null)
 			{
 				/** If the entry is a directory, create the directory. **/
 				if (entry.isDirectory())
