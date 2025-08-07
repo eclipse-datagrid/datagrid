@@ -124,8 +124,8 @@ public interface ClusterStorageBinaryDataDistributorKafka extends StorageBinaryD
 
 				final long offset = this.storageOffset.incrementAndGet();
 				record.headers().add("storageOffset", Long.toString(offset).getBytes(StandardCharsets.UTF_8));
-
-				producer.send(record);
+				
+				this.producer.send(record);
 
 				packetIndex++;
 			}
