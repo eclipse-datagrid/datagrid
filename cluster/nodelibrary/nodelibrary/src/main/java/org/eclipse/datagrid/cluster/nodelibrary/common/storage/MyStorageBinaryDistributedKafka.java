@@ -23,37 +23,37 @@ import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.M
 
 public class MyStorageBinaryDistributedKafka
 {
-	public final static String keyMessageType()
+	public static String keyMessageType()
 	{
 		return "message-type";
 	}
 
-	public final static String keyMessageLength()
+	public static String keyMessageLength()
 	{
 		return "message-length";
 	}
 
-	public final static String keyPacketCount()
+	public static String keyPacketCount()
 	{
 		return "packet-count";
 	}
 
-	public final static String keyPacketIndex()
+	public static String keyPacketIndex()
 	{
 		return "packet-index";
 	}
 
-	public final static int maxPacketSize()
+	public static int maxPacketSize()
 	{
 		return 1_000_000;
 	}
 
-	public final static Charset charset()
+	public static Charset charset()
 	{
 		return StandardCharsets.UTF_8;
 	}
 
-	public final static void addPacketHeaders(
+	public static void addPacketHeaders(
 		final Headers headers,
 		final MessageType messageType,
 		final int messageLength,
@@ -67,44 +67,44 @@ public class MyStorageBinaryDistributedKafka
 		headers.add(keyPacketCount(), serialize(packetCount));
 	}
 
-	public final static MessageType messageType(final Headers headers)
+	public static MessageType messageType(final Headers headers)
 	{
 		return MessageType.valueOf(deserializeString(headers.lastHeader(keyMessageType()).value()));
 	}
 
-	public final static int messageLength(final Headers headers)
+	public static int messageLength(final Headers headers)
 	{
 		return deserializeInt(headers.lastHeader(keyMessageLength()).value());
 	}
 
-	public final static int packetIndex(final Headers headers)
+	public static int packetIndex(final Headers headers)
 	{
 		return deserializeInt(headers.lastHeader(keyPacketIndex()).value());
 	}
 
-	public final static int packetCount(final Headers headers)
+	public static int packetCount(final Headers headers)
 	{
 		return deserializeInt(headers.lastHeader(keyPacketCount()).value());
 	}
 
-	public final static byte[] serialize(final String value)
+	public static byte[] serialize(final String value)
 	{
 		return value.getBytes(charset());
 	}
 
-	public final static String deserializeString(final byte[] bytes)
+	public static String deserializeString(final byte[] bytes)
 	{
 		return new String(bytes, charset());
 	}
 
-	public final static byte[] serialize(final int value)
+	public static byte[] serialize(final int value)
 	{
 		return new byte[] {
 			(byte)(value >>> 24), (byte)(value >>> 16), (byte)(value >>> 8), (byte)value
 		};
 	}
 
-	public final static int deserializeInt(final byte[] bytes)
+	public static int deserializeInt(final byte[] bytes)
 	{
 		int value = 0;
 		for (final byte b : bytes)

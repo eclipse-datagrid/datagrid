@@ -23,42 +23,42 @@ import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.M
 
 final class StorageBinaryDistributedKafka
 {
-	final static String keyMessageType()
+	static String keyMessageType()
 	{
 		return "message-type";
 	}
 	
-	final static String keyMessageLength()
+	static String keyMessageLength()
 	{
 		return "message-length";
 	}
 	
-	final static String keyPacketCount()
+	static String keyPacketCount()
 	{
 		return "packet-count";
 	}
 	
-	final static String keyPacketIndex()
+	static String keyPacketIndex()
 	{
 		return "packet-index";
 	}
 	
-	final static int maxPacketSize()
+	static int maxPacketSize()
 	{
 		return 1_000_000;
 	}
 	
-	final static Charset charset()
+	static Charset charset()
 	{
 		return StandardCharsets.UTF_8;
 	}
 	
-	final static void addPacketHeaders(
-		final Headers     headers    ,
+	static void addPacketHeaders(
+		final Headers headers,
 		final MessageType messageType,
-		final int         messageLength,
-		final int         packetIndex,
-		final int         packetCount
+		final int messageLength,
+		final int packetIndex,
+		final int packetCount
 	)
 	{
 		headers.add(keyMessageType(),   serialize(messageType.name()));
@@ -67,39 +67,39 @@ final class StorageBinaryDistributedKafka
 		headers.add(keyPacketCount(),   serialize(packetCount));
 	}
 	
-	final static MessageType messageType(final Headers headers)
+	static MessageType messageType(final Headers headers)
 	{
 		return MessageType.valueOf(
 			deserializeString(headers.lastHeader(keyMessageType()).value())
 		);
 	}
 	
-	final static int messageLength(final Headers headers)
+	static int messageLength(final Headers headers)
 	{
 		return deserializeInt(headers.lastHeader(keyMessageLength()).value());
 	}
 	
-	final static int packetIndex(final Headers headers)
+	static int packetIndex(final Headers headers)
 	{
 		return deserializeInt(headers.lastHeader(keyPacketIndex()).value());
 	}
 	
-	final static int packetCount(final Headers headers)
+	static int packetCount(final Headers headers)
 	{
 		return deserializeInt(headers.lastHeader(keyPacketCount()).value());
 	}
 	
-	final static byte[] serialize(final String value)
+	static byte[] serialize(final String value)
 	{
 		return value.getBytes(charset());
 	}
 	
-	final static String deserializeString(final byte[] bytes)
+	static String deserializeString(final byte[] bytes)
 	{
 		return new String(bytes, charset());
 	}
 	
-	final static byte[] serialize(final int value)
+	static byte[] serialize(final int value)
 	{
 		return new byte[]
 		{
@@ -110,7 +110,7 @@ final class StorageBinaryDistributedKafka
 		};
 	}
 	
-	final static int deserializeInt(final byte[] bytes)
+	static int deserializeInt(final byte[] bytes)
 	{
 		int value = 0;
         for (final byte b : bytes) {
