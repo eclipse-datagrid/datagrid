@@ -65,6 +65,7 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
         private final String topicName;
         private final KafkaProducer<String, byte[]> producer;
         private long offset = Long.MIN_VALUE;
+        private boolean ignoreDistribution = false;
 
         protected Abstract(final String topicName, final KafkaPropertiesProvider kafkaPropertiesProvider)
         {
@@ -81,6 +82,11 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
 
         private void distribute(final MessageType messageType, final Binary data)
         {
+            if (this.ignoreDistribution)
+            {
+                LOG.trace("Ignoring distribution for data of type {}", messageType);
+                return;
+            }
             this.execute(() -> this.tryExecuteDistribution(messageType, data));
         }
 
@@ -202,6 +208,18 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
         public long offset()
         {
             return this.offset;
+        }
+
+        @Override
+        public boolean ignoreDistribution()
+        {
+            return this.ignoreDistribution;
+        }
+
+        @Override
+        public void ignoreDistribution(final boolean ignore)
+        {
+            this.ignoreDistribution = ignore;
         }
 
         @Override

@@ -68,8 +68,6 @@ public interface BackupProxyHttpClient
         {
             LOG.trace("Uploading compressed storage archive");
 
-            final long archiveFileSize = this.readFileSize(filePath);
-
             final HttpResponse<Void> res;
 
             try
@@ -78,7 +76,6 @@ public interface BackupProxyHttpClient
                     HttpRequest.newBuilder()
                         .PUT(BodyPublishers.ofFile(filePath))
                         .uri(this.baseUri.resolve(s3Key))
-                        .header("Microstream-BackupLength", Long.toString(archiveFileSize))
                         .build(),
                     BodyHandlers.discarding()
                 );
@@ -190,18 +187,6 @@ public interface BackupProxyHttpClient
             if (statusCode / 100 != 2)
             {
                 throw new NodelibraryException("Unexpected response from backup proxy. Status Code: " + statusCode);
-            }
-        }
-
-        private long readFileSize(final Path archivePath)
-        {
-            try
-            {
-                return archivePath.toFile().length();
-            }
-            catch (final Exception e)
-            {
-                throw new NodelibraryException("Failed to read file size", e);
             }
         }
     }
