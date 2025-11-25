@@ -40,8 +40,8 @@
 		<maven.compiler.release>17</maven.compiler.release>
 		<maven.version.minimum>3.8.1</maven.version.minimum>
 		<maven.java.version.minimum>17</maven.java.version.minimum>
-		<eclipse-store.version>3.0.0</eclipse-store.version>
-		<eclipse-serializer.version>3.0.0</eclipse-serializer.version>
+        <eclipse-store.version>4.0.0-SNAPSHOT</eclipse-store.version>
+        <eclipse-serializer.version>4.0.0-SNAPSHOT</eclipse-serializer.version>
 		<license.inceptionYear>2025</license.inceptionYear>
 		<license.licenseName>epl_only_v2</license.licenseName>
 		<license.licenceFile>${basedir}/LICENSE</license.licenceFile>
@@ -51,6 +51,20 @@
 		<module>cluster</module>
 		<module>storage</module>
 	</modules>
+
+    <repositories>
+        <repository>
+            <id>maven-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
 
 	<dependencyManagement>
 		<dependencies>

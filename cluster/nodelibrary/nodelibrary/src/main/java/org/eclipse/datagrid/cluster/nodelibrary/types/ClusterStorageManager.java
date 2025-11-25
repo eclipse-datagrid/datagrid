@@ -28,6 +28,7 @@ import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.StorageLimitReachedException;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.UnreachableCodeException;
 import org.eclipse.serializer.afs.types.AFile;
+import org.eclipse.serializer.collections.Set_long;
 import org.eclipse.serializer.collections.types.XGettingEnum;
 import org.eclipse.serializer.persistence.binary.types.Binary;
 import org.eclipse.serializer.persistence.types.PersistenceCommitListener;
@@ -760,7 +761,14 @@ public interface ClusterStorageManager<T> extends StorageManager
             public <C extends Consumer<Object>> C collect(final C collector, final long... objectIds)
             {
                 ClusterStorageManager.Default.this.validateState();
-                return ClusterStorageManager.Default.this.exitOnThrow(() -> this.delegate.collect(null, objectIds));
+                return ClusterStorageManager.Default.this.exitOnThrow(() -> this.delegate.collect(collector, objectIds));
+            }
+
+            @Override
+            public <C extends Consumer<Object>> C collect(final C collector, final Set_long objectIds)
+            {
+                ClusterStorageManager.Default.this.validateState();
+                return ClusterStorageManager.Default.this.exitOnThrow(() -> this.delegate.collect(collector, objectIds));
             }
 
             @Override
