@@ -26,6 +26,10 @@ public interface ClusterStorageBinaryDataDistributor extends StorageBinaryDataDi
 
     long offset();
 
+    void ignoreDistribution(boolean ignore);
+
+    boolean ignoreDistribution();
+
     static ClusterStorageBinaryDataDistributor Caching(final ClusterStorageBinaryDataDistributor delegate)
     {
         return new Caching(notNull(delegate));
@@ -68,6 +72,18 @@ public interface ClusterStorageBinaryDataDistributor extends StorageBinaryDataDi
         public long offset()
         {
             return this.delegate.offset();
+        }
+
+        @Override
+        public boolean ignoreDistribution()
+        {
+            return this.delegate.ignoreDistribution();
+        }
+
+        @Override
+        public void ignoreDistribution(final boolean ignore)
+        {
+            this.delegate.ignoreDistribution(ignore);
         }
 
         @Override
