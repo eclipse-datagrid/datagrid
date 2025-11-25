@@ -21,6 +21,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataClient;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacket;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacketAcceptor;
@@ -46,6 +47,9 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
     OffsetInfo offsetInfo();
 
     boolean isRunning();
+
+    void resume() throws NodelibraryException;
+
 
     static ClusterStorageBinaryDataClient New(
         final StorageBinaryDataPacketAcceptor packetAcceptor,
@@ -89,8 +93,10 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
 
         private final AtomicReference<OffsetInfo> offsetInfo;
         private long cachedOffset;
-        private final AtomicBoolean active = new AtomicBoolean();
         private final AtomicBoolean stopAtLatestOffset = new AtomicBoolean();
+        private final AtomicBoolean requestStop = new AtomicBoolean();
+
+        private Thread runner;
 
         public Default(
             final StorageBinaryDataPacketAcceptor packetAcceptor,
@@ -115,7 +121,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         @Override
         public boolean isRunning()
         {
-            return this.active.get();
+            return this.runner != null && this.runner.isAlive();
         }
 
         @Override
@@ -127,13 +133,12 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         @Override
         public void start()
         {
-            this.active.set(true);
             if (LOG.isInfoEnabled())
             {
                 LOG.info("Starting kafka data client at offsets {}", this.offsetInfo.get().msOffset());
             }
-            final Thread thread = new Thread(this::tryRun);
-            thread.start();
+            this.runner = new Thread(this::tryRun);
+            this.runner.start();
         }
 
         private void tryRun()
@@ -198,7 +203,8 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                     consumer.seekToBeginning(missingPartitions);
                 }
 
-                while (this.active.get())
+                boolean run = true;
+                while (run && !this.requestStop.get())
                 {
                     if (!this.stopAtLatestOffset.get())
                     {
@@ -209,8 +215,9 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                         LOG.info("Data client is now stopping at latest offset.");
                         final long stopAt;
                         try (
-                            final var offsetProvider = KafkaOffsetProvider.forTopic(
+                            final var offsetProvider = KafkaOffsetProvider.New(
                                 this.topicName,
+                                this.groupId + "-offsetgetter",
                                 this.kafkaPropertiesProvider
                             )
                         )
@@ -226,7 +233,8 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                         }
                         LOG.info("Data client is now at latest offset ({})", this.cachedOffset);
 
-                        this.active.set(false);
+                        this.stopAtLatestOffset.set(false);
+                        run = false;
                     }
 
                     if (this.doCommitOffset)
@@ -236,6 +244,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                 }
             }
 
+            this.requestStop.set(false);
             LOG.info("DataClient run finished");
         }
 
@@ -416,10 +425,39 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         }
 
         @Override
+        public void resume() throws NodelibraryException
+        {
+            if (this.stopAtLatestOffset.get())
+            {
+                throw new NodelibraryException(
+                    new IllegalStateException("Client is sill reading up to the latest offset")
+                );
+            }
+            if (this.isRunning())
+            {
+                throw new NodelibraryException(new IllegalStateException("Client is sill active"));
+            }
+            this.start();
+        }
+
+        @Override
         public void dispose()
         {
             LOG.trace("Disposing data client");
-            this.active.set(false);
+            this.requestStop.set(true);
+            while (this.runner != null && this.runner.isAlive())
+            {
+                try
+                {
+                    LOG.trace("Waiting for runner to stop");
+                    this.runner.join(10_000L);
+                }
+                catch (final InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                    throw new NodelibraryException(e);
+                }
+            }
             this.offsetChangedListener.close();
         }
     }

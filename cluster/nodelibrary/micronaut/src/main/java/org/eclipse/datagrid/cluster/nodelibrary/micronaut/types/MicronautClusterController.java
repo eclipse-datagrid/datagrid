@@ -109,17 +109,6 @@ public class MicronautClusterController implements AutoCloseable
     }
 
     @Post(
-        value = PostMicrostreamUploadStorage.PATH,
-        consumes = PostMicrostreamUploadStorage.CONSUMES,
-        produces = PostMicrostreamUploadStorage.PRODUCES
-    )
-    @ExecuteOn(TaskExecutors.IO)
-    public void postMicrostreamUploadStorage(@Body @NonNull final InputStream storage) throws HttpResponseException
-    {
-        this.controller.postMicrostreamUploadStorage(storage);
-    }
-
-    @Post(
         value = PostMicrostreamBackup.PATH,
         consumes = PostMicrostreamBackup.CONSUMES,
         produces = PostMicrostreamBackup.PRODUCES
@@ -127,6 +116,12 @@ public class MicronautClusterController implements AutoCloseable
     public void postMicrostreamBackup() throws HttpResponseException
     {
         this.controller.postMicrostreamBackup();
+    }
+
+    @Get(value = GetMicrostreamBackup.PATH, produces = GetMicrostreamBackup.PRODUCES)
+    public void getMicrostreamBackup() throws HttpResponseException
+    {
+        this.controller.getMicrostreamBackup();
     }
 
     @Post(
@@ -143,6 +138,16 @@ public class MicronautClusterController implements AutoCloseable
     public boolean getMicrostreamUpdates() throws HttpResponseException
     {
         return this.controller.getMicrostreamUpdates();
+    }
+
+    @Post(
+        value = PostMicrostreamResumeUpdates.PATH,
+        consumes = PostMicrostreamResumeUpdates.CONSUMES,
+        produces = PostMicrostreamResumeUpdates.PRODUCES
+    )
+    public void postMicrostreamResumeUpdates() throws HttpResponseException
+    {
+        this.controller.postMicrostreamResumeUpdates();
     }
 
     @Post(value = PostMicrostreamGc.PATH, consumes = PostMicrostreamGc.CONSUMES, produces = PostMicrostreamGc.PRODUCES)

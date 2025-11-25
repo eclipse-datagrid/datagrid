@@ -42,6 +42,12 @@ public interface StoredOffsetManager extends AutoCloseable
         return new Default(notNull(offsetFile));
     }
 
+    @FunctionalInterface
+    interface Creator
+    {
+        StoredOffsetManager create(AWritableFile offsetFile);
+    }
+
     final class Default implements StoredOffsetManager
     {
         private static final Logger LOG = LoggerFactory.getLogger(StoredOffsetManager.class);
@@ -205,11 +211,11 @@ public interface StoredOffsetManager extends AutoCloseable
 
             try
             {
-                this.offsetFile.close();
+                this.offsetFile.release();
             }
             catch (final RuntimeException e)
             {
-                LOG.error("Failed to close offset file", e);
+                LOG.error("Failed to release  offset file", e);
             }
 
             this.closed = true;

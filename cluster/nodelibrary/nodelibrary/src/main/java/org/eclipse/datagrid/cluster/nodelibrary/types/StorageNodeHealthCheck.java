@@ -72,7 +72,7 @@ public interface StorageNodeHealthCheck extends AutoCloseable
             final KafkaPropertiesProvider kafkaPropertiesProvider
         )
         {
-            this.kafka = new KafkaOffsetProvider(topic, groupId, kafkaPropertiesProvider);
+            this.kafka = KafkaOffsetProvider.New(topic, groupId, kafkaPropertiesProvider);
             this.storageController = storageController;
             this.dataClient = dataClient;
         }

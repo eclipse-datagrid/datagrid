@@ -16,6 +16,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
 
 import static org.eclipse.serializer.util.X.notNull;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.util.function.Supplier;
 
@@ -50,6 +51,10 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
     StorageChecksIssuer getStorageChecksIssuer();
 
     F setStorageChecksIssuer(StorageChecksIssuer issuer);
+
+    StorageBackupIssuer getStorageBackupIssuer();
+
+    F setStorageBackupIssuer(StorageBackupIssuer issuer);
 
     StorageBinaryDataPacketAcceptor getStorageBinaryDataPacketAcceptor();
 
@@ -127,6 +132,10 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
     F setEnableAsyncDistribution(boolean enable);
 
+    KafkaOffsetProvider getKafkaOffsetProvider();
+
+    F setKafkaOffsetProvider(KafkaOffsetProvider provider);
+
     static ClusterFoundation<?> New()
     {
         return new Default<>();
@@ -152,6 +161,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         private NodelibraryPropertiesProvider propertiesProvider;
         private StorageChecksIssuer.Creator storageChecksIssuerCreator;
         private StorageChecksIssuer storageChecksIssuer;
+        private StorageBackupIssuer storageBackupIssuer;
         private StorageDiskSpaceReader storageDiskSpaceReader;
         private StorageNodeManager storageNodeManager;
         private boolean enableAsyncDistribution;
@@ -163,6 +173,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         private StorageBinaryDataPacketAcceptor dataPacketAcceptor;
         private StoredOffsetManager storedOffsetManager;
         private KafkaPropertiesProvider kafkaPropertiesProvider;
+        private KafkaOffsetProvider kafkaOffsetProvider;
 
         // cached created types
         private ClusterStorageManager<?> clusterStorageManager;
@@ -176,6 +187,17 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         protected final F $()
         {
             return (F)this;
+        }
+
+        protected KafkaOffsetProvider ensureKafkaOffsetProvider()
+        {
+            final var nodelibProps = this.getNodelibraryPropertiesProvider();
+            final var kafkaProps = this.getKafkaPropertiesProvider();
+
+            final String topic = nodelibProps.kafkaTopicName();
+            final String groupId = String.format("%s-%s-offsetgetter", topic, nodelibProps.myPodName());
+
+            return KafkaOffsetProvider.New(topic, groupId, kafkaProps);
         }
 
         protected KafkaPropertiesProvider ensureKafkaPropertiesProvider()
@@ -226,7 +248,18 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
         protected StorageBackupManager ensureStorageBackupManager()
         {
-            return StorageBackupManager.New();
+            // TODO: Hardcoded path
+            final var backupsDirPath = new File("/backups");
+            final int maxBackupCount = this.getNodelibraryPropertiesProvider().keptBackupsCount();
+            final Supplier<OffsetInfo> offsetProvider = this.getClusterStorageBinaryDataClient()::offsetInfo;
+            final StoredOffsetManager.Creator offsetManagerCreator = StoredOffsetManager::New;
+            return StorageBackupManager.New(
+                this.clusterStorageManager,
+                backupsDirPath,
+                maxBackupCount,
+                offsetProvider,
+                offsetManagerCreator
+            );
         }
 
         protected StorageLimitChecker ensureLimitChecker()
@@ -263,13 +296,19 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             return EmbeddedStorageFoundation.New();
         }
 
+        protected StorageBackupIssuer ensureStorageBackupIssuer()
+        {
+            return StorageBackupIssuer.New(this.getStorageBackupManager());
+        }
+
         protected BackupNodeManager ensureBackupNodeManager()
         {
             return BackupNodeManager.New(
                 this.getStorageChecksIssuer(),
+                this.getStorageBackupIssuer(),
                 this.getClusterStorageBinaryDataClient(),
                 this.getStorageBackupManager(),
-                notNull(this.clusterStorageManager),
+                this.clusterStorageManager,
                 this.getStorageDiskSpaceReader()
             );
         }
@@ -307,7 +346,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         {
             return MicroNodeManager.New(
                 this.getStorageChecksIssuer(),
-                notNull(this.clusterStorageManager),
+                this.clusterStorageManager,
                 this.getStorageBackupManager(),
                 this.getStorageDiskSpaceReader()
             );
@@ -323,7 +362,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             return StorageNodeHealthCheck.New(
                 topic,
                 groupId,
-                notNull(this.clusterStorageManager),
+                this.clusterStorageManager,
                 this.getClusterStorageBinaryDataClient(),
                 this.getKafkaPropertiesProvider()
             );
@@ -358,8 +397,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 this.getStorageChecksIssuer(),
                 this.getClusterStorageBinaryDataClient(),
                 this.getStorageNodeHealthCheck(),
-                notNull(this.clusterStorageManager),
-                this.getStorageDiskSpaceReader()
+                this.clusterStorageManager,
+                this.getStorageDiskSpaceReader(),
+                this.getKafkaOffsetProvider()
             );
         }
 
@@ -384,7 +424,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         {
             return StorageBinaryDataMerger.New(
                 this.getEmbeddedStorageFoundation().getConnectionFoundation(),
-                notNull(this.clusterStorageManager),
+                this.clusterStorageManager,
                 this.getObjectGraphUpdateHandler()
             );
         }
@@ -664,6 +704,23 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         }
 
         @Override
+        public StorageBackupIssuer getStorageBackupIssuer()
+        {
+            if (this.storageBackupIssuer == null)
+            {
+                this.storageBackupIssuer = this.dispatch(this.ensureStorageBackupIssuer());
+            }
+            return this.storageBackupIssuer;
+        }
+
+        @Override
+        public F setStorageBackupIssuer(final StorageBackupIssuer issuer)
+        {
+            this.storageBackupIssuer = issuer;
+            return this.$();
+        }
+
+        @Override
         public StorageBinaryDataMerger getStorageBinaryDataMerger()
         {
             if (this.dataMerger == null)
@@ -749,6 +806,23 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         }
 
         @Override
+        public KafkaOffsetProvider getKafkaOffsetProvider()
+        {
+            if (this.kafkaOffsetProvider == null)
+            {
+                this.kafkaOffsetProvider = this.dispatch(this.ensureKafkaOffsetProvider());
+            }
+            return this.kafkaOffsetProvider;
+        }
+
+        @Override
+        public F setKafkaOffsetProvider(final KafkaOffsetProvider provider)
+        {
+            this.kafkaOffsetProvider = provider;
+            return this.$();
+        }
+
+        @Override
         public ClusterRestRequestController startController() throws NodelibraryException
         {
             if (this.clusterRequestController == null)
@@ -795,6 +869,8 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         protected void startBackupNode() throws NodelibraryException
         {
             LOG.info("Starting backup cluster node");
+
+            this.getKafkaOffsetProvider().init();
 
             final var logger = LoggerFactory.getLogger(ClusterFoundation.class);
             // TODO: Hardcoded paths
@@ -937,6 +1013,8 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         {
             LOG.info("Starting storage cluster node");
 
+            this.getKafkaOffsetProvider().init();
+
             // TODO: Hardcoded paths
             final var storagePath = Paths.get("/storage/storage");
 
@@ -972,16 +1050,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
             if (embeddedStorageManager.root() == null)
             {
-                final var root = this.getRootSupplier().get();
-                if (root instanceof Lazy)
-                {
-                    embeddedStorageManager.setRoot(root);
-                }
-                else
-                {
-                    embeddedStorageManager.setRoot(Lazy.Reference(root));
-                }
-                embeddedStorageManager.storeRoot();
+                throw new NodelibraryException("Storage-Node was started without a storage containing a root object");
             }
 
             final var storageLimitChecker = this.getStorageLimitChecker();

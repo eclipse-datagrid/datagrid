@@ -27,14 +27,17 @@ public interface BackupNodeManager extends ClusterNodeManager
 {
     void stopReadingAtLatestOffset();
 
+    void resumeReading() throws NodelibraryException;
+
     boolean isReading();
 
-    void createStorageBackup();
+    void createStorageBackup() throws NodelibraryException;
 
-    boolean replaceStorage(InputStream storageStream);
+    boolean isBackupRunning();
 
     static BackupNodeManager New(
         final StorageChecksIssuer storageChecksIssuer,
+        final StorageBackupIssuer storageBackupIssuer,
         final ClusterStorageBinaryDataClient dataClient,
         final StorageBackupManager backupManager,
         final StorageController storageController,
@@ -43,6 +46,7 @@ public interface BackupNodeManager extends ClusterNodeManager
     {
         return new Default(
             notNull(storageChecksIssuer),
+            notNull(storageBackupIssuer),
             notNull(dataClient),
             notNull(backupManager),
             notNull(storageController),
@@ -53,6 +57,7 @@ public interface BackupNodeManager extends ClusterNodeManager
     final class Default implements BackupNodeManager
     {
         private final StorageChecksIssuer storageChecksIssuer;
+        private final StorageBackupIssuer storageBackupIssuer;
         private final ClusterStorageBinaryDataClient dataClient;
         private final StorageBackupManager backupManager;
         private final StorageController storageController;
@@ -60,6 +65,7 @@ public interface BackupNodeManager extends ClusterNodeManager
 
         private Default(
             final StorageChecksIssuer storageChecksIssuer,
+            final StorageBackupIssuer storageBackupIssuer,
             final ClusterStorageBinaryDataClient dataClient,
             final StorageBackupManager backupManager,
             final StorageController storageController,
@@ -67,6 +73,7 @@ public interface BackupNodeManager extends ClusterNodeManager
         )
         {
             this.storageChecksIssuer = storageChecksIssuer;
+            this.storageBackupIssuer = storageBackupIssuer;
             this.dataClient = dataClient;
             this.backupManager = backupManager;
             this.storageController = storageController;
@@ -80,15 +87,27 @@ public interface BackupNodeManager extends ClusterNodeManager
         }
 
         @Override
+        public void resumeReading() throws NodelibraryException
+        {
+            this.dataClient.resume();
+        }
+
+        @Override
         public boolean isReading()
         {
             return this.dataClient.isRunning();
         }
 
         @Override
-        public void createStorageBackup()
+        public void createStorageBackup() throws NodelibraryException
         {
-            this.backupManager.createStorageBackup();
+            this.storageBackupIssuer.startBackup();
+        }
+
+        @Override
+        public boolean isBackupRunning()
+        {
+            return this.storageBackupIssuer.backupInProgress();
         }
 
         @Override
@@ -116,13 +135,6 @@ public interface BackupNodeManager extends ClusterNodeManager
         }
 
         @Override
-        public boolean replaceStorage(final InputStream storageStream)
-        {
-            // TODO Implement
-            throw new NotImplementedYetError();
-        }
-
-        @Override
         public void startStorageChecks()
         {
             this.storageChecksIssuer.startChecks();
@@ -131,6 +143,7 @@ public interface BackupNodeManager extends ClusterNodeManager
         @Override
         public void close()
         {
+            this.dataClient.dispose();
             this.backupManager.close();
         }
     }

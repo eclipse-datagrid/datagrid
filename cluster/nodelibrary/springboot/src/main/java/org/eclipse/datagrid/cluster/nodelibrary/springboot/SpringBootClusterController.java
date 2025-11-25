@@ -14,37 +14,22 @@ package org.eclipse.datagrid.cluster.nodelibrary.springboot;
  * #L%
  */
 
-import java.io.InputStream;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-
+import jakarta.annotation.PreDestroy;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.*;
 import org.eclipse.serializer.util.X;
 import org.springframework.http.HttpStatus;
-import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import jakarta.annotation.PreDestroy;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamDistributor;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamGc;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamHealth;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamHealthReady;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamStorageBytes;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamUpdates;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamActivateDistributorFinish;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamActivateDistributorStart;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamBackup;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamGc;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamUpdates;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamUploadStorage;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 @RestController
 @RequestMapping(ClusterRestRouteConfigurations.ROOT_PATH)
@@ -112,19 +97,6 @@ public class SpringBootClusterController implements AutoCloseable
     }
 
     @PostMapping(
-        value = PostMicrostreamUploadStorage.PATH,
-        consumes = PostMicrostreamUploadStorage.CONSUMES,
-        produces = PostMicrostreamUploadStorage.PRODUCES
-    )
-    @Async
-    public CompletableFuture<Void> postMicrostreamUploadStorage(@NonNull @RequestBody final InputStream storage)
-        throws HttpResponseException
-    {
-        this.call(() -> this.controller.postMicrostreamUploadStorage(storage));
-        return CompletableFuture.completedFuture(null);
-    }
-
-    @PostMapping(
         value = PostMicrostreamBackup.PATH,
         consumes = PostMicrostreamBackup.CONSUMES,
         produces = PostMicrostreamBackup.PRODUCES
@@ -144,10 +116,26 @@ public class SpringBootClusterController implements AutoCloseable
         this.call(this.controller::postMicrostreamUpdates);
     }
 
+    @GetMapping(value = GetMicrostreamBackup.PATH, produces = GetMicrostreamBackup.PRODUCES)
+    public boolean getMicrostreamBackup() throws HttpResponseException
+    {
+        return this.call(this.controller::getMicrostreamBackup);
+    }
+
     @GetMapping(value = GetMicrostreamUpdates.PATH, produces = GetMicrostreamUpdates.PRODUCES)
     public boolean getMicrostreamUpdates() throws HttpResponseException
     {
         return this.call(this.controller::getMicrostreamUpdates);
+    }
+
+    @PostMapping(
+        value = PostMicrostreamResumeUpdates.PATH,
+        consumes = PostMicrostreamResumeUpdates.CONSUMES,
+        produces = PostMicrostreamResumeUpdates.PRODUCES
+    )
+    public void postMicrostreamResumeUpdates() throws HttpResponseException
+    {
+        this.call(this.controller::postMicrostreamResumeUpdates);
     }
 
     @PostMapping(

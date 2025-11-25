@@ -31,13 +31,19 @@ public interface StorageNodeManager extends ClusterNodeManager
 
     boolean finishDistributonSwitch() throws NotADistributorException;
 
+    long getCurrentMicrostreamOffset();
+
+    long getLatestMicrostreamOffset();
+
+
     static StorageNodeManager New(
         final ClusterStorageBinaryDataDistributor dataDistributor,
         final StorageChecksIssuer storageChecksIssuer,
         final ClusterStorageBinaryDataClient dataClient,
         final StorageNodeHealthCheck healthCheck,
         final StorageController storageController,
-        final StorageDiskSpaceReader storageDiskSpaceReader
+        final StorageDiskSpaceReader storageDiskSpaceReader,
+        final KafkaOffsetProvider kafkaOffsetProvider
     )
     {
         return new Default(
@@ -46,7 +52,8 @@ public interface StorageNodeManager extends ClusterNodeManager
             notNull(dataClient),
             notNull(healthCheck),
             notNull(storageController),
-            notNull(storageDiskSpaceReader)
+            notNull(storageDiskSpaceReader),
+            notNull(kafkaOffsetProvider)
         );
     }
 
@@ -60,6 +67,7 @@ public interface StorageNodeManager extends ClusterNodeManager
         private final StorageNodeHealthCheck healthCheck;
         private final StorageController storageController;
         private final StorageDiskSpaceReader storageDiskSpaceReader;
+        private final KafkaOffsetProvider kafkaOffsetProvider;
 
         private boolean isDistributor;
         private boolean isSwitchingToDistributor;
@@ -70,7 +78,8 @@ public interface StorageNodeManager extends ClusterNodeManager
             final ClusterStorageBinaryDataClient dataClient,
             final StorageNodeHealthCheck healthCheck,
             final StorageController storageController,
-            final StorageDiskSpaceReader storageDiskSpaceReader
+            final StorageDiskSpaceReader storageDiskSpaceReader,
+            final KafkaOffsetProvider kafkaOffsetProvider
         )
         {
             this.dataDistributor = dataDistributor;
@@ -79,6 +88,7 @@ public interface StorageNodeManager extends ClusterNodeManager
             this.storageController = storageController;
             this.storageDiskSpaceReader = storageDiskSpaceReader;
             this.storageChecksIssuer = storageChecksIssuer;
+            this.kafkaOffsetProvider = kafkaOffsetProvider;
         }
 
         @Override
@@ -172,6 +182,25 @@ public interface StorageNodeManager extends ClusterNodeManager
             this.isDistributor = true;
             this.isSwitchingToDistributor = false;
             return true;
+        }
+
+        @Override
+        public long getCurrentMicrostreamOffset()
+        {
+            if (this.isDistributor())
+            {
+                return this.dataDistributor.offset();
+            }
+            else
+            {
+                return this.dataClient.offsetInfo().msOffset();
+            }
+        }
+
+        @Override
+        public long getLatestMicrostreamOffset()
+        {
+            return this.kafkaOffsetProvider.provideLatestOffset();
         }
 
         @Override

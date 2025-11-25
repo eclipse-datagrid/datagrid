@@ -34,16 +34,13 @@ import static org.eclipse.serializer.util.X.notNull;
  */
 public class KafkaOffsetProvider implements AutoCloseable
 {
-    public static KafkaOffsetProvider forTopic(
+    public static KafkaOffsetProvider New(
         final String topic,
+        final String groupInstanceId,
         final KafkaPropertiesProvider kafkaPropertiesProvider
     )
     {
-        return new KafkaOffsetProvider(
-            notNull(topic),
-            notNull(topic + "-offsetgetter"),
-            notNull(kafkaPropertiesProvider)
-        );
+        return new KafkaOffsetProvider(notNull(topic), notNull(groupInstanceId), notNull(kafkaPropertiesProvider));
     }
 	
 	private static final Logger LOG = LoggerFactory.getLogger(KafkaOffsetProvider.class);
@@ -54,7 +51,7 @@ public class KafkaOffsetProvider implements AutoCloseable
     private final KafkaPropertiesProvider kafkaPropertiesProvider;
 	private final String topic;
 
-    public KafkaOffsetProvider(
+    private KafkaOffsetProvider(
         final String topic,
         final String groupInstanceId,
         final KafkaPropertiesProvider kafkaPropertiesProvider

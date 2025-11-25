@@ -24,6 +24,8 @@ public interface ClusterStorageBinaryDataDistributor extends StorageBinaryDataDi
 {
     void offset(long offset);
 
+    long offset();
+
     static ClusterStorageBinaryDataDistributor Caching(final ClusterStorageBinaryDataDistributor delegate)
     {
         return new Caching(notNull(delegate));
@@ -60,6 +62,12 @@ public interface ClusterStorageBinaryDataDistributor extends StorageBinaryDataDi
         public void offset(final long offset)
         {
             this.delegate.offset(offset);
+        }
+
+        @Override
+        public long offset()
+        {
+            return this.delegate.offset();
         }
 
         @Override
