@@ -54,6 +54,8 @@ public interface NodelibraryPropertiesProvider
 
     boolean isProdMode();
 
+    Long dataMergerTimeoutMs();
+
     static NodelibraryPropertiesProvider Env()
     {
         return new Env();
@@ -83,6 +85,7 @@ public interface NodelibraryPropertiesProvider
             public static final String MY_POD_NAME = "MY_POD_NAME";
             public static final String MY_NAMESPACE = "MY_NAMESPACE";
             public static final String IS_PROD_MODE = "MSCNL_PROD_MODE";
+            public static final String DATA_MERGER_TIMEOUT_MS = "MSCNL_DATA_MERGER_TIMEOUT";
 
             private EnvKeys()
             {
@@ -204,10 +207,22 @@ public interface NodelibraryPropertiesProvider
             return this.envBoolean(EnvKeys.IS_PROD_MODE);
         }
 
+        @Override
+        public Long dataMergerTimeoutMs()
+        {
+            return this.envLong(EnvKeys.DATA_MERGER_TIMEOUT_MS);
+        }
+
         private Integer envInteger(final String envkey)
         {
             final String env = this.envString(envkey);
             return env == null ? null : Integer.parseInt(env);
+        }
+
+        private Long envLong(final String envkey)
+        {
+            final String env = this.envString(envkey);
+            return env == null ? null : Long.parseLong(env);
         }
 
         private Double envDouble(final String envkey)
