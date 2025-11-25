@@ -89,13 +89,13 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
     F setKafkaPropertiesProvider(KafkaPropertiesProvider provider);
 
-    StorageBinaryDataPacketAcceptor getStorageBinaryDataPacketAcceptor();
+    ClusterStorageBinaryDataPacketAcceptor getClusterStorageBinaryDataPacketAcceptor();
 
-    F setStorageBinaryDataPacketAcceptor(StorageBinaryDataPacketAcceptor acceptor);
+    F setClusterStorageBinaryDataPacketAcceptor(ClusterStorageBinaryDataPacketAcceptor acceptor);
 
-    StorageBinaryDataMerger getStorageBinaryDataMerger();
+    ClusterStorageBinaryDataMerger getClusterStorageBinaryDataMerger();
 
-    F setStorageBinaryDataMerger(StorageBinaryDataMerger merger);
+    F setClusterStorageBinaryDataMerger(ClusterStorageBinaryDataMerger merger);
 
     AfterDataMessageConsumedListener getAfterDataMessageConsumedListener();
 
@@ -199,8 +199,8 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         private ObjectGraphUpdateHandler graphUpdateHandler;
         private StorageBackupManager storageBackupManager;
         private AfterDataMessageConsumedListener afterDataMessageConsumedListener;
-        private StorageBinaryDataMerger dataMerger;
-        private StorageBinaryDataPacketAcceptor dataPacketAcceptor;
+        private ClusterStorageBinaryDataMerger dataMerger;
+        private ClusterStorageBinaryDataPacketAcceptor dataPacketAcceptor;
         private StoredOffsetManager storedOffsetManager;
         private KafkaPropertiesProvider kafkaPropertiesProvider;
         private KafkaOffsetProvider kafkaOffsetProvider;
@@ -427,7 +427,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             }
             LOG.trace("Created data client with group id {}", groupId);
             return ClusterStorageBinaryDataClient.New(
-                this.getStorageBinaryDataPacketAcceptor(),
+                this.getClusterStorageBinaryDataPacketAcceptor(),
                 topic,
                 groupId,
                 this.getAfterDataMessageConsumedListener(),
@@ -504,18 +504,22 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             return ClusterStorageBinaryDataDistributor.Caching(delegate);
         }
 
-        protected StorageBinaryDataMerger ensureStorageBinaryDataMerger()
+        protected ClusterStorageBinaryDataMerger ensureClusterStorageBinaryDataMerger()
         {
-            return StorageBinaryDataMerger.New(
+            final Long mergerTimeoutMs = this.getNodelibraryPropertiesProvider().dataMergerTimeoutMs();
+            final long cachingTimeoutMs = mergerTimeoutMs == null ? ClusterStorageBinaryDataMerger.Defaults
+                .cachingTimeoutMs() : mergerTimeoutMs;
+            return ClusterStorageBinaryDataMerger.New(
                 this.getEmbeddedStorageFoundation().getConnectionFoundation(),
                 this.clusterStorageManager,
-                this.getObjectGraphUpdateHandler()
+                this.getObjectGraphUpdateHandler(),
+                cachingTimeoutMs
             );
         }
 
-        protected StorageBinaryDataPacketAcceptor ensureDataPacketAcceptor()
+        protected ClusterStorageBinaryDataPacketAcceptor ensureDataPacketAcceptor()
         {
-            return StorageBinaryDataPacketAcceptor.New(this.getStorageBinaryDataMerger());
+            return ClusterStorageBinaryDataPacketAcceptor.New(this.getClusterStorageBinaryDataMerger());
         }
 
         @Override
@@ -923,24 +927,24 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         }
 
         @Override
-        public StorageBinaryDataMerger getStorageBinaryDataMerger()
+        public ClusterStorageBinaryDataMerger getClusterStorageBinaryDataMerger()
         {
             if (this.dataMerger == null)
             {
-                this.dataMerger = this.dispatch(this.ensureStorageBinaryDataMerger());
+                this.dataMerger = this.dispatch(this.ensureClusterStorageBinaryDataMerger());
             }
             return this.dataMerger;
         }
 
         @Override
-        public F setStorageBinaryDataMerger(final StorageBinaryDataMerger merger)
+        public F setClusterStorageBinaryDataMerger(final ClusterStorageBinaryDataMerger merger)
         {
             this.dataMerger = merger;
             return this.$();
         }
 
         @Override
-        public StorageBinaryDataPacketAcceptor getStorageBinaryDataPacketAcceptor()
+        public ClusterStorageBinaryDataPacketAcceptor getClusterStorageBinaryDataPacketAcceptor()
         {
             if (this.dataPacketAcceptor == null)
             {
@@ -950,7 +954,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         }
 
         @Override
-        public F setStorageBinaryDataPacketAcceptor(final StorageBinaryDataPacketAcceptor acceptor)
+        public F setClusterStorageBinaryDataPacketAcceptor(final ClusterStorageBinaryDataPacketAcceptor acceptor)
         {
             this.dataPacketAcceptor = acceptor;
             return this.$();

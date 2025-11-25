@@ -24,7 +24,6 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataClient;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacket;
-import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacketAcceptor;
 import org.eclipse.serializer.collections.EqHashTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
 
 
     static ClusterStorageBinaryDataClient New(
-        final StorageBinaryDataPacketAcceptor packetAcceptor,
+        final ClusterStorageBinaryDataPacketAcceptor packetAcceptor,
         final String topicName,
         final String groupId,
         final AfterDataMessageConsumedListener offsetChangedListener,
@@ -84,7 +83,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
          */
         private final Queue<ClusterStorageBinaryDataPacket> cachedPackets = new LinkedList<>();
 
-        private final StorageBinaryDataPacketAcceptor packetAcceptor;
+        private final ClusterStorageBinaryDataPacketAcceptor packetAcceptor;
         private final String topicName;
         private final String groupId;
         private final AfterDataMessageConsumedListener offsetChangedListener;
@@ -99,8 +98,8 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
 
         private Thread runner;
 
-        public Default(
-            final StorageBinaryDataPacketAcceptor packetAcceptor,
+        private Default(
+            final ClusterStorageBinaryDataPacketAcceptor packetAcceptor,
             final String topicName,
             final String groupId,
             final AfterDataMessageConsumedListener offsetChangedListener,
@@ -468,6 +467,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                     throw new NodelibraryException(e);
                 }
             }
+            this.packetAcceptor.dispose();
             this.offsetChangedListener.close();
         }
     }
