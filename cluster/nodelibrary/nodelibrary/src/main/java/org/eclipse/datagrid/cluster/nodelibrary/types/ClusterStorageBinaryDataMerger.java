@@ -15,8 +15,8 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  */
 
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
-import org.eclipse.datagrid.storage.distributed.types.BinaryEntityObjectIdAcceptor;
 import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
+import org.eclipse.datagrid.storage.distributed.types.ObjectMaterializer;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMerger;
 import org.eclipse.serializer.collections.types.XEnum;
 import org.eclipse.serializer.collections.types.XList;
@@ -26,7 +26,6 @@ import org.eclipse.serializer.persistence.binary.types.Binary;
 import org.eclipse.serializer.persistence.binary.types.BinaryEntityRawDataIterator;
 import org.eclipse.serializer.persistence.binary.types.BinaryPersistence;
 import org.eclipse.serializer.persistence.binary.types.BinaryPersistenceFoundation;
-import org.eclipse.serializer.persistence.types.PersistenceLoader;
 import org.eclipse.serializer.persistence.types.PersistenceTypeDefinition;
 import org.eclipse.serializer.persistence.types.PersistenceTypeDescription;
 import org.eclipse.serializer.persistence.types.PersistenceTypeDictionary;
@@ -131,21 +130,21 @@ public interface ClusterStorageBinaryDataMerger extends StorageBinaryDataMerger,
             LOG.trace("Updating object graph");
             this.objectGraphUpdateHandler.objectGraphUpdateAvailable(() ->
             {
-                final PersistenceLoader loader = this.storage.persistenceManager().createLoader();
-                final BinaryEntityObjectIdAcceptor acceptor = new BinaryEntityObjectIdAcceptor(
-                    this.storage,
-                    loader::getObject
-                );
+                final ObjectMaterializer materializer = new ObjectMaterializer(this.storage.persistenceManager());
+
                 final BinaryEntityRawDataIterator iterator = BinaryEntityRawDataIterator.New();
                 for (final var buffers : data)
                 {
                     for (final ByteBuffer buffer : buffers)
                     {
                         final long address = XMemory.getDirectByteBufferAddress(buffer);
-                        iterator.iterateEntityRawData(address, address + buffer.limit(), acceptor);
+                        iterator.iterateEntityRawData(address, address + buffer.limit(), materializer);
                         XMemory.deallocateDirectByteBuffer(buffer);
+
                     }
                 }
+
+                materializer.materialize();
             });
             LOG.trace("Finished");
         }

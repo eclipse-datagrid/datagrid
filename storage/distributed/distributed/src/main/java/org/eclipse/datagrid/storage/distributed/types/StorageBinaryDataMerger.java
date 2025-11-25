@@ -14,16 +14,11 @@ package org.eclipse.datagrid.storage.distributed.types;
  * #L%
  */
 
-import static org.eclipse.serializer.util.X.notNull;
-
-import java.nio.ByteBuffer;
-
 import org.eclipse.serializer.memory.XMemory;
 import org.eclipse.serializer.persistence.binary.types.Binary;
 import org.eclipse.serializer.persistence.binary.types.BinaryEntityRawDataIterator;
 import org.eclipse.serializer.persistence.binary.types.BinaryPersistence;
 import org.eclipse.serializer.persistence.binary.types.BinaryPersistenceFoundation;
-import org.eclipse.serializer.persistence.types.PersistenceLoader;
 import org.eclipse.serializer.persistence.types.PersistenceTypeDefinition;
 import org.eclipse.serializer.persistence.types.PersistenceTypeDescription;
 import org.eclipse.serializer.persistence.types.PersistenceTypeDictionary;
@@ -31,6 +26,10 @@ import org.eclipse.serializer.util.X;
 import org.eclipse.serializer.util.logging.Logging;
 import org.eclipse.store.storage.types.StorageConnection;
 import org.slf4j.Logger;
+
+import java.nio.ByteBuffer;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface StorageBinaryDataMerger extends StorageBinaryDataReceiver
 {
@@ -74,22 +73,25 @@ public interface StorageBinaryDataMerger extends StorageBinaryDataReceiver
 			logger.debug("Importing data");
 			this.storage.importData(X.Enum(data.buffers()));
 
-			final ObjectGraphUpdater updater = () ->
-			{
-				logger.debug("Updating object graph");
-				final PersistenceLoader            loader   = this.storage.persistenceManager().createLoader();
-				final BinaryEntityObjectIdAcceptor acceptor = new BinaryEntityObjectIdAcceptor(this.storage, loader::getObject);
-				final BinaryEntityRawDataIterator  iterator = BinaryEntityRawDataIterator.New();
-				for(final ByteBuffer buffer : data.buffers())
-				{
-					final long address = XMemory.getDirectByteBufferAddress(buffer);
-					iterator.iterateEntityRawData(
-			    		address,
-			    		address + buffer.limit(),
-			    		acceptor
-			    	);
-				}
-			};
+            final ObjectGraphUpdater updater = () ->
+            {
+                logger.debug("Updating object graph");
+
+                final ObjectMaterializer materializer = new ObjectMaterializer(this.storage.persistenceManager());
+
+                final BinaryEntityRawDataIterator iterator = BinaryEntityRawDataIterator.New();
+                for (final ByteBuffer buffer : data.buffers())
+                {
+                    final long address = XMemory.getDirectByteBufferAddress(buffer);
+                    iterator.iterateEntityRawData(
+                        address,
+                        address + buffer.limit(),
+                        materializer
+                    );
+                }
+
+                materializer.materialize();
+            };
 			this.objectGraphUpdateHandler.objectGraphUpdateAvailable(updater);
 		}
 		
