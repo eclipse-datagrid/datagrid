@@ -21,7 +21,6 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Locale;
@@ -115,11 +114,12 @@ public class KafkaOffsetProvider implements AutoCloseable
 		
 		this.seekToLastOffsets();
 		
-		LOG.trace("Polling latest messages for topic {}", this.topic);
+//		LOG.trace("Polling latest messages for topic {}", this.topic);
 		for (final var rec : this.kafka.poll(POLL_TIMEOUT))
 		{
-			final byte[] microstreamOffsetRaw = rec.headers().lastHeader("microstreamOffset").value();
-			final long microstreamOffset = Long.parseLong(new String(microstreamOffsetRaw, StandardCharsets.UTF_8));
+            final long microstreamOffset = ClusterStorageBinaryDistributedKafka.deserializeLong(
+                rec.headers().lastHeader(ClusterStorageBinaryDistributedKafka.keyMicrostreamOffset()).value()
+            );
 			if (microstreamOffset > lastMicrostreamOffset)
 			{
 				lastMicrostreamOffset = microstreamOffset;

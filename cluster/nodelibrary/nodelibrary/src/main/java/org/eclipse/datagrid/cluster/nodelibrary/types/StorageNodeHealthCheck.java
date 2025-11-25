@@ -138,12 +138,15 @@ public interface StorageNodeHealthCheck extends AutoCloseable
                 final long latestOffset = this.kafka.provideLatestOffset();
                 final long currentOffset = this.dataClient.offsetInfo().msOffset();
 
-                LOG.trace(
-                    "Current Offset: {}, Latest Offset: {}, Difference: {}",
-                    currentOffset,
-                    latestOffset,
-                    latestOffset - currentOffset
-                );
+                if (LOG.isTraceEnabled() && latestOffset - currentOffset > 1_000)
+                {
+                    LOG.trace(
+                        "Current Offset: {}, Latest Offset: {}, Difference: {}",
+                        currentOffset,
+                        latestOffset,
+                        latestOffset - currentOffset
+                    );
+                }
 
                 if (currentOffset >= latestOffset)
                 {
