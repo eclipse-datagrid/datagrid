@@ -19,9 +19,8 @@ Eclipse Data Grid is based on two other Eclipse projects:
 
   Java-native object graph persistence layer to store any complex Java object graphs or individual subgraphs transaction-safe into any binary data storage, and restore them in RAM on demand. Using a traditional database and thus OR-Mapping, JSON conversion, or any other mappings are completely superfluous. EclipseStore is ACID-compliant, provides lazy-loading, indexing, GigaMap for fully automated lazy-loading, and provides a smart concept for schema migration. EclipseStore is built as a persistence layer to be used for a single JVM run on a single node.
 
-Eclipse Data Grid itself provides you with the code to generate a cluster environment to run, scale, and maintain an Eclipse Data Grid application based on Kubernetes, as well as important cluster features such as replication, elastic scale-out / scale-in, and backups. Eclipse Data Grid bases on a single-writer approach. While the consistency model on each cluster node is full consistency, the standard cluster consistency model is eventual consistency.
+Eclipse Data Grid itself provides you with the code to generate a cluster environment to run, scale, and maintain an Eclipse Data Grid application based on Kubernetes, as well as important cluster features such as replication, elastic scale-out / scale-in, and backups. Eclipse Data Grid is based on a single-writer approach. While the consistency model on each cluster node is full consistency, the standard cluster consistency model is eventual consistency.
 
 ## License
 
 Eclipse Data Grid is available under [Eclipse Public License - v 2.0](LICENSE).
-0
