@@ -14,6 +14,9 @@ package org.eclipse.datagrid.cluster.nodelibrary.springboot;
  * #L%
  */
 
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterFoundation;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
 import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
 import org.eclipse.serializer.concurrency.LockedExecutor;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,15 +24,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import org.eclipse.datagrid.cluster.nodelibrary.common.ClusterEnv;
-import org.eclipse.datagrid.cluster.nodelibrary.common.ClusterStorageManager;
-import org.eclipse.datagrid.cluster.nodelibrary.common.impl._default.BackupDefaultClusterStorageManager;
-import org.eclipse.datagrid.cluster.nodelibrary.common.impl._default.NodeDefaultClusterStorageManager;
-import org.eclipse.datagrid.cluster.nodelibrary.common.impl.dev.DevClusterStorageManager;
-import org.eclipse.datagrid.cluster.nodelibrary.common.impl.micro.MicroClusterStorageManager;
 
 @Configuration
-@Import(StorageClusterController.class)
+@Import(SpringBootClusterController.class)
 public class EclipseDataGridCluster
 {
 	@Bean
@@ -45,29 +42,28 @@ public class EclipseDataGridCluster
 	}
 	
 	@Bean
-	public ClusterStorageManager<?> clusterStorageManager(
-		final RootProvider<?> rootProvider,
-		final ObjectGraphUpdateHandler objectGraphUpdateHandler,
-		@Value("${eclipse.datagrid.distribution.kafka.async:false}") final boolean async
-	)
-	{
-		final var root = rootProvider.root();
+    public ClusterFoundation<?> clusterFoundation(
+        final RootProvider<?> rootProvider,
+        final ObjectGraphUpdateHandler objectGraphUpdateHandler,
+        @Value("${eclipsestore.distribution.kafka.async:false}") final boolean async
+    )
+    {
+        return ClusterFoundation.New()
+            .setEnableAsyncDistribution(async)
+            .setObjectGraphUpdateHandler(objectGraphUpdateHandler)
+            .setRootSupplier(rootProvider::root);
+    }
 
-		if (!ClusterEnv.isProdMode())
-		{
-			return new DevClusterStorageManager<>(rootProvider::root);
-		}
+    @Bean
+    public ClusterRestRequestController nodelibraryClusterController(final ClusterFoundation<?> foundation)
+    {
+        return foundation.startController();
+    }
 
-		if (ClusterEnv.isMicro())
-		{
-			return new MicroClusterStorageManager<>(rootProvider::root);
-		}
+    @Bean
+    public ClusterStorageManager<?> clusterStorageManager(final ClusterFoundation<?> foundation)
+    {
+        return foundation.startStorageManager();
+    }
 
-		if (ClusterEnv.isBackupNode())
-		{
-			return new BackupDefaultClusterStorageManager<>(rootProvider::root);
-		}
-
-		return new NodeDefaultClusterStorageManager<>(rootProvider::root, objectGraphUpdateHandler, async);
-	}
 }
