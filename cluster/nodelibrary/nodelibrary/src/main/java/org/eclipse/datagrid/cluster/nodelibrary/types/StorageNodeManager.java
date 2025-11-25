@@ -38,7 +38,7 @@ public interface StorageNodeManager extends ClusterNodeManager
 
     static StorageNodeManager New(
         final ClusterStorageBinaryDataDistributor dataDistributor,
-        final StorageChecksIssuer storageChecksIssuer,
+        final StorageTaskExecutor storageTaskExecutor,
         final ClusterStorageBinaryDataClient dataClient,
         final StorageNodeHealthCheck healthCheck,
         final StorageController storageController,
@@ -48,7 +48,7 @@ public interface StorageNodeManager extends ClusterNodeManager
     {
         return new Default(
             notNull(dataDistributor),
-            notNull(storageChecksIssuer),
+            notNull(storageTaskExecutor),
             notNull(dataClient),
             notNull(healthCheck),
             notNull(storageController),
@@ -62,7 +62,7 @@ public interface StorageNodeManager extends ClusterNodeManager
         private static final Logger LOG = LoggerFactory.getLogger(StorageNodeManager.class);
 
         private final ClusterStorageBinaryDataDistributor dataDistributor;
-        private final StorageChecksIssuer storageChecksIssuer;
+        private StorageTaskExecutor storageTaskExecutor;
         private final ClusterStorageBinaryDataClient dataClient;
         private final StorageNodeHealthCheck healthCheck;
         private final StorageController storageController;
@@ -74,7 +74,7 @@ public interface StorageNodeManager extends ClusterNodeManager
 
         public Default(
             final ClusterStorageBinaryDataDistributor dataDistributor,
-            final StorageChecksIssuer storageChecksIssuer,
+            final StorageTaskExecutor storageTaskExecutor,
             final ClusterStorageBinaryDataClient dataClient,
             final StorageNodeHealthCheck healthCheck,
             final StorageController storageController,
@@ -87,20 +87,20 @@ public interface StorageNodeManager extends ClusterNodeManager
             this.healthCheck = healthCheck;
             this.storageController = storageController;
             this.storageDiskSpaceReader = storageDiskSpaceReader;
-            this.storageChecksIssuer = storageChecksIssuer;
+            this.storageTaskExecutor = storageTaskExecutor;
             this.kafkaOffsetProvider = kafkaOffsetProvider;
         }
 
         @Override
         public void startStorageChecks()
         {
-            this.storageChecksIssuer.startChecks();
+            this.storageTaskExecutor.runChecks();
         }
 
         @Override
         public boolean isRunningStorageChecks()
         {
-            return this.storageChecksIssuer.checksInProgress();
+            return this.storageTaskExecutor.isRunningChecks();
         }
 
         @Override
@@ -206,6 +206,7 @@ public interface StorageNodeManager extends ClusterNodeManager
         @Override
         public void close()
         {
+            LOG.info("Closing StorageNodeManager");
             this.dataDistributor.dispose();
             this.dataClient.dispose();
             this.healthCheck.close();

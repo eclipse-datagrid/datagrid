@@ -16,8 +16,10 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
 
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.eclipse.serializer.collections.EqHashTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +82,7 @@ public class KafkaOffsetProvider implements AutoCloseable
 	@Override
 	public void close() throws KafkaException
 	{
+        LOG.trace("Closing KafkaOffsetProvider.");
 		this.kafka.close();
 	}
 	
@@ -125,6 +128,20 @@ public class KafkaOffsetProvider implements AutoCloseable
 		
 		return lastMicrostreamOffset;
 	}
+
+    public OffsetInfo provideLatestOffsetInfo()
+    {
+        final var msOffset = this.provideLatestOffset();
+
+        final EqHashTable<TopicPartition, Long> kafkaOffsets = EqHashTable.New();
+        for (final var partition : this.kafka.assignment())
+        {
+            final long offset = this.kafka.position(partition);
+            kafkaOffsets.put(partition, offset);
+        }
+
+        return OffsetInfo.New(msOffset, kafkaOffsets.immure());
+    }
 	
 	private void seekToLastOffsets() throws KafkaException
 	{

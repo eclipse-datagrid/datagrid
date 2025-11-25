@@ -165,6 +165,8 @@ public interface StorageNodeHealthCheck extends AutoCloseable
                 return;
             }
 
+            LOG.info("Closing StorageNodeHealthCheck.");
+
             try
             {
                 this.kafka.close();

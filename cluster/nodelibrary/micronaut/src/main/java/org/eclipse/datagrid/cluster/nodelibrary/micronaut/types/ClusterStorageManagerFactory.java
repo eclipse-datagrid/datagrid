@@ -26,9 +26,9 @@ import jakarta.inject.Singleton;
 @Factory
 public class ClusterStorageManagerFactory
 {
-    @Singleton
-    @Bean(preDestroy = "close")
     @Replaces(StorageManager.class)
+    @Bean(preDestroy = "shutdown")
+    @Singleton
     public ClusterStorageManager<?> clusterStorageManager(final ClusterFoundation<?> foundation)
     {
         return foundation.startStorageManager();

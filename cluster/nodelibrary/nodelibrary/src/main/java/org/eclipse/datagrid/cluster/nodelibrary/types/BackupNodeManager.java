@@ -14,14 +14,13 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * #L%
  */
 
-import static org.eclipse.serializer.util.X.notNull;
-
-import java.io.InputStream;
-
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
-import org.eclipse.serializer.meta.NotImplementedYetError;
 import org.eclipse.store.storage.types.StorageController;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface BackupNodeManager extends ClusterNodeManager
 {
@@ -31,13 +30,13 @@ public interface BackupNodeManager extends ClusterNodeManager
 
     boolean isReading();
 
-    void createStorageBackup() throws NodelibraryException;
+    void createStorageBackup(final boolean useManualSlot) throws NodelibraryException;
 
     boolean isBackupRunning();
 
     static BackupNodeManager New(
-        final StorageChecksIssuer storageChecksIssuer,
-        final StorageBackupIssuer storageBackupIssuer,
+        final StorageBackupTaskExecutor storageBackupTaskExecutor,
+
         final ClusterStorageBinaryDataClient dataClient,
         final StorageBackupManager backupManager,
         final StorageController storageController,
@@ -45,8 +44,8 @@ public interface BackupNodeManager extends ClusterNodeManager
     )
     {
         return new Default(
-            notNull(storageChecksIssuer),
-            notNull(storageBackupIssuer),
+            notNull(storageBackupTaskExecutor),
+
             notNull(dataClient),
             notNull(backupManager),
             notNull(storageController),
@@ -56,24 +55,27 @@ public interface BackupNodeManager extends ClusterNodeManager
 
     final class Default implements BackupNodeManager
     {
-        private final StorageChecksIssuer storageChecksIssuer;
-        private final StorageBackupIssuer storageBackupIssuer;
+        private static final Logger LOG = LoggerFactory.getLogger(BackupNodeManager.class);
+
+        private final StorageBackupTaskExecutor tasks;
         private final ClusterStorageBinaryDataClient dataClient;
         private final StorageBackupManager backupManager;
         private final StorageController storageController;
         private final StorageDiskSpaceReader storageDiskSpaceReader;
 
+        private final boolean isStopping = false;
+
         private Default(
-            final StorageChecksIssuer storageChecksIssuer,
-            final StorageBackupIssuer storageBackupIssuer,
+            final StorageBackupTaskExecutor storageBackupTaskExecutor,
+
             final ClusterStorageBinaryDataClient dataClient,
             final StorageBackupManager backupManager,
             final StorageController storageController,
             final StorageDiskSpaceReader storageDiskSpaceReader
         )
         {
-            this.storageChecksIssuer = storageChecksIssuer;
-            this.storageBackupIssuer = storageBackupIssuer;
+            this.tasks = storageBackupTaskExecutor;
+
             this.dataClient = dataClient;
             this.backupManager = backupManager;
             this.storageController = storageController;
@@ -83,12 +85,14 @@ public interface BackupNodeManager extends ClusterNodeManager
         @Override
         public void stopReadingAtLatestOffset()
         {
+            this.validateRunning();
             this.dataClient.stopAtLatestOffset();
         }
 
         @Override
         public void resumeReading() throws NodelibraryException
         {
+            this.validateRunning();
             this.dataClient.resume();
         }
 
@@ -99,15 +103,16 @@ public interface BackupNodeManager extends ClusterNodeManager
         }
 
         @Override
-        public void createStorageBackup() throws NodelibraryException
+        public void createStorageBackup(final boolean useManualSlot) throws NodelibraryException
         {
-            this.storageBackupIssuer.startBackup();
+            this.validateRunning();
+            this.tasks.runBackup(useManualSlot);
         }
 
         @Override
         public boolean isBackupRunning()
         {
-            return this.storageBackupIssuer.backupInProgress();
+            return this.tasks.isRunningBackup();
         }
 
         @Override
@@ -125,7 +130,7 @@ public interface BackupNodeManager extends ClusterNodeManager
         @Override
         public boolean isRunningStorageChecks()
         {
-            return this.storageChecksIssuer.checksInProgress();
+            return this.tasks.isRunningChecks();
         }
 
         @Override
@@ -137,14 +142,24 @@ public interface BackupNodeManager extends ClusterNodeManager
         @Override
         public void startStorageChecks()
         {
-            this.storageChecksIssuer.startChecks();
+            this.validateRunning();
+            this.tasks.runChecks();
         }
 
         @Override
         public void close()
         {
+            LOG.info("Closing BackupNodeManager.");
             this.dataClient.dispose();
-            this.backupManager.close();
+            //this.backupManager.close();
+        }
+
+        private void validateRunning()
+        {
+            if (this.isStopping)
+            {
+                throw new NodelibraryException("Backup Node is stopping.");
+            }
         }
     }
 }

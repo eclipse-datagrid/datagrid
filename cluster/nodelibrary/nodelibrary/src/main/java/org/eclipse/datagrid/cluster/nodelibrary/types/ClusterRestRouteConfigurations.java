@@ -95,8 +95,23 @@ public final class ClusterRestRouteConfigurations
     public static final class PostMicrostreamBackup
     {
         public static final String PATH = "/microstream-backup";
-        public static final String CONSUMES = MediaTypes.WILDCARD;
+        public static final String CONSUMES = MediaTypes.APPLICATION_JSON;
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
+
+        public static final class Body
+        {
+            private Boolean useManualSlot;
+
+            public Boolean getUseManualSlot()
+            {
+                return this.useManualSlot;
+            }
+
+            public void setUseManualSlot(final Boolean useManualSlot)
+            {
+                this.useManualSlot = useManualSlot;
+            }
+        }
 
         private PostMicrostreamBackup()
         {

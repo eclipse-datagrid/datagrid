@@ -49,6 +49,8 @@ import org.eclipse.serializer.persistence.types.PersistenceTypeHandler;
 import org.eclipse.serializer.persistence.types.Storer;
 import org.eclipse.serializer.reference.Lazy;
 import org.eclipse.store.storage.types.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public interface ClusterStorageManager<T> extends StorageManager
@@ -61,24 +63,57 @@ public interface ClusterStorageManager<T> extends StorageManager
 
     static <T> ClusterStorageManager<T> New(
         final StorageManager delegate,
-        final StorageLimitChecker storageLimitChecker
+        final StorageSizeValidation storageSizeValidation,
+        final ShutdownCallback shutdownCallback
     )
     {
-        return new Default<>(notNull(delegate), notNull(storageLimitChecker));
+        return new Default<>(notNull(delegate), notNull(storageSizeValidation), notNull(shutdownCallback));
     }
 
-    static <T> ClusterStorageManager<T> Wrapper(final StorageManager delegate)
+    interface ShutdownCallback
     {
-        return new Wrapper<>(notNull(delegate));
+        void onShutdown();
+
+        static ShutdownCallback NoOp()
+        {
+            return new NoOp();
+        }
+
+        final class NoOp implements ShutdownCallback
+        {
+            private NoOp()
+            {
+            }
+
+            @Override
+            public void onShutdown()
+            {
+                // no-op
+            }
+        }
+    }
+
+    interface StorageSizeValidation
+    {
+        boolean isStorageSizeValid();
+    }
+
+    static <T> ClusterStorageManager<T> Wrapper(final StorageManager delegate, final ShutdownCallback shutdownCallback)
+    {
+        return new Wrapper<>(notNull(delegate), notNull(shutdownCallback));
     }
 
     class Wrapper<T> implements ClusterStorageManager<T>
     {
-        private final StorageManager delegate;
+        private static final Logger LOG = LoggerFactory.getLogger(Wrapper.class);
 
-        private Wrapper(final StorageManager delegate)
+        private final StorageManager delegate;
+        private final ShutdownCallback shutdownCallback;
+
+        private Wrapper(final StorageManager delegate, final ShutdownCallback shutdownCallback)
         {
             this.delegate = delegate;
+            this.shutdownCallback = shutdownCallback;
         }
 
         @Override
@@ -96,6 +131,8 @@ public interface ClusterStorageManager<T> extends StorageManager
         @Override
         public boolean shutdown()
         {
+            LOG.info("Shutting down ClusterStorageManager");
+            this.shutdownCallback.onShutdown();
             return this.delegate.shutdown();
         }
 
@@ -302,13 +339,20 @@ public interface ClusterStorageManager<T> extends StorageManager
 
     class Default<T> implements ClusterStorageManager<T>
     {
-        private final StorageLimitChecker storageLimitChecker;
+        private static final Logger LOG = LoggerFactory.getLogger(Wrapper.class);
+        private final StorageSizeValidation storageSizeValidation;
         private final StorageManager delegate;
+        private final ShutdownCallback shutdownCallback;
 
-        private Default(final StorageManager delegate, final StorageLimitChecker storageLimitChecker)
+        private Default(
+            final StorageManager delegate,
+            final StorageSizeValidation storageSizeValidation,
+            final ShutdownCallback shutdownCallback
+        )
         {
             this.delegate = delegate;
-            this.storageLimitChecker = storageLimitChecker;
+            this.storageSizeValidation = storageSizeValidation;
+            this.shutdownCallback = shutdownCallback;
         }
 
         private <R> R exitOnThrow(final Callable<R> callable)
@@ -340,7 +384,7 @@ public interface ClusterStorageManager<T> extends StorageManager
 
         private void validateState() throws StorageLimitReachedException
         {
-            if (this.storageLimitChecker.limitReached())
+            if (this.storageSizeValidation.isStorageSizeValid())
             {
                 throw new StorageLimitReachedException(
                     "Can not store more objects in storage as the storage limit has been reached"
@@ -505,7 +549,8 @@ public interface ClusterStorageManager<T> extends StorageManager
         @Override
         public boolean shutdown()
         {
-            this.storageLimitChecker.stop();
+            LOG.info("Shutting down ClusterStorageManager");
+            this.shutdownCallback.onShutdown();
             return this.delegate.shutdown();
         }
 

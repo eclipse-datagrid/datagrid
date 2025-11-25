@@ -14,17 +14,17 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * #L%
  */
 
-import static org.eclipse.serializer.util.X.notNull;
-
-import java.io.InputStream;
-import java.util.function.Supplier;
-
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.BadRequestException;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.InternalServerErrorException;
-import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamBackup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.function.Supplier;
+
+import static org.eclipse.serializer.util.X.notNull;
+import static org.eclipse.serializer.util.X.unbox;
 
 
 public interface ClusterRestRequestController extends AutoCloseable
@@ -42,7 +42,7 @@ public interface ClusterRestRequestController extends AutoCloseable
     // TODO: Rename to get statistics or monitoring etc.
     String getMicrostreamStorageBytes() throws HttpResponseException;
 
-    void postMicrostreamBackup() throws HttpResponseException;
+    void postMicrostreamBackup(PostMicrostreamBackup.Body body) throws HttpResponseException;
 
     boolean getMicrostreamBackup() throws HttpResponseException;
 
@@ -188,7 +188,7 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamBackup() throws HttpResponseException
+        public void postMicrostreamBackup(PostMicrostreamBackup.Body body) throws HttpResponseException
         {
             throw new BadRequestException();
         }
@@ -299,11 +299,10 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamBackup() throws HttpResponseException
+        public void postMicrostreamBackup(PostMicrostreamBackup.Body body) throws HttpResponseException
         {
             LOG.trace("Handling postMicrostreamBackup request");
-            this.handleRequest(this.backupNodeManager::createStorageBackup);
-
+            this.handleRequest(() -> this.backupNodeManager.createStorageBackup(unbox(body.getUseManualSlot())));
         }
 
         @Override
@@ -377,7 +376,7 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamBackup() throws HttpResponseException
+        public void postMicrostreamBackup(PostMicrostreamBackup.Body body) throws HttpResponseException
         {
             LOG.trace("Handling postMicrostreamBackup request");
             this.handleRequest(this.microNodeManager::createStorageBackup);
@@ -443,7 +442,7 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamBackup() throws HttpResponseException
+        public void postMicrostreamBackup(PostMicrostreamBackup.Body body) throws HttpResponseException
         {
             throw new BadRequestException();
         }

@@ -1,4 +1,4 @@
-package org.eclipse.datagrid.cluster.nodelibrary.types;
+package org.eclipse.datagrid.cluster.nodelibrary.types.cronjob;
 
 /*-
  * #%L
@@ -14,12 +14,9 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * #L%
  */
 
-import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
+import org.quartz.Job;
 
-public interface AfterDataMessageConsumedListener extends AutoCloseable
+public interface QuartzCronJobManager
 {
-    void onChange(OffsetInfo offsetInfo) throws NodelibraryException;
-
-    @Override
-    void close();
+    Job create();
 }

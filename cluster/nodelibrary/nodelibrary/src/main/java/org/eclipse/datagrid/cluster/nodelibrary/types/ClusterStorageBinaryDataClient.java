@@ -425,8 +425,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
 
         /**
          * Stop collecting updates after the last available offset in kafka has been
-         * reached. After the offset has been reached a file called 'stopped' will be
-         * created in the storage directory.
+         * reached.
          */
         @Override
         public void stopAtLatestOffset()
