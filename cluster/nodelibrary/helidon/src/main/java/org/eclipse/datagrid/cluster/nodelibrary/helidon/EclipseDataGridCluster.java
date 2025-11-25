@@ -14,17 +14,13 @@ package org.eclipse.datagrid.cluster.nodelibrary.helidon;
  * #L%
  */
 
-import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
-import org.eclipse.datagrid.cluster.nodelibrary.common.ClusterEnv;
-import org.eclipse.datagrid.cluster.nodelibrary.common.ClusterStorageManager;
-import org.eclipse.datagrid.cluster.nodelibrary.common.impl._default.BackupDefaultClusterStorageManager;
-import org.eclipse.datagrid.cluster.nodelibrary.common.impl._default.NodeDefaultClusterStorageManager;
-import org.eclipse.datagrid.cluster.nodelibrary.common.impl.dev.DevClusterStorageManager;
-import org.eclipse.datagrid.cluster.nodelibrary.common.impl.micro.MicroClusterStorageManager;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterFoundation;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
+import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.serializer.concurrency.LockedExecutor;
 
 
@@ -48,33 +44,35 @@ public class EclipseDataGridCluster
 	@SuppressWarnings("rawtypes")
 	@ApplicationScoped
 	@Produces
-	public ClusterStorageManager clusterStorageManager(
+    public ClusterStorageManager clusterStorageManager(final ClusterFoundation foundation)
+    {
+        final var manager = foundation.startStorageManager();
+        Runtime.getRuntime().addShutdownHook(new Thread(manager::close, "ShutdownCluster"));
+        return manager;
+    }
+
+    @SuppressWarnings("rawtypes")
+    @ApplicationScoped
+    @Produces
+    public ClusterRestRequestController clusterRequestController(final ClusterFoundation foundation)
+    {
+        final var controller = foundation.startController();
+        Runtime.getRuntime().addShutdownHook(new Thread(controller::close, "ShutdownController"));
+        return controller;
+    }
+
+    @SuppressWarnings("rawtypes")
+    @ApplicationScoped
+    @Produces
+    public ClusterFoundation clusterFoundation(
 		final RootProvider rootProvider,
 		final ObjectGraphUpdateHandler objectGraphUpdateHandler,
-		@ConfigProperty(name = "eclipse.datagrid.distribution.kafka.async", defaultValue = "false") final boolean async
+		@ConfigProperty(name = "eclipsestore.distribution.kafka.async", defaultValue = "false") final boolean async
 	)
 	{
-		final ClusterStorageManager<?> sm;
-		
-		if (!ClusterEnv.isProdMode())
-		{
-			sm = new DevClusterStorageManager<>(rootProvider::root);
-		}
-		else if (ClusterEnv.isMicro())
-		{
-			sm = new MicroClusterStorageManager<>(rootProvider::root);
-		}
-		else if (ClusterEnv.isBackupNode())
-		{
-			sm = new BackupDefaultClusterStorageManager<>(rootProvider::root);
-		}
-		else
-		{
-			sm = new NodeDefaultClusterStorageManager<>(rootProvider::root, objectGraphUpdateHandler, async);
-		}
-
-		Runtime.getRuntime().addShutdownHook(new Thread(sm::close, "ShutdownCluster"));
-
-		return sm;
+        return ClusterFoundation.New()
+            .setEnableAsyncDistribution(async)
+            .setObjectGraphUpdateHandler(objectGraphUpdateHandler)
+            .setRootSupplier(rootProvider::root);
 	}
 }

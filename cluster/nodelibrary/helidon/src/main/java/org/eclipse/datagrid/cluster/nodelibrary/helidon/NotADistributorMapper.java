@@ -14,29 +14,25 @@ package org.eclipse.datagrid.cluster.nodelibrary.helidon;
  * #L%
  */
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import org.eclipse.datagrid.cluster.nodelibrary.common.ClusterEnv;
-import org.eclipse.datagrid.cluster.nodelibrary.common.exception.NotADistributorException;
+import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
+
 
 @ApplicationScoped
 @Provider
-public class NotADistributorMapper implements ExceptionMapper<NotADistributorException>
+public class NotADistributorMapper implements ExceptionMapper<HttpResponseException>
 {
-	private final Logger logger = LoggerFactory.getLogger(NotADistributorMapper.class);
-
-	@Override
-	public Response toResponse(final NotADistributorException exception)
-	{
-		this.logger.error(
-			"Store call has been made on a node that is not the writer! Message: {}",
-			exception.getMessage()
-		);
-		return Response.status(400).header(ClusterEnv.NAD_KEY, Boolean.TRUE.toString()).build();
-	}
+    @Override
+    public Response toResponse(final HttpResponseException e)
+    {
+        final var response = Response.status(e.statusCode());
+        for (final var header : e.extraHeaders())
+        {
+            response.header(header.key(), header.value());
+        }
+        return response.build();
+    }
 }
