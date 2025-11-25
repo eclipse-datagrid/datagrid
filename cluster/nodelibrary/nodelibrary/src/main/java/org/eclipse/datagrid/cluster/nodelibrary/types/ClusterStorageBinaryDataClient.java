@@ -21,7 +21,6 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.eclipse.datagrid.storage.distributed.kafka.types.StorageBinaryDistributedKafka;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataClient;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacket;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacketAcceptor;
@@ -30,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -75,6 +73,12 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         private static final Logger LOG = LoggerFactory.getLogger(ClusterStorageBinaryDataClient.class);
         private static final long PARTITION_ASSIGNMENT_TIMEOUT_MS = Duration.ofSeconds(60L).toMillis();
         private static final Duration POLL_TIMEOUT = Duration.ofSeconds(5L);
+
+        /**
+         * List of packets that have been polled but not yet consumed as they are still
+         * missing some packets to complete the set
+         */
+        private final Queue<ClusterStorageBinaryDataPacket> cachedPackets = new LinkedList<>();
 
         private final StorageBinaryDataPacketAcceptor packetAcceptor;
         private final String topicName;
@@ -198,8 +202,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                 {
                     if (!this.stopAtLatestOffset.get())
                     {
-                        final var records = consumer.poll(Duration.ofSeconds(5));
-                        this.consume(records, consumer);
+                        this.pollAndConsume(consumer);
                     }
                     else
                     {
@@ -219,7 +222,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
 
                         while (this.cachedOffset < stopAt)
                         {
-                            this.consume(consumer.poll(Duration.ofSeconds(5)), consumer);
+                            this.pollAndConsume(consumer);
                         }
                         LOG.info("Data client is now at latest offset ({})", this.cachedOffset);
 
@@ -253,59 +256,149 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
             return info;
         }
 
-        private void consume(
-            final ConsumerRecords<String, byte[]> records,
+        /**
+         * Polls the kafka consumer and consumes fully completed messages. Invalid
+         * packets are skipped and incomplete messages will be cached.
+         */
+        private void pollAndConsume(final KafkaConsumer<String, byte[]> consumer)
+        {
+            // only consume complete messages, to do this we need to look ahead to see if all packets
+            // are here yet. If not read more, if it starts at 0 again then we know that something went
+            // wrong on the writer side and that we should just skip all the packets in that series
+
+            this.cachedPackets.addAll(this.createPackets(consumer.poll(Duration.ofSeconds(5))));
+
+            if (this.cachedPackets.isEmpty())
+            {
+                return;
+            }
+
+            outer: while (!this.cachedPackets.isEmpty())
+            {
+                final var rootPacket = this.cachedPackets.peek();
+
+                if (rootPacket.packetIndex() != 0)
+                {
+                    LOG.error("First packet has index {}, expected 0 skipping packet...", rootPacket.packetIndex());
+                    this.cachedPackets.remove();
+                    continue;
+                }
+
+                if (this.cachedPackets.size() < rootPacket.packetCount())
+                {
+                    //LOG.trace("Message Incomplete ({}/{})", this.cachedPackets.size(), rootPacket.packetCount());
+                    return;
+                }
+
+                final var packets = new ArrayList<ClusterStorageBinaryDataPacket>();
+
+                for (int i = 0; i < rootPacket.packetCount(); i++)
+                {
+                    final var packet = this.cachedPackets.remove();
+
+                    if (packet.packetIndex() != i)
+                    {
+                        LOG.error(
+                            "Unexpected Packet Index {}, expected 0 skipping packet...",
+                            rootPacket.packetIndex()
+                        );
+                        continue outer;
+                    }
+
+                    if (packet.packetCount() != rootPacket.packetCount())
+                    {
+                        LOG.error(
+                            "Unexpected Packet Count {} of Packet at Index {}, expected {} skipping packet...",
+                            packet.packetCount(),
+                            packet.packetIndex(),
+                            rootPacket.packetCount()
+                        );
+                        continue outer;
+                    }
+
+                    packets.add(packet);
+                }
+
+                this.consumeFullMessage(packets, consumer);
+            }
+        }
+
+        private List<ClusterStorageBinaryDataPacket> createPackets(final ConsumerRecords<String, byte[]> records)
+        {
+            final var list = new ArrayList<ClusterStorageBinaryDataPacket>();
+            for (final var record : records)
+            {
+                if (record.serializedValueSize() > 0)
+                {
+                    list.add(this.createDataPacket(record, record.headers()));
+                }
+                else
+                {
+                    LOG.warn("Encountered record with serialized value size 0");
+                }
+            }
+            return list;
+        }
+
+        private void consumeFullMessage(
+            final Iterable<ClusterStorageBinaryDataPacket> packets,
             final KafkaConsumer<String, byte[]> consumer
         )
         {
-            final List<StorageBinaryDataPacket> packets = new ArrayList<>();
-            final Iterator<ConsumerRecord<String, byte[]>> iterator = records.iterator();
-            while (iterator.hasNext())
+            final List<StorageBinaryDataPacket> newPackets = new ArrayList<>();
+
+            for (final var packet : packets)
             {
-                final ConsumerRecord<String, byte[]> record = iterator.next();
-                if (record.serializedValueSize() < 0)
+                if (this.cachedOffset >= packet.microstreamOffset())
+
                 {
+                    LOG.warn(
+                        "Skipping packet with offset {} (current: {})",
+                        packet.microstreamOffset(),
+                        this.cachedOffset
+                    );
                     continue;
                 }
-                final Headers headers = record.headers();
 
-                final long oldMsOffset = this.cachedOffset;
-                this.cachedOffset = Long.parseLong(
-                    new String(headers.lastHeader("microstreamOffset").value(), StandardCharsets.UTF_8)
-                );
+
+                this.cachedOffset = packet.microstreamOffset();
+
+
+
                 if (LOG.isTraceEnabled() && this.cachedOffset % 10_000 == 0)
                 {
                     LOG.trace("Consuming packet with offset {}", this.cachedOffset);
                 }
 
-                if (this.cachedOffset > oldMsOffset)
-                {
-                    packets.add(this.createDataPacket(record, headers));
-                }
+                newPackets.add(packet);
+
+
+
             }
 
-            if (!packets.isEmpty())
+            if (!newPackets.isEmpty())
             {
                 if (LOG.isDebugEnabled() && this.cachedOffset % 10_000 == 0)
                 {
                     LOG.debug("Applying packets at offset {}", this.cachedOffset);
                 }
-                this.packetAcceptor.accept(packets);
+                this.packetAcceptor.accept(newPackets);
                 final var newInfo = this.updateOffsets(consumer);
                 this.offsetChangedListener.onChange(newInfo);
             }
         }
 
-        private StorageBinaryDataPacket createDataPacket(
+        private ClusterStorageBinaryDataPacket createDataPacket(
             final ConsumerRecord<String, byte[]> record,
             final Headers headers
         )
         {
-            return StorageBinaryDataPacket.New(
-                StorageBinaryDistributedKafka.messageType(headers),
-                StorageBinaryDistributedKafka.messageLength(headers),
-                StorageBinaryDistributedKafka.packetIndex(headers),
-                StorageBinaryDistributedKafka.packetCount(headers),
+            return ClusterStorageBinaryDataPacket.New(
+                ClusterStorageBinaryDistributedKafka.messageType(headers),
+                ClusterStorageBinaryDistributedKafka.messageLength(headers),
+                ClusterStorageBinaryDistributedKafka.packetIndex(headers),
+                ClusterStorageBinaryDistributedKafka.packetCount(headers),
+                ClusterStorageBinaryDistributedKafka.microstreamOffset(headers),
                 ByteBuffer.wrap(record.value())
             );
         }

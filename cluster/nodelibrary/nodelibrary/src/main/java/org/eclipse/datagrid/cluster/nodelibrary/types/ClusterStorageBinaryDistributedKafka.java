@@ -14,6 +14,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * #L%
  */
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -21,7 +22,7 @@ import org.apache.kafka.common.header.Headers;
 
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.MessageType;
 
-public class StorageBinaryDistributedKafka
+public class ClusterStorageBinaryDistributedKafka
 {
     public static String keyMessageType()
     {
@@ -36,6 +37,11 @@ public class StorageBinaryDistributedKafka
     public static String keyPacketCount()
     {
         return "packet-count";
+    }
+
+    public static String keyMicrostreamOffset()
+    {
+        return "microstreamOffset";
     }
 
     public static String keyPacketIndex()
@@ -58,13 +64,15 @@ public class StorageBinaryDistributedKafka
         final MessageType messageType,
         final int messageLength,
         final int packetIndex,
-        final int packetCount
+        final int packetCount,
+        final long microstreamOffset
     )
     {
         headers.add(keyMessageType(), serialize(messageType.name()));
-        headers.add(keyMessageLength(), serialize(messageLength));
-        headers.add(keyPacketIndex(), serialize(packetIndex));
-        headers.add(keyPacketCount(), serialize(packetCount));
+        headers.add(keyMessageLength(), serializeInt(messageLength));
+        headers.add(keyPacketIndex(), serializeInt(packetIndex));
+        headers.add(keyPacketCount(), serializeInt(packetCount));
+        headers.add(keyMicrostreamOffset(), serializeLong(microstreamOffset));
     }
 
     public static MessageType messageType(final Headers headers)
@@ -87,6 +95,11 @@ public class StorageBinaryDistributedKafka
         return deserializeInt(headers.lastHeader(keyPacketCount()).value());
     }
 
+    public static long microstreamOffset(final Headers headers)
+    {
+        return deserializeLong(headers.lastHeader(keyMicrostreamOffset()).value());
+    }
+
     public static byte[] serialize(final String value)
     {
         return value.getBytes(charset());
@@ -97,15 +110,27 @@ public class StorageBinaryDistributedKafka
         return new String(bytes, charset());
     }
 
-    public static byte[] serialize(final int value)
+    public static byte[] serializeInt(final int value)
     {
         return new byte[] {
             (byte)(value >>> 24), (byte)(value >>> 16), (byte)(value >>> 8), (byte)value
         };
     }
 
+    public static byte[] serializeLong(final long value)
+    {
+        final var buf = ByteBuffer.allocate(Long.BYTES);
+        buf.putLong(value);
+        return buf.array();
+    }
+
     public static int deserializeInt(final byte[] bytes)
     {
+        if (bytes.length != Integer.BYTES)
+        {
+            throw new RuntimeException("Expected byte array with size " + Integer.BYTES + ", received " + bytes.length);
+        }
+
         int value = 0;
         for (final byte b : bytes)
         {
@@ -115,7 +140,17 @@ public class StorageBinaryDistributedKafka
         return value;
     }
 
-    private StorageBinaryDistributedKafka()
+    public static long deserializeLong(final byte[] bytes)
+    {
+        if (bytes.length != Long.BYTES)
+        {
+            throw new RuntimeException("Expected byte array with size " + Long.BYTES + ", received " + bytes.length);
+        }
+
+        return ByteBuffer.wrap(bytes).getLong();
+    }
+
+    private ClusterStorageBinaryDistributedKafka()
     {
         throw new UnsupportedOperationException();
     }
