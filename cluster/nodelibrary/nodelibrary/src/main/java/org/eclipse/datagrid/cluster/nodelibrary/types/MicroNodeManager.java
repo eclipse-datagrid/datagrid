@@ -17,6 +17,8 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.serializer.meta.NotImplementedYetError;
 import org.eclipse.store.storage.types.StorageController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 
@@ -31,14 +33,14 @@ public interface MicroNodeManager extends ClusterNodeManager
     boolean replaceStorage(InputStream storageStream);
 
     static MicroNodeManager New(
-        final StorageChecksIssuer storageChecksIssuer,
+        final StorageTaskExecutor storageTaskExecutor,
         final StorageController storageController,
         final StorageBackupManager backupManager,
         final StorageDiskSpaceReader storageDiskSpaceReader
     )
     {
         return new Default(
-            notNull(storageChecksIssuer),
+            notNull(storageTaskExecutor),
             notNull(storageController),
             notNull(backupManager),
             notNull(storageDiskSpaceReader)
@@ -47,19 +49,21 @@ public interface MicroNodeManager extends ClusterNodeManager
 
     final class Default implements MicroNodeManager
     {
-        private final StorageChecksIssuer storageChecksIssuer;
+        private static final Logger LOG = LoggerFactory.getLogger(MicroNodeManager.class);
+
+        private final StorageTaskExecutor tasks;
         private final StorageController storageController;
         private final StorageBackupManager backupManager;
         private final StorageDiskSpaceReader storageDiskSpaceReader;
 
         private Default(
-            final StorageChecksIssuer storageChecksIssuer,
+            StorageTaskExecutor storageTaskExecutor,
             final StorageController storageController,
             final StorageBackupManager backupManager,
             final StorageDiskSpaceReader storageDiskSpaceReader
         )
         {
-            this.storageChecksIssuer = storageChecksIssuer;
+            this.tasks = storageTaskExecutor;
             this.storageController = storageController;
             this.backupManager = backupManager;
             this.storageDiskSpaceReader = storageDiskSpaceReader;
@@ -68,13 +72,14 @@ public interface MicroNodeManager extends ClusterNodeManager
         @Override
         public void close()
         {
-            this.backupManager.close();
+            LOG.info("Closing MicroNodeManager.");
+            //this.backupManager.close();
         }
 
         @Override
         public void createStorageBackup() throws NodelibraryException
         {
-            this.backupManager.createStorageBackup();
+            this.backupManager.createStorageBackup(false);
         }
 
         @Override
@@ -99,7 +104,7 @@ public interface MicroNodeManager extends ClusterNodeManager
         @Override
         public boolean isRunningStorageChecks()
         {
-            return this.storageChecksIssuer.checksInProgress();
+            return this.tasks.isRunningChecks();
         }
 
         @Override
@@ -118,7 +123,7 @@ public interface MicroNodeManager extends ClusterNodeManager
         @Override
         public void startStorageChecks()
         {
-            this.storageChecksIssuer.startChecks();
+            this.tasks.runChecks();
         }
     }
 }

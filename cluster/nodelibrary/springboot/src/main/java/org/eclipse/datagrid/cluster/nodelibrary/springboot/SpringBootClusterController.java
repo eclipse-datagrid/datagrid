@@ -14,7 +14,6 @@ package org.eclipse.datagrid.cluster.nodelibrary.springboot;
  * #L%
  */
 
-import jakarta.annotation.PreDestroy;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
@@ -22,10 +21,7 @@ import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurat
 import org.eclipse.serializer.util.X;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.concurrent.CompletableFuture;
@@ -33,20 +29,13 @@ import java.util.function.Supplier;
 
 @RestController
 @RequestMapping(ClusterRestRouteConfigurations.ROOT_PATH)
-public class SpringBootClusterController implements AutoCloseable
+public class SpringBootClusterController
 {
     private final ClusterRestRequestController controller;
 
     public SpringBootClusterController(final ClusterRestRequestController controller)
     {
         this.controller = controller;
-    }
-
-    @PreDestroy
-    @Override
-    public void close()
-    {
-        this.controller.close();
     }
 
     @GetMapping(value = GetMicrostreamDistributor.PATH, produces = GetMicrostreamDistributor.PRODUCES)
@@ -101,9 +90,9 @@ public class SpringBootClusterController implements AutoCloseable
         consumes = PostMicrostreamBackup.CONSUMES,
         produces = PostMicrostreamBackup.PRODUCES
     )
-    public void postMicrostreamBackup() throws HttpResponseException
+    public void postMicrostreamBackup(@RequestBody final PostMicrostreamBackup.Body body) throws HttpResponseException
     {
-        this.call(this.controller::postMicrostreamBackup);
+        this.call(() -> this.controller.postMicrostreamBackup(body));
     }
 
     @PostMapping(

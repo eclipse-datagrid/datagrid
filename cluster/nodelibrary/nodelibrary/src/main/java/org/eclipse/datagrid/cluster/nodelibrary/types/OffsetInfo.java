@@ -17,6 +17,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
 import static org.eclipse.serializer.util.X.notNull;
 
 import org.apache.kafka.common.TopicPartition;
+import org.eclipse.serializer.chars.VarString;
 import org.eclipse.serializer.collections.types.XImmutableMap;
 
 public interface OffsetInfo
@@ -51,6 +52,18 @@ public interface OffsetInfo
         public long msOffset()
         {
             return this.msOffset;
+        }
+
+        @Override
+        public String toString()
+        {
+            return VarString.New()
+                .add("OffsetInfo{msOffset=")
+                .add(this.msOffset)
+                .add(",kafkaPartitionOffsets=")
+                .add(this.kafkaPartitionOffsets.toString())
+                .add('}')
+                .toString();
         }
     }
 }

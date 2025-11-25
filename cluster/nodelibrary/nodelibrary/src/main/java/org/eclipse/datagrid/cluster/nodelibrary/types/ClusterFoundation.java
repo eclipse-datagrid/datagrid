@@ -14,13 +14,11 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * #L%
  */
 
-import static org.eclipse.serializer.util.X.notNull;
-
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.function.Supplier;
-
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
+import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.*;
+import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.GcWorkaroundQuartzCronJobManager.GcWorkaroundQuartzCronJob;
+import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.StorageBackupQuartzCronJobManager.StorageBackupQuartzCronJob;
+import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.StorageLimitCheckerQuartzCronJobManager.StorageLimitCheckerQuartzCronJob;
 import org.eclipse.datagrid.storage.distributed.types.DistributedStorage;
 import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMerger;
@@ -35,26 +33,61 @@ import org.eclipse.store.storage.exceptions.StorageException;
 import org.eclipse.store.storage.types.StorageConfiguration;
 import org.eclipse.store.storage.types.StorageExceptionHandler;
 import org.eclipse.store.storage.types.StorageLiveFileProvider;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
+import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.function.Supplier;
+
 
 public interface ClusterFoundation<F extends ClusterFoundation<?>> extends InstanceDispatcher
 {
+    StorageBackupBackend getStorageBackupBackend();
+
+    F setStorageBackupBackend(StorageBackupBackend backend);
+
+    StorageTaskExecutor getStorageTaskExecutor();
+
+    F setStorageTaskExecutor(StorageTaskExecutor executor);
+
+    StorageBackupTaskExecutor getStorageBackupTaskExecutor();
+
+    F setStorageBackupTaskExecutor(StorageBackupTaskExecutor executor);
+
+    BackupProxyHttpClient getBackupProxyHttpClient();
+
+    F setBackupProxyHttpClient(BackupProxyHttpClient client);
+
+    QuartzCronJobScheduler getQuartzCronJobScheduler();
+
+    F setQuartzCronJobScheduler(QuartzCronJobScheduler scheduler);
+
+    QuartzCronJobJobFactory getQuartzCronJobJobFactory();
+
+    F setQuartzCronJobJobFactory(QuartzCronJobJobFactory factory);
+
+    StorageBackupQuartzCronJobManager getStorageBackupQuartzCronJobManager();
+
+    F setStorageBackupQuartzCronJobManager(StorageBackupQuartzCronJobManager manager);
+
+    StorageLimitCheckerQuartzCronJobManager getStorageLimitCheckerQuartzCronJobManager();
+
+    F setStorageLimitCheckerQuartzCronJobManager(StorageLimitCheckerQuartzCronJobManager manager);
+
+    GcWorkaroundQuartzCronJobManager getGcWorkaroundQuartzCronJobManager();
+
+    F setGcWorkaroundQuartzCronJobManager(GcWorkaroundQuartzCronJobManager manager);
+
     KafkaPropertiesProvider getKafkaPropertiesProvider();
 
     F setKafkaPropertiesProvider(KafkaPropertiesProvider provider);
-
-    StorageChecksIssuer getStorageChecksIssuer();
-
-    F setStorageChecksIssuer(StorageChecksIssuer issuer);
-
-    StorageBackupIssuer getStorageBackupIssuer();
-
-    F setStorageBackupIssuer(StorageBackupIssuer issuer);
 
     StorageBinaryDataPacketAcceptor getStorageBinaryDataPacketAcceptor();
 
@@ -75,10 +108,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
     StorageBackupManager getStorageBackupManager();
 
     F setStorageBackupManager(StorageBackupManager manager);
-
-    StorageLimitChecker getStorageLimitChecker();
-
-    F setStorageLimitChecker(StorageLimitChecker checker);
 
     Supplier<Object> getRootSupplier();
 
@@ -116,10 +145,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
     F setNodelibraryPropertiesProvider(NodelibraryPropertiesProvider provider);
 
-    StorageChecksIssuer.Creator getStorageChecksIssuerCreator();
-
-    F setStorageChecksIssuerCreator(StorageChecksIssuer.Creator creator);
-
     StorageDiskSpaceReader getStorageDiskSpaceReader();
 
     F setStorageDiskSpaceReader(StorageDiskSpaceReader reader);
@@ -151,17 +176,22 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
     {
         private static final Logger LOG = LoggerFactory.getLogger(ClusterFoundation.class);
 
+        private StorageBackupBackend backupBackend;
+        private BackupProxyHttpClient backupProxyHttpClient;
         private EmbeddedStorageFoundation<?> embeddedStorageFoundation;
-        private StorageLimitChecker limitChecker;
+        private QuartzCronJobScheduler cronJobScheduler;
+        private QuartzCronJobJobFactory cronJobFactory;
+        private StorageBackupQuartzCronJobManager backupCronjobManager;
+        private GcWorkaroundQuartzCronJobManager gcWorkaroundManager;
+        private StorageLimitCheckerQuartzCronJobManager limitCheckerManager;
         private BackupNodeManager backupNodeManager;
         private ClusterStorageBinaryDataClient dataClient;
         private ClusterStorageBinaryDataDistributor dataDistributor;
         private MicroNodeManager microNodeManager;
         private StorageNodeHealthCheck healthCheck;
         private NodelibraryPropertiesProvider propertiesProvider;
-        private StorageChecksIssuer.Creator storageChecksIssuerCreator;
-        private StorageChecksIssuer storageChecksIssuer;
-        private StorageBackupIssuer storageBackupIssuer;
+        private StorageTaskExecutor storageTaskExecutor;
+        private StorageBackupTaskExecutor storageBackupTaskExecutor;
         private StorageDiskSpaceReader storageDiskSpaceReader;
         private StorageNodeManager storageNodeManager;
         private boolean enableAsyncDistribution;
@@ -187,6 +217,96 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         protected final F $()
         {
             return (F)this;
+        }
+
+        protected StorageBackupBackend ensureBackupBackend()
+        {
+            // TODO: Hardcoded path
+            final var props = this.getNodelibraryPropertiesProvider();
+            final StoredOffsetManager.Creator offsetManagerCreator = StoredOffsetManager::New;
+
+            if (props.backupTarget() == BackupTarget.SAAS)
+            {
+                final var scratchSpace = Paths.get("/storage/backup/");
+                if (!Files.exists(scratchSpace))
+                {
+                    try
+                    {
+                        Files.createDirectories(scratchSpace);
+                    }
+                    catch (final IOException e)
+                    {
+                        throw new NodelibraryException("Failed to create scratch space", e);
+                    }
+                }
+                return NetworkArchiveBackupBackend.New(
+                    scratchSpace,
+                    this.getBackupProxyHttpClient(),
+                    offsetManagerCreator
+                );
+            }
+            else
+            {
+                return FilesystemVolumeBackupBackend.New(Paths.get("/backups"), offsetManagerCreator);
+            }
+        }
+
+        protected StorageTaskExecutor ensureStorageTaskExecutor()
+        {
+            if (this.getNodelibraryPropertiesProvider().isBackupNode())
+            {
+                return this.getStorageBackupTaskExecutor();
+            }
+            return StorageTaskExecutor.New(this.clusterStorageManager);
+        }
+
+        protected StorageBackupTaskExecutor ensureStorageBackupTaskExecutor()
+        {
+            return StorageBackupTaskExecutor.New(this.clusterStorageManager, this.getStorageBackupManager());
+        }
+
+        protected StorageBackupQuartzCronJobManager ensureStorageBackupQuartzCronJobManager()
+        {
+            return StorageBackupQuartzCronJobManager.New(this.getStorageBackupManager());
+        }
+
+        protected BackupProxyHttpClient ensureBackupProxyHttpClient()
+        {
+            return BackupProxyHttpClient.New(
+                URI.create(this.getNodelibraryPropertiesProvider().backupProxyServiceUrl())
+            );
+        }
+
+        protected QuartzCronJobJobFactory ensureCronJobFactory()
+        {
+            return QuartzCronJobJobFactory.New();
+        }
+
+        protected QuartzCronJobScheduler ensureCronJobScheduler()
+        {
+            final Scheduler scheduler;
+            try
+            {
+                scheduler = StdSchedulerFactory.getDefaultScheduler();
+            }
+            catch (final SchedulerException e)
+            {
+                throw new NodelibraryException("Failed to get the default quartz cron job scheduler", e);
+            }
+            return QuartzCronJobScheduler.New(scheduler);
+        }
+
+        protected GcWorkaroundQuartzCronJobManager ensureGcWorkaroundManager()
+        {
+            return GcWorkaroundQuartzCronJobManager.New(this.clusterStorageManager);
+        }
+
+        protected StorageLimitCheckerQuartzCronJobManager ensureStorageLimitCheckerManager()
+        {
+            return StorageLimitCheckerQuartzCronJobManager.New(
+                this.getNodelibraryPropertiesProvider().storageLimitGB(),
+                this.getStorageDiskSpaceReader()
+            );
         }
 
         protected KafkaOffsetProvider ensureKafkaOffsetProvider()
@@ -216,9 +336,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         protected AfterDataMessageConsumedListener ensureAfterDataMessageConsumedListener()
         {
             final var props = this.getNodelibraryPropertiesProvider();
-            final var storageChecks = AfterDataMessageConsumedListener.RunStorageChecks(
-                notNull(this.clusterStorageManager)
-            );
+
             final var storedOffsetUpdater = new AfterDataMessageConsumedListener()
             {
                 final StoredOffsetManager delegate = ClusterFoundation.Default.this.getStoredOffsetManager();
@@ -243,42 +361,24 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 "Created AfterDataMessageConsumedListener->StoredOffsetManager delegate. WillRun={}",
                 props.isBackupNode()
             );
-            return AfterDataMessageConsumedListener.Combined(storageChecks, storedOffsetUpdater);
+            return storedOffsetUpdater;
         }
 
         protected StorageBackupManager ensureStorageBackupManager()
         {
-            // TODO: Hardcoded path
-            final var backupsDirPath = new File("/backups");
-            final int maxBackupCount = this.getNodelibraryPropertiesProvider().keptBackupsCount();
+            final var props = this.getNodelibraryPropertiesProvider();
+            final int maxBackupCount = props.keptBackupsCount();
+
             final Supplier<OffsetInfo> offsetProvider = this.getClusterStorageBinaryDataClient()::offsetInfo;
-            final StoredOffsetManager.Creator offsetManagerCreator = StoredOffsetManager::New;
+
             return StorageBackupManager.New(
                 this.clusterStorageManager,
-                backupsDirPath,
-                maxBackupCount,
-                offsetProvider,
-                offsetManagerCreator
-            );
-        }
 
-        protected StorageLimitChecker ensureLimitChecker()
-        {
-            // TODO: Do this differently
-            final var p = this.getNodelibraryPropertiesProvider();
-            final int errorGb = (int)Math.round(p.storageLimitGB() / 100.0 * p.storageLimitCheckerPercent());
-            final int intervalMins = p.storageLimitCheckerIntervalMinutes();
-            final Scheduler s;
-            try
-            {
-                s = StdSchedulerFactory.getDefaultScheduler();
-            }
-            catch (final SchedulerException e)
-            {
-                throw new NodelibraryException(e);
-            }
-            LOG.trace("Created storage limit checker with interval {}min and error at {}gb", intervalMins, errorGb);
-            return StorageLimitChecker.New(intervalMins, errorGb, s, this.getStorageDiskSpaceReader());
+                maxBackupCount,
+                this.getStorageBackupBackend(),
+                offsetProvider,
+                this.getClusterStorageBinaryDataClient()
+            );
         }
 
         protected Supplier<Object> ensureRootSupplier()
@@ -296,16 +396,11 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             return EmbeddedStorageFoundation.New();
         }
 
-        protected StorageBackupIssuer ensureStorageBackupIssuer()
-        {
-            return StorageBackupIssuer.New(this.getStorageBackupManager());
-        }
-
         protected BackupNodeManager ensureBackupNodeManager()
         {
             return BackupNodeManager.New(
-                this.getStorageChecksIssuer(),
-                this.getStorageBackupIssuer(),
+                this.getStorageBackupTaskExecutor(),
+
                 this.getClusterStorageBinaryDataClient(),
                 this.getStorageBackupManager(),
                 this.clusterStorageManager,
@@ -345,7 +440,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         protected MicroNodeManager ensureMicroNodeManager()
         {
             return MicroNodeManager.New(
-                this.getStorageChecksIssuer(),
+                this.getStorageTaskExecutor(),
                 this.clusterStorageManager,
                 this.getStorageBackupManager(),
                 this.getStorageDiskSpaceReader()
@@ -372,17 +467,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         {
             return NodelibraryPropertiesProvider.Env();
         }
-
-        protected StorageChecksIssuer ensureStorageChecksIssuer()
-        {
-            throw new MissingFoundationPartException(StorageChecksIssuer.class);
-        }
-
-        protected StorageChecksIssuer.Creator ensureStorageChecksIssuerCreator()
-        {
-            return StorageChecksIssuer::New;
-        }
-
         protected StorageDiskSpaceReader ensureStorageDiskSpaceReader()
         {
             return StorageDiskSpaceReader.New(
@@ -394,7 +478,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         {
             return StorageNodeManager.New(
                 this.getClusterStorageBinaryDataDistributor(),
-                this.getStorageChecksIssuer(),
+                this.getStorageTaskExecutor(),
                 this.getClusterStorageBinaryDataClient(),
                 this.getStorageNodeHealthCheck(),
                 this.clusterStorageManager,
@@ -432,6 +516,159 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         protected StorageBinaryDataPacketAcceptor ensureDataPacketAcceptor()
         {
             return StorageBinaryDataPacketAcceptor.New(this.getStorageBinaryDataMerger());
+        }
+
+        @Override
+        public StorageBackupBackend getStorageBackupBackend()
+        {
+            if (this.backupBackend == null)
+            {
+                this.backupBackend = this.dispatch(this.ensureBackupBackend());
+            }
+            return this.backupBackend;
+        }
+
+        @Override
+        public F setStorageBackupBackend(final StorageBackupBackend backend)
+        {
+            this.backupBackend = backend;
+            return this.$();
+        }
+
+        @Override
+        public StorageTaskExecutor getStorageTaskExecutor()
+        {
+            if (this.storageTaskExecutor == null)
+            {
+                this.storageTaskExecutor = this.dispatch(this.ensureStorageTaskExecutor());
+            }
+            return this.storageTaskExecutor;
+        }
+
+        @Override
+        public F setStorageTaskExecutor(final StorageTaskExecutor executor)
+        {
+            this.storageTaskExecutor = executor;
+            return this.$();
+        }
+
+        @Override
+        public StorageBackupTaskExecutor getStorageBackupTaskExecutor()
+        {
+            if (this.storageBackupTaskExecutor == null)
+            {
+                this.storageBackupTaskExecutor = this.dispatch(this.ensureStorageBackupTaskExecutor());
+            }
+            return this.storageBackupTaskExecutor;
+        }
+
+        @Override
+        public F setStorageBackupTaskExecutor(final StorageBackupTaskExecutor executor)
+        {
+            this.storageBackupTaskExecutor = executor;
+            return this.$();
+        }
+
+        @Override
+        public StorageBackupQuartzCronJobManager getStorageBackupQuartzCronJobManager()
+        {
+            if (this.backupCronjobManager == null)
+            {
+                this.backupCronjobManager = this.dispatch(this.ensureStorageBackupQuartzCronJobManager());
+            }
+            return this.backupCronjobManager;
+        }
+
+        @Override
+        public F setStorageBackupQuartzCronJobManager(final StorageBackupQuartzCronJobManager manager)
+        {
+            this.backupCronjobManager = manager;
+            return this.$();
+        }
+
+        @Override
+        public BackupProxyHttpClient getBackupProxyHttpClient()
+        {
+            if (this.backupProxyHttpClient == null)
+            {
+                this.backupProxyHttpClient = this.dispatch(this.ensureBackupProxyHttpClient());
+            }
+            return this.backupProxyHttpClient;
+        }
+
+        @Override
+        public F setBackupProxyHttpClient(final BackupProxyHttpClient client)
+        {
+            this.backupProxyHttpClient = client;
+            return this.$();
+        }
+
+        @Override
+        public QuartzCronJobJobFactory getQuartzCronJobJobFactory()
+        {
+            if (this.cronJobFactory == null)
+            {
+                this.cronJobFactory = this.dispatch(this.ensureCronJobFactory());
+            }
+            return this.cronJobFactory;
+        }
+
+        @Override
+        public F setQuartzCronJobJobFactory(final QuartzCronJobJobFactory factory)
+        {
+            this.cronJobFactory = factory;
+            return this.$();
+        }
+
+        @Override
+        public QuartzCronJobScheduler getQuartzCronJobScheduler()
+        {
+            if (this.cronJobScheduler == null)
+            {
+                this.cronJobScheduler = this.dispatch(this.ensureCronJobScheduler());
+            }
+            return this.cronJobScheduler;
+        }
+
+        @Override
+        public F setQuartzCronJobScheduler(final QuartzCronJobScheduler scheduler)
+        {
+            this.cronJobScheduler = scheduler;
+            return this.$();
+        }
+
+        @Override
+        public GcWorkaroundQuartzCronJobManager getGcWorkaroundQuartzCronJobManager()
+        {
+            if (this.gcWorkaroundManager == null)
+            {
+                this.gcWorkaroundManager = this.dispatch(this.ensureGcWorkaroundManager());
+            }
+            return this.gcWorkaroundManager;
+        }
+
+        @Override
+        public F setGcWorkaroundQuartzCronJobManager(final GcWorkaroundQuartzCronJobManager manager)
+        {
+            this.gcWorkaroundManager = manager;
+            return this.$();
+        }
+
+        @Override
+        public StorageLimitCheckerQuartzCronJobManager getStorageLimitCheckerQuartzCronJobManager()
+        {
+            if (this.limitCheckerManager == null)
+            {
+                this.limitCheckerManager = this.dispatch(this.ensureStorageLimitCheckerManager());
+            }
+            return this.limitCheckerManager;
+        }
+
+        @Override
+        public F setStorageLimitCheckerQuartzCronJobManager(final StorageLimitCheckerQuartzCronJobManager manager)
+        {
+            this.limitCheckerManager = manager;
+            return this.$();
         }
 
         @Override
@@ -686,41 +923,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         }
 
         @Override
-        public StorageChecksIssuer getStorageChecksIssuer()
-        {
-            if (this.storageChecksIssuer == null)
-            {
-                this.storageChecksIssuer = this.getStorageChecksIssuerCreator()
-                    .create(notNull(this.clusterStorageManager));
-            }
-            return this.storageChecksIssuer;
-        }
-
-        @Override
-        public F setStorageChecksIssuer(final StorageChecksIssuer issuer)
-        {
-            this.storageChecksIssuer = issuer;
-            return this.$();
-        }
-
-        @Override
-        public StorageBackupIssuer getStorageBackupIssuer()
-        {
-            if (this.storageBackupIssuer == null)
-            {
-                this.storageBackupIssuer = this.dispatch(this.ensureStorageBackupIssuer());
-            }
-            return this.storageBackupIssuer;
-        }
-
-        @Override
-        public F setStorageBackupIssuer(final StorageBackupIssuer issuer)
-        {
-            this.storageBackupIssuer = issuer;
-            return this.$();
-        }
-
-        @Override
         public StorageBinaryDataMerger getStorageBinaryDataMerger()
         {
             if (this.dataMerger == null)
@@ -751,40 +953,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         public F setStorageBinaryDataPacketAcceptor(final StorageBinaryDataPacketAcceptor acceptor)
         {
             this.dataPacketAcceptor = acceptor;
-            return this.$();
-        }
-
-        @Override
-        public StorageChecksIssuer.Creator getStorageChecksIssuerCreator()
-        {
-            if (this.storageChecksIssuerCreator == null)
-            {
-                this.storageChecksIssuerCreator = this.dispatch(this.ensureStorageChecksIssuerCreator());
-            }
-            return this.storageChecksIssuerCreator;
-        }
-
-        @Override
-        public F setStorageChecksIssuerCreator(final StorageChecksIssuer.Creator creator)
-        {
-            this.storageChecksIssuerCreator = creator;
-            return this.$();
-        }
-
-        @Override
-        public StorageLimitChecker getStorageLimitChecker()
-        {
-            if (this.limitChecker == null)
-            {
-                this.limitChecker = this.dispatch(this.ensureLimitChecker());
-            }
-            return this.limitChecker;
-        }
-
-        @Override
-        public F setStorageLimitChecker(final StorageLimitChecker checker)
-        {
-            this.limitChecker = checker;
             return this.$();
         }
 
@@ -874,7 +1042,51 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
             final var logger = LoggerFactory.getLogger(ClusterFoundation.class);
             // TODO: Hardcoded paths
-            final var storagePath = Paths.get("/storage/storage");
+            final var storageParentPath = Paths.get("/storage/");
+            final var storageRootPath = storageParentPath.resolve("storage");
+
+            // if we use a downloaded storage, always scroll to the latest offset so we don't read old messages
+            boolean useLatestOffset = false;
+            boolean requiresStorageUpload = false;
+
+            final var backend = this.getStorageBackupBackend();
+
+            final boolean containsBackups = backend.containsBackups();
+
+            /*
+             * If there are backups already available, use those instead as a fresh cluster
+             * has none, but a upgraded cluster has the previous storage backed up
+             */
+
+            // user uploaded a new storage
+            if (backend.hasUserUploadedStorage())
+            {
+                logger.info("Downloading user uploaded storage");
+
+                useLatestOffset = true;
+                // since the storage is now different than before the storage nodes
+                // also need the exact same storage
+                requiresStorageUpload = true;
+                this.deleteDirectory(storageRootPath);
+                backend.downloadUserUploadedStorage(storageParentPath);
+                backend.deleteUserUploadedStorage();
+            }
+            else if (containsBackups && !Files.exists(storageRootPath))
+            {
+                logger.info("Downloading latest storage backup");
+                backend.downloadLatestBackup(storageParentPath);
+            }
+            else
+            {
+                logger.info("Starting with local storage");
+            }
+
+            if (useLatestOffset)
+            {
+                final var offsets = this.getKafkaOffsetProvider().provideLatestOffsetInfo();
+                LOG.debug("Set starting offset to offsets: {}", offsets);
+                this.getStoredOffsetManager().set(offsets);
+            }
 
             logger.info("Creating nodelibrary cluster controller");
 
@@ -887,7 +1099,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 .setDataFileEvaluator(storageConfig.dataFileEvaluator())
                 .setEntityCacheEvaluator(storageConfig.entityCacheEvaluator())
                 .setHousekeepingController(storageConfig.housekeepingController())
-                .setStorageFileProvider(StorageLiveFileProvider.New(NioFileSystem.New().ensureDirectory(storagePath)))
+                .setStorageFileProvider(
+                    StorageLiveFileProvider.New(NioFileSystem.New().ensureDirectory(storageRootPath))
+                )
                 .createConfiguration();
             embeddedStorageFoundation.setConfiguration(storageConfig);
 
@@ -919,7 +1133,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 embeddedStorageManager.storeRoot();
             }
 
-            this.clusterStorageManager = ClusterStorageManager.Wrapper(embeddedStorageManager);
+            final var scheduler = this.getQuartzCronJobScheduler();
+
+            this.clusterStorageManager = ClusterStorageManager.Wrapper(embeddedStorageManager, scheduler::shutdown);
 
             this.getClusterStorageBinaryDataClient().start();
 
@@ -927,6 +1143,34 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 this.getBackupNodeManager(),
                 this.getNodelibraryPropertiesProvider()
             );
+
+            final var jobFactory = this.getQuartzCronJobJobFactory();
+            scheduler.setFactory(jobFactory);
+
+            final var gcWorkaround = this.getGcWorkaroundQuartzCronJobManager();
+            jobFactory.setJobFactory(GcWorkaroundQuartzCronJob.class, gcWorkaround::create);
+            scheduler.schedule(
+                JobBuilder.newJob(GcWorkaroundQuartzCronJob.class).withIdentity("GcWorkaround").build(),
+                // Once at the start of every hour
+                TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule("0 0 * * * ? *")).build()
+            );
+
+            final var storageBackup = this.getStorageBackupQuartzCronJobManager();
+            jobFactory.setJobFactory(StorageBackupQuartzCronJob.class, storageBackup::create);
+            scheduler.schedule(
+                JobBuilder.newJob(StorageBackupQuartzCronJob.class).withIdentity("StorageBackup").build(),
+                // Once at the start of every 2 hours
+                TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule("0 0 */2 * * ? *")).build()
+            );
+
+            // storage nodes need an initial backup to start from
+            if (requiresStorageUpload || !containsBackups)
+            {
+                logger.info("Uploading starter backup for storage nodes");
+                this.getBackupNodeManager().createStorageBackup(false);
+            }
+
+            scheduler.start();
         }
 
         protected void startMicroNode() throws NodelibraryException
@@ -977,14 +1221,38 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 embeddedStorageManager.storeRoot();
             }
 
-            final StorageLimitChecker storageLimitChecker = this.getStorageLimitChecker();
-            storageLimitChecker.start();
+            final var scheduler = this.getQuartzCronJobScheduler();
 
-            this.clusterStorageManager = ClusterStorageManager.New(embeddedStorageManager, storageLimitChecker);
+
+            this.clusterStorageManager = ClusterStorageManager.New(
+                embeddedStorageManager,
+                () -> this.getStorageLimitCheckerQuartzCronJobManager().limitReached(),
+                scheduler::shutdown
+            );
             this.clusterRequestController = ClusterRestRequestController.MicroNode(
                 this.getMicroNodeManager(),
                 this.getNodelibraryPropertiesProvider()
             );
+
+            final var jobFactory = this.getQuartzCronJobJobFactory();
+
+            final var limitChecker = this.getStorageLimitCheckerQuartzCronJobManager();
+            jobFactory.setJobFactory(StorageLimitCheckerQuartzCronJob.class, limitChecker::create);
+
+            scheduler.setFactory(jobFactory);
+            scheduler.schedule(
+                JobBuilder.newJob(StorageLimitCheckerQuartzCronJobManager.StorageLimitCheckerQuartzCronJob.class).withIdentity("StorageLimitChecker").build(),
+                TriggerBuilder.newTrigger()
+                    .withSchedule(
+                        SimpleScheduleBuilder.repeatMinutelyForever(
+                            this.getNodelibraryPropertiesProvider().storageLimitCheckerIntervalMinutes()
+                        )
+                    )
+                    .startNow()
+                    .build()
+            );
+
+            scheduler.start();
         }
 
         protected void startDevNode() throws NodelibraryException
@@ -1005,7 +1273,10 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 storage.storeRoot();
             }
 
-            this.clusterStorageManager = ClusterStorageManager.Wrapper(storage);
+            this.clusterStorageManager = ClusterStorageManager.Wrapper(
+                storage,
+                ClusterStorageManager.ShutdownCallback.NoOp()
+            );
             this.clusterRequestController = ClusterRestRequestController.DevNode();
         }
 
@@ -1053,10 +1324,14 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 throw new NodelibraryException("Storage-Node was started without a storage containing a root object");
             }
 
-            final var storageLimitChecker = this.getStorageLimitChecker();
-            storageLimitChecker.start();
+            final var scheduler = this.getQuartzCronJobScheduler();
 
-            this.clusterStorageManager = ClusterStorageManager.New(embeddedStorageManager, storageLimitChecker);
+
+            this.clusterStorageManager = ClusterStorageManager.New(
+                embeddedStorageManager,
+                () -> this.getStorageLimitCheckerQuartzCronJobManager().limitReached(),
+                scheduler::shutdown
+            );
 
             this.getClusterStorageBinaryDataClient().start();
 
@@ -1066,6 +1341,62 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 this.getStorageNodeManager(),
                 this.getNodelibraryPropertiesProvider()
             );
+
+            final var jobFactory = this.getQuartzCronJobJobFactory();
+
+            final var gcWorkaround = this.getGcWorkaroundQuartzCronJobManager();
+            jobFactory.setJobFactory(GcWorkaroundQuartzCronJob.class, gcWorkaround::create);
+
+            final var limitChecker = this.getStorageLimitCheckerQuartzCronJobManager();
+            jobFactory.setJobFactory(StorageLimitCheckerQuartzCronJob.class, limitChecker::create);
+
+            scheduler.setFactory(jobFactory);
+            scheduler.schedule(
+                JobBuilder.newJob(GcWorkaroundQuartzCronJob.class).withIdentity("GcWorkaround").build(),
+                // Once at the start of every hour
+                TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule("0 0 * * * ? *")).build()
+            );
+            scheduler.schedule(
+                JobBuilder.newJob(StorageLimitCheckerQuartzCronJob.class).withIdentity("StorageLimitChecker").build(),
+                TriggerBuilder.newTrigger()
+                    .withSchedule(
+                        SimpleScheduleBuilder.repeatMinutelyForever(
+                            this.getNodelibraryPropertiesProvider().storageLimitCheckerIntervalMinutes()
+                        )
+                    )
+                    .build()
+            );
+
+            scheduler.start();
+        }
+
+        private void deleteDirectory(final Path path)
+        {
+            if (!Files.exists(path))
+            {
+                return;
+            }
+
+            LOG.info("Deleting files at {}", path);
+
+            try (final var directories = Files.walk(path))
+            {
+                directories.sorted(Comparator.reverseOrder()).forEach(f ->
+                {
+                    try
+                    {
+                        Files.delete(f);
+                    }
+                    catch (final IOException e)
+                    {
+                        throw new NodelibraryException("Failed to delete file at " + f.toString(), e);
+                    }
+                });
+            }
+            catch (final IOException e) // thrown by Files.walk(Path)
+            {
+                throw new NodelibraryException("Failed to walk files at " + path);
+            }
         }
     }
 }

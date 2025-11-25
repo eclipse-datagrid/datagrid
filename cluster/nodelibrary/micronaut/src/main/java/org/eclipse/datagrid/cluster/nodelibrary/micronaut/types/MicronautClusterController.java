@@ -14,7 +14,6 @@ package org.eclipse.datagrid.cluster.nodelibrary.micronaut.types;
  * #L%
  */
 
-import io.micronaut.core.annotation.NonNull;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MutableHttpResponse;
@@ -24,31 +23,21 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
-import jakarta.annotation.PreDestroy;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
-
-import java.io.InputStream;
 
 import static org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.*;
 
 
 @Controller(ClusterRestRouteConfigurations.ROOT_PATH)
-public class MicronautClusterController implements AutoCloseable
+public class MicronautClusterController
 {
     private final ClusterRestRequestController controller;
 
     public MicronautClusterController(final ClusterRestRequestController controller)
     {
         this.controller = controller;
-    }
-
-    @Override
-    @PreDestroy
-    public void close()
-    {
-        this.controller.close();
     }
 
     @io.micronaut.http.annotation.Error
@@ -113,15 +102,15 @@ public class MicronautClusterController implements AutoCloseable
         consumes = PostMicrostreamBackup.CONSUMES,
         produces = PostMicrostreamBackup.PRODUCES
     )
-    public void postMicrostreamBackup() throws HttpResponseException
+    public void postMicrostreamBackup(@Body final PostMicrostreamBackup.Body body) throws HttpResponseException
     {
-        this.controller.postMicrostreamBackup();
+        this.controller.postMicrostreamBackup(body);
     }
 
     @Get(value = GetMicrostreamBackup.PATH, produces = GetMicrostreamBackup.PRODUCES)
-    public void getMicrostreamBackup() throws HttpResponseException
+    public boolean getMicrostreamBackup() throws HttpResponseException
     {
-        this.controller.getMicrostreamBackup();
+        return this.controller.getMicrostreamBackup();
     }
 
     @Post(

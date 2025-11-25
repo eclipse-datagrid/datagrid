@@ -14,32 +14,25 @@ package org.eclipse.datagrid.cluster.nodelibrary.helidon;
  * #L%
  */
 
-import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.*;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
 import static org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.*;
 
 
 @ApplicationScoped
 @Path(ClusterRestRouteConfigurations.ROOT_PATH)
-public class HelidonClusterController implements AutoCloseable
+public class HelidonClusterController
 {
     private final ClusterRestRequestController requestController;
 
     public HelidonClusterController(final ClusterRestRequestController requestController)
     {
         this.requestController = requestController;
-    }
-
-    @PreDestroy
-    @Override
-    public void close()
-    {
-        this.requestController.close();
     }
 
     @GET
@@ -96,9 +89,9 @@ public class HelidonClusterController implements AutoCloseable
     @Path(PostMicrostreamBackup.PATH)
     @Consumes(PostMicrostreamBackup.CONSUMES)
     @Produces(PostMicrostreamBackup.PRODUCES)
-    public void postMicrostreamBackup() throws HttpResponseException
+    public void postMicrostreamBackup(@RequestBody final PostMicrostreamBackup.Body body) throws HttpResponseException
     {
-        this.requestController.postMicrostreamBackup();
+        this.requestController.postMicrostreamBackup(body);
     }
 
     @GET

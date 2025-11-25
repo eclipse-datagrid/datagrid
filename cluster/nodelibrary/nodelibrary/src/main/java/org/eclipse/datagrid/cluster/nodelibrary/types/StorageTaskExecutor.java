@@ -20,60 +20,62 @@ import org.eclipse.store.storage.types.StorageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public interface StorageChecksIssuer
+public interface StorageTaskExecutor
 {
-    void startChecks();
+    void runChecks();
 
-    boolean checksInProgress();
+    boolean isRunningChecks();
 
-    static StorageChecksIssuer New(final StorageConnection storageConnection)
+    static StorageTaskExecutor New(final StorageConnection connection)
     {
-        return new Default(notNull(storageConnection));
+        return new Default(notNull(connection));
     }
 
-    @FunctionalInterface
-    interface Creator
+    class Abstract implements StorageTaskExecutor
     {
-        StorageChecksIssuer create(StorageConnection connection);
-    }
-
-    class Default implements StorageChecksIssuer
-    {
-        private static final Logger LOG = LoggerFactory.getLogger(StorageChecksIssuer.class);
+        private static final Logger LOG = LoggerFactory.getLogger(Abstract.class);
         private final StorageConnection connection;
 
-        private Thread runner;
+        private Thread checksThread;
 
-        private Default(final StorageConnection connection)
+        protected Abstract(final StorageConnection connection)
         {
             this.connection = connection;
         }
 
         @Override
-        public void startChecks()
+        public void runChecks()
         {
-            if (this.runner == null || !this.runner.isAlive())
+            if (this.checksThread == null || !this.checksThread.isAlive())
             {
                 LOG.debug("Issuing new storage checks");
-                this.runner = new Thread(() ->
+                this.checksThread = new Thread(() ->
                 {
                     this.connection.issueFullGarbageCollection();
                     this.connection.issueFullCacheCheck();
                     this.connection.issueFullFileCheck();
-                }, "EclipseStore-StorageChecks-Issuer");
-                this.runner.start();
+                }, "EclipseStore-StorageChecks");
+                this.checksThread.start();
             }
         }
 
         @Override
-        public boolean checksInProgress()
+        public boolean isRunningChecks()
         {
-            if (this.runner != null && !this.runner.isAlive())
+            if (this.checksThread != null && !this.checksThread.isAlive())
             {
                 LOG.trace("Cleanup previous storage checks thread");
-                this.runner = null;
+                this.checksThread = null;
             }
-            return this.runner != null;
+            return this.checksThread != null;
+        }
+    }
+
+    final class Default extends Abstract implements StorageTaskExecutor
+    {
+        private Default(final StorageConnection connection)
+        {
+            super(connection);
         }
     }
 }

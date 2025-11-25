@@ -26,6 +26,8 @@ public interface NodelibraryPropertiesProvider
 
     Integer keptBackupsCount();
 
+    BackupTarget backupTarget();
+
     Integer backupIntervalMinutes();
 
     String microstreamPath();
@@ -65,6 +67,7 @@ public interface NodelibraryPropertiesProvider
             public static final String KAFKA_BOOTSTRAP_SERVERS = "KAFKA_BOOTSTRAP_SERVERS";
             public static final String KAFKA_TOPIC_NAME = "MSCNL_KAFKA_TOPIC_NAME";
             public static final String IS_BACKUP_NODE = "IS_BACKUP_NODE";
+            public static final String BACKUP_TARGET = "BACKUP_TARGET";
             public static final String KEPT_BACKUPS_COUNT = "KEPT_BACKUPS_COUNT";
             public static final String BACKUP_INTERVAL_MINUTES = "BACKUP_INTERVAL_MINUTES";
             public static final String MICROSTREAM_PATH = "MICROSTREAM_PATH";
@@ -108,6 +111,12 @@ public interface NodelibraryPropertiesProvider
         public boolean isBackupNode()
         {
             return this.envBoolean(EnvKeys.IS_BACKUP_NODE);
+        }
+
+        @Override
+        public BackupTarget backupTarget()
+        {
+            return BackupTarget.parse(this.envString(EnvKeys.BACKUP_TARGET));
         }
 
         @Override
