@@ -92,24 +92,24 @@ public final class ClusterRestRouteConfigurations
         }
     }
 
-    public static final class PostMicrostreamUploadStorage
+    public static final class PostMicrostreamBackup
     {
-        public static final String PATH = "/eclipse-datagrid-uploadStorage";
-        public static final String CONSUMES = MediaTypes.APPLICATION_OCTET_STREAM;
-        public static final String PRODUCES = MediaTypes.WILDCARD;
+        public static final String PATH = "/microstream-backup";
+        public static final String CONSUMES = MediaTypes.WILDCARD;
+        public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-        private PostMicrostreamUploadStorage()
+        private PostMicrostreamBackup()
         {
         }
     }
 
-    public static final class PostMicrostreamBackup
+    public static final class GetMicrostreamBackup
     {
-        public static final String PATH = "/eclipse-datagrid-backup";
-        public static final String CONSUMES = MediaTypes.WILDCARD;
-        public static final String PRODUCES = MediaTypes.WILDCARD;
+        public static final String PATH = "/microstream-backup";
+        public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-        private PostMicrostreamBackup()
+
+        private GetMicrostreamBackup()
         {
         }
     }
@@ -128,9 +128,20 @@ public final class ClusterRestRouteConfigurations
     public static final class GetMicrostreamUpdates
     {
         public static final String PATH = "/eclipse-datagrid-updates";
-        public static final String PRODUCES = MediaTypes.WILDCARD;
+        public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
         private GetMicrostreamUpdates()
+        {
+        }
+    }
+
+    public static final class PostMicrostreamResumeUpdates
+    {
+        public static final String PATH = "/microstream-resume-updates";
+        public static final String CONSUMES = MediaTypes.WILDCARD;
+        public static final String PRODUCES = MediaTypes.WILDCARD;
+
+        private PostMicrostreamResumeUpdates()
         {
         }
     }
@@ -149,7 +160,7 @@ public final class ClusterRestRouteConfigurations
     public static final class GetMicrostreamGc
     {
         public static final String PATH = "/eclipse-datagrid-gc";
-        public static final String PRODUCES = MediaTypes.WILDCARD;
+        public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
         private GetMicrostreamGc()
         {

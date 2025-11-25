@@ -42,22 +42,22 @@ public interface ClusterRestRequestController extends AutoCloseable
     // TODO: Rename to get statistics or monitoring etc.
     String getMicrostreamStorageBytes() throws HttpResponseException;
 
-    void postMicrostreamUploadStorage(final InputStream storageStream) throws HttpResponseException;
-
     void postMicrostreamBackup() throws HttpResponseException;
+
+    boolean getMicrostreamBackup() throws HttpResponseException;
 
     void postMicrostreamUpdates() throws HttpResponseException;
 
     boolean getMicrostreamUpdates() throws HttpResponseException;
+
+    void postMicrostreamResumeUpdates() throws HttpResponseException;
 
     void postMicrostreamGc() throws HttpResponseException;
 
     boolean getMicrostreamGc() throws HttpResponseException;
 
     @Override
-    default void close() throws NodelibraryException
-    {
-    }
+    void close();
 
     static ClusterRestRequestController StorageNode(
         final StorageNodeManager storageNodeManager,
@@ -176,6 +176,12 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
+        public void postMicrostreamResumeUpdates() throws HttpResponseException
+        {
+            throw new BadRequestException();
+        }
+
+        @Override
         public void postMicrostreamActivateDistributorStart() throws HttpResponseException
         {
             throw new BadRequestException();
@@ -188,13 +194,13 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamUpdates() throws HttpResponseException
+        public boolean getMicrostreamBackup() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamUploadStorage(final InputStream storageStream) throws HttpResponseException
+        public void postMicrostreamUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
@@ -273,6 +279,12 @@ public interface ClusterRestRequestController extends AutoCloseable
                 }
             });
         }
+
+        @Override
+        public void close()
+        {
+            this.storageNodeManager.close();
+        }
     }
 
     final class BackupNode extends Abstract
@@ -287,20 +299,18 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public boolean getMicrostreamUpdates() throws HttpResponseException
-        {
-            return this.handleRequest(() ->
-            {
-                final boolean isReading = this.backupNodeManager.isReading();
-                return !isReading;
-            });
-        }
-
-        @Override
         public void postMicrostreamBackup() throws HttpResponseException
         {
             LOG.trace("Handling postMicrostreamBackup request");
             this.handleRequest(this.backupNodeManager::createStorageBackup);
+
+        }
+
+        @Override
+        public boolean getMicrostreamBackup() throws HttpResponseException
+        {
+            return this.handleRequest(this.backupNodeManager::isBackupRunning);
+
         }
 
         @Override
@@ -311,10 +321,27 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamUploadStorage(final InputStream storageStream) throws HttpResponseException
+        public boolean getMicrostreamUpdates() throws HttpResponseException
         {
-            LOG.trace("Handling postMicrostreamUploadStorage request");
-            this.handleRequest(() -> this.backupNodeManager.replaceStorage(storageStream));
+            return this.handleRequest(() ->
+            {
+                final boolean isReading = this.backupNodeManager.isReading();
+                return !isReading;
+            });
+        }
+
+        @Override
+        public void postMicrostreamResumeUpdates() throws HttpResponseException
+        {
+            LOG.trace("Handling postMicrostreamResumeUpdates request");
+            this.handleRequest(this.backupNodeManager::resumeReading);
+        }
+
+        @Override
+        public void close()
+        {
+            this.backupNodeManager.close();
+
         }
     }
 
@@ -350,17 +377,22 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamUploadStorage(final InputStream storageStream) throws HttpResponseException
-        {
-            LOG.trace("Handling postMicrostreamUploadStorage request");
-            this.handleRequest(() -> this.microNodeManager.replaceStorage(storageStream));
-        }
-
-        @Override
         public void postMicrostreamBackup() throws HttpResponseException
         {
             LOG.trace("Handling postMicrostreamBackup request");
             this.handleRequest(this.microNodeManager::createStorageBackup);
+        }
+
+        @Override
+        public boolean getMicrostreamBackup() throws HttpResponseException
+        {
+            return this.handleRequest(this.microNodeManager::isBackupRunning);
+        }
+
+        @Override
+        public void close()
+        {
+            this.microNodeManager.close();
         }
     }
 
@@ -411,13 +443,13 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamUploadStorage(final InputStream storageStream) throws HttpResponseException
+        public void postMicrostreamBackup() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamBackup() throws HttpResponseException
+        public boolean getMicrostreamBackup() throws HttpResponseException
         {
             throw new BadRequestException();
         }
@@ -435,6 +467,12 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
+        public void postMicrostreamResumeUpdates() throws HttpResponseException
+        {
+            throw new BadRequestException();
+        }
+
+        @Override
         public void postMicrostreamGc() throws HttpResponseException
         {
             throw new BadRequestException();
@@ -444,6 +482,12 @@ public interface ClusterRestRequestController extends AutoCloseable
         public boolean getMicrostreamGc() throws HttpResponseException
         {
             throw new BadRequestException();
+        }
+
+        @Override
+        public void close()
+        {
+            // no-op
         }
     }
 }

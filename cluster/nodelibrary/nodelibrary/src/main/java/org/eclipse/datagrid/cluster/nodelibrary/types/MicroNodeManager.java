@@ -24,7 +24,9 @@ import static org.eclipse.serializer.util.X.notNull;
 
 public interface MicroNodeManager extends ClusterNodeManager
 {
-    void createStorageBackup();
+    void createStorageBackup() throws NodelibraryException;
+
+    boolean isBackupRunning();
 
     boolean replaceStorage(InputStream storageStream);
 
@@ -70,9 +72,16 @@ public interface MicroNodeManager extends ClusterNodeManager
         }
 
         @Override
-        public void createStorageBackup()
+        public void createStorageBackup() throws NodelibraryException
         {
             this.backupManager.createStorageBackup();
+        }
+
+        @Override
+        public boolean isBackupRunning()
+        {
+            // creating backups on micro nodes is not concurrent. So it's always done when calling this
+            return false;
         }
 
         @Override

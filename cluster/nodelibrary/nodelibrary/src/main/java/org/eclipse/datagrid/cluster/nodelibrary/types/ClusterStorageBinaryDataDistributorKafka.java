@@ -19,7 +19,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.eclipse.datagrid.storage.distributed.kafka.types.StorageBinaryDistributedKafka;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.MessageType;
 import org.eclipse.serializer.collections.BulkList;
 import org.eclipse.serializer.collections.types.XList;
@@ -30,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -60,30 +58,29 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
         );
     }
 
-
-	abstract class Abstract implements ClusterStorageBinaryDataDistributorKafka
-	{
+    abstract class Abstract implements ClusterStorageBinaryDataDistributorKafka
+    {
         private static final Logger LOG = LoggerFactory.getLogger(ClusterStorageBinaryDataDistributorKafka.class);
 
-		private final String topicName;
-		private final KafkaProducer<String, byte[]> producer;
+        private final String topicName;
+        private final KafkaProducer<String, byte[]> producer;
         private long offset = Long.MIN_VALUE;
 
-		protected Abstract(final String topicName, final KafkaPropertiesProvider kafkaPropertiesProvider)
-		{
-			this.topicName = topicName;
+        protected Abstract(final String topicName, final KafkaPropertiesProvider kafkaPropertiesProvider)
+        {
+            this.topicName = topicName;
 
-			final Properties properties = kafkaPropertiesProvider.provide();
-			properties.setProperty(KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-			properties.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
-			properties.setProperty(COMPRESSION_TYPE_CONFIG, CompressionType.ZSTD.name);
-			this.producer = new KafkaProducer<>(properties);
-		}
+            final Properties properties = kafkaPropertiesProvider.provide();
+            properties.setProperty(KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+            properties.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+            properties.setProperty(COMPRESSION_TYPE_CONFIG, CompressionType.ZSTD.name);
+            this.producer = new KafkaProducer<>(properties);
+        }
 
-		protected abstract void execute(Runnable action);
+        protected abstract void execute(Runnable action);
 
-		private void distribute(final MessageType messageType, final Binary data)
-		{
+        private void distribute(final MessageType messageType, final Binary data)
+        {
             this.execute(() -> this.tryExecuteDistribution(messageType, data));
         }
 
@@ -99,53 +96,61 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
                 // the application to shut down
                 GlobalErrorHandling.handleFatalError(t);
             }
-		}
+        }
 
-		private void executeDistribution(final MessageType messageType, final Binary data)
-		{
-			final ByteBuffer[] buffers = this.allBuffers(data);
-			int messageSize = 0;
-			for (final ByteBuffer buffer : buffers)
-			{
-				messageSize += buffer.remaining();
-				buffer.mark();
-			}
+        private void executeDistribution(final MessageType messageType, final Binary data)
+        {
+            final ByteBuffer[] buffers = this.allBuffers(data);
+            int messageSize = 0;
 
-			int remaining = messageSize;
-			int currentBuffer = 0;
-			int packetIndex = 0;
-            final int packetCount = messageSize / StorageBinaryDistributedKafka.maxPacketSize() + (messageSize
-                % StorageBinaryDistributedKafka.maxPacketSize() == 0 ? 0 : 1);
-			while (remaining > 0)
-			{
-				final byte[] packet = new byte[Math.min(remaining, StorageBinaryDistributedKafka.maxPacketSize())];
-				int packetOffset = 0;
-				while (packetOffset < packet.length)
-				{
-					final ByteBuffer buffer = buffers[currentBuffer];
-					final int length = Math.min(packet.length - packetOffset, buffer.remaining());
-					buffer.get(packet, packetOffset, length);
-					if (!buffer.hasRemaining())
-					{
-						currentBuffer++;
-					}
-					remaining -= length;
-					packetOffset += length;
-				}
+            for (final ByteBuffer buffer : buffers)
+            {
+                messageSize += buffer.remaining();
+                buffer.mark();
+            }
+
+            int remaining = messageSize;
+            int currentBuffer = 0;
+            int packetIndex = 0;
+            final int packetCount = messageSize / ClusterStorageBinaryDistributedKafka.maxPacketSize() + (messageSize
+                % ClusterStorageBinaryDistributedKafka.maxPacketSize() == 0 ? 0 : 1);
+
+            while (remaining > 0)
+            {
+                final byte[] packet = new byte[Math.min(
+                    remaining,
+                    ClusterStorageBinaryDistributedKafka.maxPacketSize()
+                )];
+                int packetOffset = 0;
+
+                while (packetOffset < packet.length)
+                {
+                    final ByteBuffer buffer = buffers[currentBuffer];
+                    final int length = Math.min(packet.length - packetOffset, buffer.remaining());
+
+                    buffer.get(packet, packetOffset, length);
+
+                    if (!buffer.hasRemaining())
+                    {
+                        currentBuffer++;
+                    }
+
+                    remaining -= length;
+                    packetOffset += length;
+                }
 
                 final var kafkaRecord = new ProducerRecord<String, byte[]>(this.topicName, packet);
 
-                StorageBinaryDistributedKafka.addPacketHeaders(
+                ++this.offset;
+
+                ClusterStorageBinaryDistributedKafka.addPacketHeaders(
                     kafkaRecord.headers(),
                     messageType,
                     messageSize,
                     packetIndex,
-                    packetCount
+                    packetCount,
+                    this.offset
                 );
-
-                ++this.offset;
-                final var microstreamOffset = Long.toString(this.offset).getBytes(StandardCharsets.UTF_8);
-                kafkaRecord.headers().add("microstreamOffset", microstreamOffset);
 
                 if (LOG.isDebugEnabled() && this.offset % 10_000 == 0)
                 {
@@ -153,38 +158,38 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
                 }
                 this.producer.send(kafkaRecord);
 
-				packetIndex++;
-			}
+                packetIndex++;
+            }
 
-			for (final ByteBuffer buffer : buffers)
-			{
-				buffer.reset();
-			}
-		}
+            for (final ByteBuffer buffer : buffers)
+            {
+                buffer.reset();
+            }
+        }
 
-		private ByteBuffer[] allBuffers(final Binary data)
-		{
-			final XList<ByteBuffer> list = BulkList.New();
-			data.iterateChannelChunks(channelChunk -> list.addAll(channelChunk.buffers()));
-			return list.toArray(ByteBuffer.class);
-		}
+        private ByteBuffer[] allBuffers(final Binary data)
+        {
+            final XList<ByteBuffer> list = BulkList.New();
+            data.iterateChannelChunks(channelChunk -> list.addAll(channelChunk.buffers()));
+            return list.toArray(ByteBuffer.class);
+        }
 
-		@Override
-		public void distributeData(final Binary data)
-		{
-			this.distribute(MessageType.DATA, data);
-		}
+        @Override
+        public void distributeData(final Binary data)
+        {
+            this.distribute(MessageType.DATA, data);
+        }
 
-		@Override
-		public void distributeTypeDictionary(final String typeDictionaryData)
-		{
-			this.distribute(
-				MessageType.TYPE_DICTIONARY,
-				ChunksWrapper.New(
-					XMemory.toDirectByteBuffer(StorageBinaryDistributedKafka.serialize(typeDictionaryData))
-				)
-			);
-		}
+        @Override
+        public void distributeTypeDictionary(final String typeDictionaryData)
+        {
+            this.distribute(
+                MessageType.TYPE_DICTIONARY,
+                ChunksWrapper.New(
+                    XMemory.toDirectByteBuffer(ClusterStorageBinaryDistributedKafka.serializeString(typeDictionaryData))
+                )
+            );
+        }
 
         @Override
         public void offset(final long offset)
@@ -194,30 +199,36 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
         }
 
         @Override
+        public long offset()
+        {
+            return this.offset;
+        }
+
+        @Override
         public synchronized void dispose()
         {
             LOG.trace("Disposing data distributor");
             this.producer.close();
         }
-	}
+    }
 
-	public static class Sync extends Abstract
-	{
+    public static class Sync extends Abstract
+    {
         private Sync(final String topicName, final KafkaPropertiesProvider kafkaPropertiesProvider)
         {
             super(topicName, kafkaPropertiesProvider);
         }
 
-		@Override
-		protected void execute(final Runnable action)
-		{
-			action.run();
-		}
-	}
+        @Override
+        protected void execute(final Runnable action)
+        {
+            action.run();
+        }
+    }
 
-	public static class Async extends Abstract
-	{
-		private final ExecutorService executor;
+    public static class Async extends Abstract
+    {
+        private final ExecutorService executor;
 
         private Async(final String topicName, final KafkaPropertiesProvider kafkaPropertiesProvider)
         {
@@ -225,28 +236,28 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
             this.executor = Executors.newSingleThreadExecutor(this::createThread);
         }
 
-		private Thread createThread(final Runnable runnable)
-		{
-			final Thread thread = new Thread(runnable);
-			thread.setName("StorageDistributor-Kafka");
-			return thread;
-		}
+        private Thread createThread(final Runnable runnable)
+        {
+            final Thread thread = new Thread(runnable);
+            thread.setName("MicroStream-StorageDistributor-Kafka");
+            return thread;
+        }
 
-		@Override
-		protected void execute(final Runnable action)
-		{
-			this.executor.execute(action);
-		}
+        @Override
+        protected void execute(final Runnable action)
+        {
+            this.executor.execute(action);
+        }
 
-		@Override
-		public synchronized void dispose()
-		{
-			if (!this.executor.isShutdown())
-			{
-				this.executor.shutdown();
-			}
+        @Override
+        public synchronized void dispose()
+        {
+            if (!this.executor.isShutdown())
+            {
+                this.executor.shutdown();
+            }
 
-			super.dispose();
-		}
-	}
+            super.dispose();
+        }
+    }
 }

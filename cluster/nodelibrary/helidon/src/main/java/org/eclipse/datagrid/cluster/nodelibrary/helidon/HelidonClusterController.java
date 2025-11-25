@@ -20,10 +20,6 @@ import jakarta.ws.rs.*;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
-import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
-
-import java.io.InputStream;
 
 import static org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.*;
 
@@ -97,22 +93,20 @@ public class HelidonClusterController implements AutoCloseable
     }
 
     @POST
-    @Path(PostMicrostreamUploadStorage.PATH)
-    @Consumes(PostMicrostreamUploadStorage.CONSUMES)
-    @Produces(PostMicrostreamUploadStorage.PRODUCES)
-    @RequestBody(required = true, content = @Content(mediaType = PostMicrostreamUploadStorage.CONSUMES))
-    public void postMicrostreamUploadStorage(final InputStream storage) throws HttpResponseException
-    {
-        this.requestController.postMicrostreamUploadStorage(storage);
-    }
-
-    @POST
     @Path(PostMicrostreamBackup.PATH)
     @Consumes(PostMicrostreamBackup.CONSUMES)
     @Produces(PostMicrostreamBackup.PRODUCES)
     public void postMicrostreamBackup() throws HttpResponseException
     {
         this.requestController.postMicrostreamBackup();
+    }
+
+    @GET
+    @Path(GetMicrostreamBackup.PATH)
+    @Produces(GetMicrostreamBackup.PRODUCES)
+    public boolean getMicrostreamBackup() throws HttpResponseException
+    {
+        return this.requestController.getMicrostreamBackup();
     }
 
     @POST
@@ -130,6 +124,15 @@ public class HelidonClusterController implements AutoCloseable
     public boolean getMicrostreamUpdates() throws HttpResponseException
     {
         return this.requestController.getMicrostreamUpdates();
+    }
+
+    @POST
+    @Path(PostMicrostreamResumeUpdates.PATH)
+    @Consumes(PostMicrostreamResumeUpdates.CONSUMES)
+    @Produces(PostMicrostreamResumeUpdates.PRODUCES)
+    public void postMicrostreamResumeUpdates() throws HttpResponseException
+    {
+        this.requestController.postMicrostreamResumeUpdates();
     }
 
     @POST
