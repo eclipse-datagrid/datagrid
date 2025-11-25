@@ -95,6 +95,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         private long cachedOffset;
         private final AtomicBoolean stopAtLatestOffset = new AtomicBoolean();
         private final AtomicBoolean requestStop = new AtomicBoolean();
+        private final AtomicBoolean running = new AtomicBoolean();
 
         private Thread runner;
 
@@ -121,7 +122,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         @Override
         public boolean isRunning()
         {
-            return this.runner != null && this.runner.isAlive();
+            return this.running.get();
         }
 
         @Override
@@ -145,10 +146,13 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         {
             try
             {
+                this.running.set(true);
                 this.run();
+                this.running.set(false);
             }
             catch (final Throwable t)
             {
+                this.running.set(false);
                 GlobalErrorHandling.handleFatalError(t);
             }
         }
@@ -227,7 +231,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                         }
                         LOG.info("Stopping at offset {}", stopAt);
 
-                        while (this.cachedOffset < stopAt)
+                        while (this.cachedOffset < stopAt && !this.requestStop.get())
                         {
                             this.pollAndConsume(consumer);
                         }
@@ -257,7 +261,10 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
             final EqHashTable<TopicPartition, Long> map = EqHashTable.New();
             for (final var partition : consumer.assignment())
             {
-                final var offset = consumer.position(partition);
+                // since we don't know the exact offset for each partition we just subtract the amount of
+                // missing cached packets to ensure that we read them again after the backup node restarts
+                long offset = consumer.position(partition);
+                offset = Math.max(offset - this.cachedPackets.size(), 0);
                 map.put(partition, offset);
             }
             final var info = OffsetInfo.New(this.cachedOffset, map.immure());
@@ -282,6 +289,8 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                 return;
             }
 
+            final var packets = new ArrayList<ClusterStorageBinaryDataPacket>(this.cachedPackets.size());
+
             outer: while (!this.cachedPackets.isEmpty())
             {
                 final var rootPacket = this.cachedPackets.peek();
@@ -296,14 +305,14 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                 if (this.cachedPackets.size() < rootPacket.packetCount())
                 {
                     //LOG.trace("Message Incomplete ({}/{})", this.cachedPackets.size(), rootPacket.packetCount());
-                    return;
+                    break;
                 }
 
-                final var packets = new ArrayList<ClusterStorageBinaryDataPacket>();
+                final var newMessagePackets = new ArrayList<ClusterStorageBinaryDataPacket>(rootPacket.packetCount());
 
                 for (int i = 0; i < rootPacket.packetCount(); i++)
                 {
-                    final var packet = this.cachedPackets.remove();
+                    final var packet = this.cachedPackets.peek();
 
                     if (packet.packetIndex() != i)
                     {
@@ -325,11 +334,13 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                         continue outer;
                     }
 
-                    packets.add(packet);
+                    newMessagePackets.add(this.cachedPackets.remove());
                 }
 
-                this.consumeFullMessage(packets, consumer);
+                packets.addAll(newMessagePackets);
             }
+
+            this.consumeFullMessage(packets, consumer);
         }
 
         private List<ClusterStorageBinaryDataPacket> createPackets(final ConsumerRecords<String, byte[]> records)
@@ -350,11 +361,11 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         }
 
         private void consumeFullMessage(
-            final Iterable<ClusterStorageBinaryDataPacket> packets,
+            final Collection<ClusterStorageBinaryDataPacket> packets,
             final KafkaConsumer<String, byte[]> consumer
         )
         {
-            final List<StorageBinaryDataPacket> newPackets = new ArrayList<>();
+            final List<StorageBinaryDataPacket> newPackets = new ArrayList<>(packets.size());
 
             for (final var packet : packets)
             {
@@ -445,12 +456,12 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         {
             LOG.trace("Disposing data client");
             this.requestStop.set(true);
-            while (this.runner != null && this.runner.isAlive())
+            while (this.isRunning())
             {
                 try
                 {
                     LOG.trace("Waiting for runner to stop");
-                    this.runner.join(10_000L);
+                    this.runner.join(1_000L);
                 }
                 catch (final InterruptedException e)
                 {
