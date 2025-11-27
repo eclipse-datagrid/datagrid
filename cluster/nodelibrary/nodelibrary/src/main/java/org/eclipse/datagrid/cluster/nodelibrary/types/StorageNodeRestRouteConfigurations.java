@@ -27,11 +27,11 @@ public final class StorageNodeRestRouteConfigurations
         }
     }
 
-    public static final String ROOT_PATH = "/eclipse-datagrid-cluster-controller";
+    public static final String ROOT_PATH = "/eclipse-datagrid";
 
     public static final class GetDistributor
     {
-        public static final String PATH = "/eclipse-datagrid-distributor";
+        public static final String PATH = "/distributor";
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
         private GetDistributor()
@@ -41,7 +41,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class PostActivateDistributorStart
     {
-        public static final String PATH = "/eclipse-datagrid-activate-distributor/start";
+        public static final String PATH = "/activate-distributor/start";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
@@ -52,7 +52,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class PostActivateDistributorFinish
     {
-        public static final String PATH = "/eclipse-datagrid-activate-distributor/finish";
+        public static final String PATH = "/activate-distributor/finish";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
@@ -63,7 +63,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class GetHealth
     {
-        public static final String PATH = "/eclipse-datagrid-health";
+        public static final String PATH = "/health";
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
         private GetHealth()
@@ -73,7 +73,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class GetHealthReady
     {
-        public static final String PATH = "/eclipse-datagrid-health/ready";
+        public static final String PATH = "/health/ready";
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
         private GetHealthReady()
@@ -83,7 +83,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class GetStorageBytes
     {
-        public static final String PATH = "/eclipse-datagrid-storage-bytes";
+        public static final String PATH = "/storage-bytes";
         public static final String PRODUCES = MediaTypes.TEXT_PLAIN;
 
         private GetStorageBytes()
@@ -93,7 +93,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class PostBackup
     {
-        public static final String PATH = "/eclipse-datagrid-backup";
+        public static final String PATH = "/backup";
         public static final String CONSUMES = MediaTypes.APPLICATION_JSON;
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
@@ -119,7 +119,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class GetBackup
     {
-        public static final String PATH = "/eclipse-datagrid-backup";
+        public static final String PATH = "/backup";
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
 
@@ -130,7 +130,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class PostUpdates
     {
-        public static final String PATH = "/eclipse-datagrid-updates";
+        public static final String PATH = "/updates";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
@@ -141,7 +141,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class GetUpdates
     {
-        public static final String PATH = "/eclipse-datagrid-updates";
+        public static final String PATH = "/updates";
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
         private GetUpdates()
@@ -151,7 +151,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class PostResumeUpdates
     {
-        public static final String PATH = "/eclipse-datagrid-resume-updates";
+        public static final String PATH = "/resume-updates";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
@@ -162,7 +162,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class PostGc
     {
-        public static final String PATH = "/eclipse-datagrid-gc";
+        public static final String PATH = "/gc";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
@@ -173,7 +173,7 @@ public final class StorageNodeRestRouteConfigurations
 
     public static final class GetGc
     {
-        public static final String PATH = "/eclipse-datagrid-gc";
+        public static final String PATH = "/gc";
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
         private GetGc()
