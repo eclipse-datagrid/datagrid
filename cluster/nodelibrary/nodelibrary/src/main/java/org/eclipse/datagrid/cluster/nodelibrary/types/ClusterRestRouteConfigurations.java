@@ -94,7 +94,7 @@ public final class ClusterRestRouteConfigurations
 
     public static final class PostMicrostreamBackup
     {
-        public static final String PATH = "/microstream-backup";
+        public static final String PATH = "/eclipse-datagrid-backup";
         public static final String CONSUMES = MediaTypes.APPLICATION_JSON;
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
@@ -120,7 +120,7 @@ public final class ClusterRestRouteConfigurations
 
     public static final class GetMicrostreamBackup
     {
-        public static final String PATH = "/microstream-backup";
+        public static final String PATH = "/eclipse-datagrid-backup";
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
 
@@ -152,7 +152,7 @@ public final class ClusterRestRouteConfigurations
 
     public static final class PostMicrostreamResumeUpdates
     {
-        public static final String PATH = "/microstream-resume-updates";
+        public static final String PATH = "/eclipse-datagrid-resume-updates";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
