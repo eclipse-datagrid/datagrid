@@ -38,110 +38,110 @@ public class HelidonClusterController
     @GET
     @Path(GetDistributor.PATH)
     @Produces(GetDistributor.PRODUCES)
-    public boolean getDataGridDistributor() throws HttpResponseException
+    public boolean getDistributor() throws HttpResponseException
     {
-        return this.requestController.getDataGridDistributor();
+        return this.requestController.getDistributor();
     }
 
     @POST
     @Path(PostActivateDistributorStart.PATH)
     @Consumes(PostActivateDistributorStart.CONSUMES)
     @Produces(PostActivateDistributorStart.PRODUCES)
-    public void postDataGridActivateDistributorStart() throws HttpResponseException
+    public void postActivateDistributorStart() throws HttpResponseException
     {
-        this.requestController.postDataGridActivateDistributorStart();
+        this.requestController.postActivateDistributorStart();
     }
 
     @POST
     @Path(PostActivateDistributorFinish.PATH)
     @Consumes(PostActivateDistributorFinish.CONSUMES)
     @Produces(PostActivateDistributorFinish.PRODUCES)
-    public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
+    public boolean postActivateDistributorFinish() throws HttpResponseException
     {
-        return this.requestController.postDataGridActivateDistributorFinish();
+        return this.requestController.postActivateDistributorFinish();
     }
 
     @GET
     @Path(GetHealth.PATH)
     @Produces(GetHealth.PRODUCES)
-    public void getDataGridHealth() throws HttpResponseException
+    public void getHealth() throws HttpResponseException
     {
-        this.requestController.getDataGridHealth();
+        this.requestController.getHealth();
     }
 
     @GET
     @Path(GetHealthReady.PATH)
     @Produces(GetHealthReady.PRODUCES)
-    public void getDataGridHealthReady() throws HttpResponseException
+    public void getHealthReady() throws HttpResponseException
     {
-        this.requestController.getDataGridHealthReady();
+        this.requestController.getHealthReady();
     }
 
     @GET
     @Path(GetStorageBytes.PATH)
     @Produces(GetStorageBytes.PRODUCES)
-    public String getDataGridStorageBytes() throws HttpResponseException
+    public String getStorageBytes() throws HttpResponseException
     {
-        return this.requestController.getDataGridStorageBytes();
+        return this.requestController.getStorageBytes();
     }
 
     @POST
     @Path(PostBackup.PATH)
     @Consumes(PostBackup.CONSUMES)
     @Produces(PostBackup.PRODUCES)
-    public void postDataGridBackup(@RequestBody final PostBackup.Body body) throws HttpResponseException
+    public void postBackup(@RequestBody final PostBackup.Body body) throws HttpResponseException
     {
-        this.requestController.postDataGridBackup(body);
+        this.requestController.postBackup(body);
     }
 
     @GET
     @Path(GetBackup.PATH)
     @Produces(GetBackup.PRODUCES)
-    public boolean getDataGridBackup() throws HttpResponseException
+    public boolean getBackup() throws HttpResponseException
     {
-        return this.requestController.getDataGridBackup();
+        return this.requestController.getBackup();
     }
 
     @POST
     @Path(PostUpdates.PATH)
     @Consumes(PostUpdates.CONSUMES)
     @Produces(PostUpdates.PRODUCES)
-    public void postDataGridUpdates() throws HttpResponseException
+    public void postUpdates() throws HttpResponseException
     {
-        this.requestController.postDataGridUpdates();
+        this.requestController.postUpdates();
     }
 
     @GET
     @Path(GetUpdates.PATH)
     @Produces(GetUpdates.PRODUCES)
-    public boolean getDataGridUpdates() throws HttpResponseException
+    public boolean getUpdates() throws HttpResponseException
     {
-        return this.requestController.getDataGridUpdates();
+        return this.requestController.getUpdates();
     }
 
     @POST
     @Path(PostResumeUpdates.PATH)
     @Consumes(PostResumeUpdates.CONSUMES)
     @Produces(PostResumeUpdates.PRODUCES)
-    public void postDataGridResumeUpdates() throws HttpResponseException
+    public void postResumeUpdates() throws HttpResponseException
     {
-        this.requestController.postDataGridResumeUpdates();
+        this.requestController.postResumeUpdates();
     }
 
     @POST
     @Path(PostGc.PATH)
     @Consumes(PostGc.CONSUMES)
     @Produces(PostGc.PRODUCES)
-    public void postDataGridGc() throws HttpResponseException
+    public void postGc() throws HttpResponseException
     {
-        this.requestController.postDataGridGc();
+        this.requestController.postGc();
     }
 
     @GET
     @Path(GetGc.PATH)
     @Produces(GetGc.PRODUCES)
-    public boolean getDataGridGc() throws HttpResponseException
+    public boolean getGc() throws HttpResponseException
     {
-        return this.requestController.getDataGridGc();
+        return this.requestController.getGc();
     }
 }

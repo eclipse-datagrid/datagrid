@@ -29,32 +29,32 @@ import static org.eclipse.serializer.util.X.unbox;
 
 public interface ClusterRestRequestController extends AutoCloseable
 {
-    boolean getDataGridDistributor() throws HttpResponseException;
+    boolean getDistributor() throws HttpResponseException;
 
-    void postDataGridActivateDistributorStart() throws HttpResponseException;
+    void postActivateDistributorStart() throws HttpResponseException;
 
-    boolean postDataGridActivateDistributorFinish() throws HttpResponseException;
+    boolean postActivateDistributorFinish() throws HttpResponseException;
 
-    void getDataGridHealth() throws HttpResponseException;
+    void getHealth() throws HttpResponseException;
 
-    void getDataGridHealthReady() throws HttpResponseException;
+    void getHealthReady() throws HttpResponseException;
 
     // TODO: Rename to get statistics or monitoring etc.
-    String getDataGridStorageBytes() throws HttpResponseException;
+    String getStorageBytes() throws HttpResponseException;
 
-    void postDataGridBackup(PostBackup.Body body) throws HttpResponseException;
+    void postBackup(PostBackup.Body body) throws HttpResponseException;
 
-    boolean getDataGridBackup() throws HttpResponseException;
+    boolean getBackup() throws HttpResponseException;
 
-    void postDataGridUpdates() throws HttpResponseException;
+    void postUpdates() throws HttpResponseException;
 
-    boolean getDataGridUpdates() throws HttpResponseException;
+    boolean getUpdates() throws HttpResponseException;
 
-    void postDataGridResumeUpdates() throws HttpResponseException;
+    void postResumeUpdates() throws HttpResponseException;
 
-    void postDataGridGc() throws HttpResponseException;
+    void postGc() throws HttpResponseException;
 
-    boolean getDataGridGc() throws HttpResponseException;
+    boolean getGc() throws HttpResponseException;
 
     @Override
     void close();
@@ -102,21 +102,21 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postDataGridGc() throws HttpResponseException
+        public void postGc() throws HttpResponseException
         {
             LOG.trace("Handling postDataGridGc request");
             this.handleRequest(this.nodeManager::startStorageChecks);
         }
 
         @Override
-        public boolean getDataGridGc() throws HttpResponseException
+        public boolean getGc() throws HttpResponseException
         {
             LOG.trace("Handling getDataGridGc request");
             return this.handleRequest(this.nodeManager::isRunningStorageChecks);
         }
 
         @Override
-        public void getDataGridHealth() throws HttpResponseException
+        public void getHealth() throws HttpResponseException
         {
             this.handleRequest(() ->
             {
@@ -128,7 +128,7 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void getDataGridHealthReady() throws HttpResponseException
+        public void getHealthReady() throws HttpResponseException
         {
             this.handleRequest(() ->
             {
@@ -140,7 +140,7 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public String getDataGridStorageBytes() throws HttpResponseException
+        public String getStorageBytes() throws HttpResponseException
         {
             return this.handleRequest(() ->
             {
@@ -158,49 +158,49 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
+        public boolean postActivateDistributorFinish() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getDataGridDistributor() throws HttpResponseException
+        public boolean getDistributor() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getDataGridUpdates() throws HttpResponseException
+        public boolean getUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postDataGridResumeUpdates() throws HttpResponseException
+        public void postResumeUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postDataGridActivateDistributorStart() throws HttpResponseException
+        public void postActivateDistributorStart() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postDataGridBackup(PostBackup.Body body) throws HttpResponseException
+        public void postBackup(PostBackup.Body body) throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getDataGridBackup() throws HttpResponseException
+        public boolean getBackup() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postDataGridUpdates() throws HttpResponseException
+        public void postUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
@@ -256,19 +256,19 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
+        public boolean postActivateDistributorFinish() throws HttpResponseException
         {
             return this.handleRequest(this.storageNodeManager::finishDistributonSwitch);
         }
 
         @Override
-        public boolean getDataGridDistributor() throws HttpResponseException
+        public boolean getDistributor() throws HttpResponseException
         {
             return this.handleRequest(this.storageNodeManager::isDistributor);
         }
 
         @Override
-        public void postDataGridActivateDistributorStart() throws HttpResponseException
+        public void postActivateDistributorStart() throws HttpResponseException
         {
             LOG.trace("Handling postDataGridActivateDistributorStart request");
             this.handleRequest(() ->
@@ -299,28 +299,28 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postDataGridBackup(PostBackup.Body body) throws HttpResponseException
+        public void postBackup(PostBackup.Body body) throws HttpResponseException
         {
             LOG.trace("Handling postDataGridBackup request");
             this.handleRequest(() -> this.backupNodeManager.createStorageBackup(unbox(body.getUseManualSlot())));
         }
 
         @Override
-        public boolean getDataGridBackup() throws HttpResponseException
+        public boolean getBackup() throws HttpResponseException
         {
             return this.handleRequest(this.backupNodeManager::isBackupRunning);
 
         }
 
         @Override
-        public void postDataGridUpdates() throws HttpResponseException
+        public void postUpdates() throws HttpResponseException
         {
             LOG.trace("Handling postDataGridUpdates request");
             this.handleRequest(this.backupNodeManager::stopReadingAtLatestOffset);
         }
 
         @Override
-        public boolean getDataGridUpdates() throws HttpResponseException
+        public boolean getUpdates() throws HttpResponseException
         {
             return this.handleRequest(() ->
             {
@@ -330,7 +330,7 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postDataGridResumeUpdates() throws HttpResponseException
+        public void postResumeUpdates() throws HttpResponseException
         {
             LOG.trace("Handling postDataGridResumeUpdates request");
             this.handleRequest(this.backupNodeManager::resumeReading);
@@ -356,34 +356,34 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
+        public boolean postActivateDistributorFinish() throws HttpResponseException
         {
             // micro nodes are always the distributor
             return true;
         }
 
         @Override
-        public boolean getDataGridDistributor() throws HttpResponseException
+        public boolean getDistributor() throws HttpResponseException
         {
             // micro nodes are always the distributor
             return true;
         }
 
         @Override
-        public void postDataGridActivateDistributorStart() throws HttpResponseException
+        public void postActivateDistributorStart() throws HttpResponseException
         {
             // micro nodes are always the distributor
         }
 
         @Override
-        public void postDataGridBackup(PostBackup.Body body) throws HttpResponseException
+        public void postBackup(PostBackup.Body body) throws HttpResponseException
         {
             LOG.trace("Handling postDataGridBackup request");
             this.handleRequest(this.microNodeManager::createStorageBackup);
         }
 
         @Override
-        public boolean getDataGridBackup() throws HttpResponseException
+        public boolean getBackup() throws HttpResponseException
         {
             return this.handleRequest(this.microNodeManager::isBackupRunning);
         }
@@ -406,79 +406,79 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public boolean getDataGridDistributor() throws HttpResponseException
+        public boolean getDistributor() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postDataGridActivateDistributorStart() throws HttpResponseException
+        public void postActivateDistributorStart() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
+        public boolean postActivateDistributorFinish() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void getDataGridHealth() throws HttpResponseException
+        public void getHealth() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void getDataGridHealthReady() throws HttpResponseException
+        public void getHealthReady() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public String getDataGridStorageBytes() throws HttpResponseException
+        public String getStorageBytes() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postDataGridBackup(PostBackup.Body body) throws HttpResponseException
+        public void postBackup(PostBackup.Body body) throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getDataGridBackup() throws HttpResponseException
+        public boolean getBackup() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postDataGridUpdates() throws HttpResponseException
+        public void postUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getDataGridUpdates() throws HttpResponseException
+        public boolean getUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postDataGridResumeUpdates() throws HttpResponseException
+        public void postResumeUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postDataGridGc() throws HttpResponseException
+        public void postGc() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getDataGridGc() throws HttpResponseException
+        public boolean getGc() throws HttpResponseException
         {
             throw new BadRequestException();
         }

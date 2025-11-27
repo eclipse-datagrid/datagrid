@@ -39,9 +39,9 @@ public class SpringBootClusterController
     }
 
     @GetMapping(value = GetDistributor.PATH, produces = GetDistributor.PRODUCES)
-    public boolean getDataGridDistributor() throws HttpResponseException
+    public boolean getDistributor() throws HttpResponseException
     {
-        return this.call(this.controller::getDataGridDistributor);
+        return this.call(this.controller::getDistributor);
     }
 
     @PostMapping(
@@ -49,9 +49,9 @@ public class SpringBootClusterController
         consumes = PostActivateDistributorStart.CONSUMES,
         produces = PostActivateDistributorStart.PRODUCES
     )
-    public void postDataGridActivateDistributorStart() throws HttpResponseException
+    public void postActivateDistributorStart() throws HttpResponseException
     {
-        this.call(this.controller::postDataGridActivateDistributorStart);
+        this.call(this.controller::postActivateDistributorStart);
     }
 
     @PostMapping(
@@ -59,30 +59,30 @@ public class SpringBootClusterController
         consumes = PostActivateDistributorFinish.CONSUMES,
         produces = PostActivateDistributorFinish.PRODUCES
     )
-    public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
+    public boolean postActivateDistributorFinish() throws HttpResponseException
     {
-        return this.call(this.controller::postDataGridActivateDistributorFinish);
+        return this.call(this.controller::postActivateDistributorFinish);
     }
 
     @GetMapping(value = GetHealth.PATH, produces = GetHealth.PRODUCES)
-    public void getDataGridHealth() throws HttpResponseException
+    public void getHealth() throws HttpResponseException
     {
-        this.call(this.controller::getDataGridHealth);
+        this.call(this.controller::getHealth);
     }
 
     @GetMapping(value = GetHealthReady.PATH, produces = GetHealthReady.PRODUCES)
     @Async
-    public CompletableFuture<Void> getDataGridHealthReady() throws HttpResponseException
+    public CompletableFuture<Void> getHealthReady() throws HttpResponseException
     {
-        this.call(this.controller::getDataGridHealthReady);
+        this.call(this.controller::getHealthReady);
         return CompletableFuture.completedFuture(null);
     }
 
     @GetMapping(value = GetStorageBytes.PATH, produces = GetStorageBytes.PRODUCES)
     @Async
-    public CompletableFuture<String> getDataGridStorageBytes() throws HttpResponseException
+    public CompletableFuture<String> getStorageBytes() throws HttpResponseException
     {
-        return CompletableFuture.completedFuture(this.call(this.controller::getDataGridStorageBytes));
+        return CompletableFuture.completedFuture(this.call(this.controller::getStorageBytes));
     }
 
     @PostMapping(
@@ -90,9 +90,9 @@ public class SpringBootClusterController
         consumes = PostBackup.CONSUMES,
         produces = PostBackup.PRODUCES
     )
-    public void postDataGridBackup(@RequestBody final PostBackup.Body body) throws HttpResponseException
+    public void postBackup(@RequestBody final PostBackup.Body body) throws HttpResponseException
     {
-        this.call(() -> this.controller.postDataGridBackup(body));
+        this.call(() -> this.controller.postBackup(body));
     }
 
     @PostMapping(
@@ -100,21 +100,21 @@ public class SpringBootClusterController
         consumes = PostUpdates.CONSUMES,
         produces = PostUpdates.PRODUCES
     )
-    public void postDataGridUpdates() throws HttpResponseException
+    public void postUpdates() throws HttpResponseException
     {
-        this.call(this.controller::postDataGridUpdates);
+        this.call(this.controller::postUpdates);
     }
 
     @GetMapping(value = GetBackup.PATH, produces = GetBackup.PRODUCES)
-    public boolean getDataGridBackup() throws HttpResponseException
+    public boolean getBackup() throws HttpResponseException
     {
-        return this.call(this.controller::getDataGridBackup);
+        return this.call(this.controller::getBackup);
     }
 
     @GetMapping(value = GetUpdates.PATH, produces = GetUpdates.PRODUCES)
-    public boolean getDataGridUpdates() throws HttpResponseException
+    public boolean getUpdates() throws HttpResponseException
     {
-        return this.call(this.controller::getDataGridUpdates);
+        return this.call(this.controller::getUpdates);
     }
 
     @PostMapping(
@@ -122,9 +122,9 @@ public class SpringBootClusterController
         consumes = PostResumeUpdates.CONSUMES,
         produces = PostResumeUpdates.PRODUCES
     )
-    public void postDataGridResumeUpdates() throws HttpResponseException
+    public void postResumeUpdates() throws HttpResponseException
     {
-        this.call(this.controller::postDataGridResumeUpdates);
+        this.call(this.controller::postResumeUpdates);
     }
 
     @PostMapping(
@@ -132,15 +132,15 @@ public class SpringBootClusterController
         consumes = PostGc.CONSUMES,
         produces = PostGc.PRODUCES
     )
-    public void postDataGridGc() throws HttpResponseException
+    public void postGc() throws HttpResponseException
     {
-        this.call(this.controller::postDataGridGc);
+        this.call(this.controller::postGc);
     }
 
     @GetMapping(value = GetGc.PATH, produces = GetGc.PRODUCES)
-    public boolean getDataGridGc() throws HttpResponseException
+    public boolean getGc() throws HttpResponseException
     {
-        return this.call(this.controller::getDataGridGc);
+        return this.call(this.controller::getGc);
     }
 
     private <T> T call(final Supplier<T> s)

@@ -67,9 +67,9 @@ public class MicronautClusterController
     }
 
     @Get(value = GetDistributor.PATH, produces = GetDistributor.PRODUCES)
-    public boolean getDataGridDistributor() throws HttpResponseException
+    public boolean getDistributor() throws HttpResponseException
     {
-        return this.controller.getDataGridDistributor();
+        return this.controller.getDistributor();
     }
 
     @Post(
@@ -77,9 +77,9 @@ public class MicronautClusterController
         consumes = PostActivateDistributorStart.CONSUMES,
         produces = PostActivateDistributorStart.PRODUCES
     )
-    public void postDataGridActivateDistributorStart() throws HttpResponseException
+    public void postActivateDistributorStart() throws HttpResponseException
     {
-        this.controller.postDataGridActivateDistributorStart();
+        this.controller.postActivateDistributorStart();
     }
 
     @Post(
@@ -87,29 +87,29 @@ public class MicronautClusterController
         consumes = PostActivateDistributorFinish.CONSUMES,
         produces = PostActivateDistributorFinish.PRODUCES
     )
-    public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
+    public boolean postActivateDistributorFinish() throws HttpResponseException
     {
-        return this.controller.postDataGridActivateDistributorFinish();
+        return this.controller.postActivateDistributorFinish();
     }
 
     @Get(value = GetHealth.PATH, produces = GetHealth.PRODUCES)
-    public void getDataGridHealth() throws HttpResponseException
+    public void getHealth() throws HttpResponseException
     {
-        this.controller.getDataGridHealth();
+        this.controller.getHealth();
     }
 
     @Get(value = GetHealthReady.PATH, produces = GetHealthReady.PRODUCES)
     @ExecuteOn(TaskExecutors.IO)
-    public void getDataGridHealthReady() throws HttpResponseException
+    public void getHealthReady() throws HttpResponseException
     {
-        this.controller.getDataGridHealthReady();
+        this.controller.getHealthReady();
     }
 
     @Get(value = GetStorageBytes.PATH, produces = GetStorageBytes.PRODUCES)
     @ExecuteOn(TaskExecutors.IO)
-    public String getDataGridStorageBytes() throws HttpResponseException
+    public String getStorageBytes() throws HttpResponseException
     {
-        return this.controller.getDataGridStorageBytes();
+        return this.controller.getStorageBytes();
     }
 
     @Post(
@@ -117,15 +117,15 @@ public class MicronautClusterController
         consumes = PostBackup.CONSUMES,
         produces = PostBackup.PRODUCES
     )
-    public void postDataGridBackup(@Body final PostBackup.Body body) throws HttpResponseException
+    public void postBackup(@Body final PostBackup.Body body) throws HttpResponseException
     {
-        this.controller.postDataGridBackup(body);
+        this.controller.postBackup(body);
     }
 
     @Get(value = GetBackup.PATH, produces = GetBackup.PRODUCES)
-    public boolean getDataGridBackup() throws HttpResponseException
+    public boolean getBackup() throws HttpResponseException
     {
-        return this.controller.getDataGridBackup();
+        return this.controller.getBackup();
     }
 
     @Post(
@@ -133,15 +133,15 @@ public class MicronautClusterController
         consumes = PostUpdates.CONSUMES,
         produces = PostUpdates.PRODUCES
     )
-    public void postDataGridUpdates() throws HttpResponseException
+    public void postUpdates() throws HttpResponseException
     {
-        this.controller.postDataGridUpdates();
+        this.controller.postUpdates();
     }
 
     @Get(value = GetUpdates.PATH, produces = GetUpdates.PRODUCES)
-    public boolean getDataGridUpdates() throws HttpResponseException
+    public boolean getUpdates() throws HttpResponseException
     {
-        return this.controller.getDataGridUpdates();
+        return this.controller.getUpdates();
     }
 
     @Post(
@@ -149,20 +149,20 @@ public class MicronautClusterController
         consumes = PostResumeUpdates.CONSUMES,
         produces = PostResumeUpdates.PRODUCES
     )
-    public void postDataGridResumeUpdates() throws HttpResponseException
+    public void postResumeUpdates() throws HttpResponseException
     {
-        this.controller.postDataGridResumeUpdates();
+        this.controller.postResumeUpdates();
     }
 
     @Post(value = PostGc.PATH, consumes = PostGc.CONSUMES, produces = PostGc.PRODUCES)
-    public void postDataGridGc() throws HttpResponseException
+    public void postGc() throws HttpResponseException
     {
-        this.controller.postDataGridGc();
+        this.controller.postGc();
     }
 
     @Get(value = GetGc.PATH, produces = GetGc.PRODUCES)
-    public boolean getDataGridGc() throws HttpResponseException
+    public boolean getGc() throws HttpResponseException
     {
-        return this.controller.getDataGridGc();
+        return this.controller.getGc();
     }
 }
