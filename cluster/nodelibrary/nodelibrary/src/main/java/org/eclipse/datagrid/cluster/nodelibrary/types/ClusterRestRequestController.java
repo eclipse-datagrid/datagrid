@@ -17,7 +17,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.BadRequestException;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.InternalServerErrorException;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamBackup;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.PostBackup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,32 +29,32 @@ import static org.eclipse.serializer.util.X.unbox;
 
 public interface ClusterRestRequestController extends AutoCloseable
 {
-    boolean getMicrostreamDistributor() throws HttpResponseException;
+    boolean getDataGridDistributor() throws HttpResponseException;
 
-    void postMicrostreamActivateDistributorStart() throws HttpResponseException;
+    void postDataGridActivateDistributorStart() throws HttpResponseException;
 
-    boolean postMicrostreamActivateDistributorFinish() throws HttpResponseException;
+    boolean postDataGridActivateDistributorFinish() throws HttpResponseException;
 
-    void getMicrostreamHealth() throws HttpResponseException;
+    void getDataGridHealth() throws HttpResponseException;
 
-    void getMicrostreamHealthReady() throws HttpResponseException;
+    void getDataGridHealthReady() throws HttpResponseException;
 
     // TODO: Rename to get statistics or monitoring etc.
-    String getMicrostreamStorageBytes() throws HttpResponseException;
+    String getDataGridStorageBytes() throws HttpResponseException;
 
-    void postMicrostreamBackup(PostMicrostreamBackup.Body body) throws HttpResponseException;
+    void postDataGridBackup(PostBackup.Body body) throws HttpResponseException;
 
-    boolean getMicrostreamBackup() throws HttpResponseException;
+    boolean getDataGridBackup() throws HttpResponseException;
 
-    void postMicrostreamUpdates() throws HttpResponseException;
+    void postDataGridUpdates() throws HttpResponseException;
 
-    boolean getMicrostreamUpdates() throws HttpResponseException;
+    boolean getDataGridUpdates() throws HttpResponseException;
 
-    void postMicrostreamResumeUpdates() throws HttpResponseException;
+    void postDataGridResumeUpdates() throws HttpResponseException;
 
-    void postMicrostreamGc() throws HttpResponseException;
+    void postDataGridGc() throws HttpResponseException;
 
-    boolean getMicrostreamGc() throws HttpResponseException;
+    boolean getDataGridGc() throws HttpResponseException;
 
     @Override
     void close();
@@ -102,21 +102,21 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamGc() throws HttpResponseException
+        public void postDataGridGc() throws HttpResponseException
         {
-            LOG.trace("Handling postMicrostreamGc request");
+            LOG.trace("Handling postDataGridGc request");
             this.handleRequest(this.nodeManager::startStorageChecks);
         }
 
         @Override
-        public boolean getMicrostreamGc() throws HttpResponseException
+        public boolean getDataGridGc() throws HttpResponseException
         {
-            LOG.trace("Handling getMicrostreamGc request");
+            LOG.trace("Handling getDataGridGc request");
             return this.handleRequest(this.nodeManager::isRunningStorageChecks);
         }
 
         @Override
-        public void getMicrostreamHealth() throws HttpResponseException
+        public void getDataGridHealth() throws HttpResponseException
         {
             this.handleRequest(() ->
             {
@@ -128,7 +128,7 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void getMicrostreamHealthReady() throws HttpResponseException
+        public void getDataGridHealthReady() throws HttpResponseException
         {
             this.handleRequest(() ->
             {
@@ -140,7 +140,7 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public String getMicrostreamStorageBytes() throws HttpResponseException
+        public String getDataGridStorageBytes() throws HttpResponseException
         {
             return this.handleRequest(() ->
             {
@@ -158,49 +158,49 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public boolean postMicrostreamActivateDistributorFinish() throws HttpResponseException
+        public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getMicrostreamDistributor() throws HttpResponseException
+        public boolean getDataGridDistributor() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getMicrostreamUpdates() throws HttpResponseException
+        public boolean getDataGridUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamResumeUpdates() throws HttpResponseException
+        public void postDataGridResumeUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamActivateDistributorStart() throws HttpResponseException
+        public void postDataGridActivateDistributorStart() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamBackup(PostMicrostreamBackup.Body body) throws HttpResponseException
+        public void postDataGridBackup(PostBackup.Body body) throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getMicrostreamBackup() throws HttpResponseException
+        public boolean getDataGridBackup() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamUpdates() throws HttpResponseException
+        public void postDataGridUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
@@ -256,21 +256,21 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public boolean postMicrostreamActivateDistributorFinish() throws HttpResponseException
+        public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
         {
             return this.handleRequest(this.storageNodeManager::finishDistributonSwitch);
         }
 
         @Override
-        public boolean getMicrostreamDistributor() throws HttpResponseException
+        public boolean getDataGridDistributor() throws HttpResponseException
         {
             return this.handleRequest(this.storageNodeManager::isDistributor);
         }
 
         @Override
-        public void postMicrostreamActivateDistributorStart() throws HttpResponseException
+        public void postDataGridActivateDistributorStart() throws HttpResponseException
         {
-            LOG.trace("Handling postMicrostreamActivateDistributorStart request");
+            LOG.trace("Handling postDataGridActivateDistributorStart request");
             this.handleRequest(() ->
             {
                 if (!this.storageNodeManager.isDistributor())
@@ -299,28 +299,28 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamBackup(PostMicrostreamBackup.Body body) throws HttpResponseException
+        public void postDataGridBackup(PostBackup.Body body) throws HttpResponseException
         {
-            LOG.trace("Handling postMicrostreamBackup request");
+            LOG.trace("Handling postDataGridBackup request");
             this.handleRequest(() -> this.backupNodeManager.createStorageBackup(unbox(body.getUseManualSlot())));
         }
 
         @Override
-        public boolean getMicrostreamBackup() throws HttpResponseException
+        public boolean getDataGridBackup() throws HttpResponseException
         {
             return this.handleRequest(this.backupNodeManager::isBackupRunning);
 
         }
 
         @Override
-        public void postMicrostreamUpdates() throws HttpResponseException
+        public void postDataGridUpdates() throws HttpResponseException
         {
-            LOG.trace("Handling postMicrostreamUpdates request");
+            LOG.trace("Handling postDataGridUpdates request");
             this.handleRequest(this.backupNodeManager::stopReadingAtLatestOffset);
         }
 
         @Override
-        public boolean getMicrostreamUpdates() throws HttpResponseException
+        public boolean getDataGridUpdates() throws HttpResponseException
         {
             return this.handleRequest(() ->
             {
@@ -330,9 +330,9 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public void postMicrostreamResumeUpdates() throws HttpResponseException
+        public void postDataGridResumeUpdates() throws HttpResponseException
         {
-            LOG.trace("Handling postMicrostreamResumeUpdates request");
+            LOG.trace("Handling postDataGridResumeUpdates request");
             this.handleRequest(this.backupNodeManager::resumeReading);
         }
 
@@ -356,34 +356,34 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public boolean postMicrostreamActivateDistributorFinish() throws HttpResponseException
+        public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
         {
             // micro nodes are always the distributor
             return true;
         }
 
         @Override
-        public boolean getMicrostreamDistributor() throws HttpResponseException
+        public boolean getDataGridDistributor() throws HttpResponseException
         {
             // micro nodes are always the distributor
             return true;
         }
 
         @Override
-        public void postMicrostreamActivateDistributorStart() throws HttpResponseException
+        public void postDataGridActivateDistributorStart() throws HttpResponseException
         {
             // micro nodes are always the distributor
         }
 
         @Override
-        public void postMicrostreamBackup(PostMicrostreamBackup.Body body) throws HttpResponseException
+        public void postDataGridBackup(PostBackup.Body body) throws HttpResponseException
         {
-            LOG.trace("Handling postMicrostreamBackup request");
+            LOG.trace("Handling postDataGridBackup request");
             this.handleRequest(this.microNodeManager::createStorageBackup);
         }
 
         @Override
-        public boolean getMicrostreamBackup() throws HttpResponseException
+        public boolean getDataGridBackup() throws HttpResponseException
         {
             return this.handleRequest(this.microNodeManager::isBackupRunning);
         }
@@ -406,79 +406,79 @@ public interface ClusterRestRequestController extends AutoCloseable
         }
 
         @Override
-        public boolean getMicrostreamDistributor() throws HttpResponseException
+        public boolean getDataGridDistributor() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamActivateDistributorStart() throws HttpResponseException
+        public void postDataGridActivateDistributorStart() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean postMicrostreamActivateDistributorFinish() throws HttpResponseException
+        public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void getMicrostreamHealth() throws HttpResponseException
+        public void getDataGridHealth() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void getMicrostreamHealthReady() throws HttpResponseException
+        public void getDataGridHealthReady() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public String getMicrostreamStorageBytes() throws HttpResponseException
+        public String getDataGridStorageBytes() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamBackup(PostMicrostreamBackup.Body body) throws HttpResponseException
+        public void postDataGridBackup(PostBackup.Body body) throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getMicrostreamBackup() throws HttpResponseException
+        public boolean getDataGridBackup() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamUpdates() throws HttpResponseException
+        public void postDataGridUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getMicrostreamUpdates() throws HttpResponseException
+        public boolean getDataGridUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamResumeUpdates() throws HttpResponseException
+        public void postDataGridResumeUpdates() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public void postMicrostreamGc() throws HttpResponseException
+        public void postDataGridGc() throws HttpResponseException
         {
             throw new BadRequestException();
         }
 
         @Override
-        public boolean getMicrostreamGc() throws HttpResponseException
+        public boolean getDataGridGc() throws HttpResponseException
         {
             throw new BadRequestException();
         }

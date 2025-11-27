@@ -16,8 +16,8 @@ package org.eclipse.datagrid.cluster.nodelibrary.springboot;
 
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.*;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.*;
 import org.eclipse.serializer.util.X;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
@@ -28,7 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 @RestController
-@RequestMapping(ClusterRestRouteConfigurations.ROOT_PATH)
+@RequestMapping(StorageNodeRestRouteConfigurations.ROOT_PATH)
 public class SpringBootClusterController
 {
     private final ClusterRestRequestController controller;
@@ -38,109 +38,109 @@ public class SpringBootClusterController
         this.controller = controller;
     }
 
-    @GetMapping(value = GetMicrostreamDistributor.PATH, produces = GetMicrostreamDistributor.PRODUCES)
-    public boolean getMicrostreamDistributor() throws HttpResponseException
+    @GetMapping(value = GetDistributor.PATH, produces = GetDistributor.PRODUCES)
+    public boolean getDataGridDistributor() throws HttpResponseException
     {
-        return this.call(this.controller::getMicrostreamDistributor);
+        return this.call(this.controller::getDataGridDistributor);
     }
 
     @PostMapping(
-        value = PostMicrostreamActivateDistributorStart.PATH,
-        consumes = PostMicrostreamActivateDistributorStart.CONSUMES,
-        produces = PostMicrostreamActivateDistributorStart.PRODUCES
+        value = PostActivateDistributorStart.PATH,
+        consumes = PostActivateDistributorStart.CONSUMES,
+        produces = PostActivateDistributorStart.PRODUCES
     )
-    public void postMicrostreamActivateDistributorStart() throws HttpResponseException
+    public void postDataGridActivateDistributorStart() throws HttpResponseException
     {
-        this.call(this.controller::postMicrostreamActivateDistributorStart);
+        this.call(this.controller::postDataGridActivateDistributorStart);
     }
 
     @PostMapping(
-        value = PostMicrostreamActivateDistributorFinish.PATH,
-        consumes = PostMicrostreamActivateDistributorFinish.CONSUMES,
-        produces = PostMicrostreamActivateDistributorFinish.PRODUCES
+        value = PostActivateDistributorFinish.PATH,
+        consumes = PostActivateDistributorFinish.CONSUMES,
+        produces = PostActivateDistributorFinish.PRODUCES
     )
-    public boolean postMicrostreamActivateDistributorFinish() throws HttpResponseException
+    public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
     {
-        return this.call(this.controller::postMicrostreamActivateDistributorFinish);
+        return this.call(this.controller::postDataGridActivateDistributorFinish);
     }
 
-    @GetMapping(value = GetMicrostreamHealth.PATH, produces = GetMicrostreamHealth.PRODUCES)
-    public void getMicrostreamHealth() throws HttpResponseException
+    @GetMapping(value = GetHealth.PATH, produces = GetHealth.PRODUCES)
+    public void getDataGridHealth() throws HttpResponseException
     {
-        this.call(this.controller::getMicrostreamHealth);
+        this.call(this.controller::getDataGridHealth);
     }
 
-    @GetMapping(value = GetMicrostreamHealthReady.PATH, produces = GetMicrostreamHealthReady.PRODUCES)
+    @GetMapping(value = GetHealthReady.PATH, produces = GetHealthReady.PRODUCES)
     @Async
-    public CompletableFuture<Void> getMicrostreamHealthReady() throws HttpResponseException
+    public CompletableFuture<Void> getDataGridHealthReady() throws HttpResponseException
     {
-        this.call(this.controller::getMicrostreamHealthReady);
+        this.call(this.controller::getDataGridHealthReady);
         return CompletableFuture.completedFuture(null);
     }
 
-    @GetMapping(value = GetMicrostreamStorageBytes.PATH, produces = GetMicrostreamStorageBytes.PRODUCES)
+    @GetMapping(value = GetStorageBytes.PATH, produces = GetStorageBytes.PRODUCES)
     @Async
-    public CompletableFuture<String> getMicrostreamStorageBytes() throws HttpResponseException
+    public CompletableFuture<String> getDataGridStorageBytes() throws HttpResponseException
     {
-        return CompletableFuture.completedFuture(this.call(this.controller::getMicrostreamStorageBytes));
+        return CompletableFuture.completedFuture(this.call(this.controller::getDataGridStorageBytes));
     }
 
     @PostMapping(
-        value = PostMicrostreamBackup.PATH,
-        consumes = PostMicrostreamBackup.CONSUMES,
-        produces = PostMicrostreamBackup.PRODUCES
+        value = PostBackup.PATH,
+        consumes = PostBackup.CONSUMES,
+        produces = PostBackup.PRODUCES
     )
-    public void postMicrostreamBackup(@RequestBody final PostMicrostreamBackup.Body body) throws HttpResponseException
+    public void postDataGridBackup(@RequestBody final PostBackup.Body body) throws HttpResponseException
     {
-        this.call(() -> this.controller.postMicrostreamBackup(body));
+        this.call(() -> this.controller.postDataGridBackup(body));
     }
 
     @PostMapping(
-        value = PostMicrostreamUpdates.PATH,
-        consumes = PostMicrostreamUpdates.CONSUMES,
-        produces = PostMicrostreamUpdates.PRODUCES
+        value = PostUpdates.PATH,
+        consumes = PostUpdates.CONSUMES,
+        produces = PostUpdates.PRODUCES
     )
-    public void postMicrostreamUpdates() throws HttpResponseException
+    public void postDataGridUpdates() throws HttpResponseException
     {
-        this.call(this.controller::postMicrostreamUpdates);
+        this.call(this.controller::postDataGridUpdates);
     }
 
-    @GetMapping(value = GetMicrostreamBackup.PATH, produces = GetMicrostreamBackup.PRODUCES)
-    public boolean getMicrostreamBackup() throws HttpResponseException
+    @GetMapping(value = GetBackup.PATH, produces = GetBackup.PRODUCES)
+    public boolean getDataGridBackup() throws HttpResponseException
     {
-        return this.call(this.controller::getMicrostreamBackup);
+        return this.call(this.controller::getDataGridBackup);
     }
 
-    @GetMapping(value = GetMicrostreamUpdates.PATH, produces = GetMicrostreamUpdates.PRODUCES)
-    public boolean getMicrostreamUpdates() throws HttpResponseException
+    @GetMapping(value = GetUpdates.PATH, produces = GetUpdates.PRODUCES)
+    public boolean getDataGridUpdates() throws HttpResponseException
     {
-        return this.call(this.controller::getMicrostreamUpdates);
+        return this.call(this.controller::getDataGridUpdates);
     }
 
     @PostMapping(
-        value = PostMicrostreamResumeUpdates.PATH,
-        consumes = PostMicrostreamResumeUpdates.CONSUMES,
-        produces = PostMicrostreamResumeUpdates.PRODUCES
+        value = PostResumeUpdates.PATH,
+        consumes = PostResumeUpdates.CONSUMES,
+        produces = PostResumeUpdates.PRODUCES
     )
-    public void postMicrostreamResumeUpdates() throws HttpResponseException
+    public void postDataGridResumeUpdates() throws HttpResponseException
     {
-        this.call(this.controller::postMicrostreamResumeUpdates);
+        this.call(this.controller::postDataGridResumeUpdates);
     }
 
     @PostMapping(
-        value = PostMicrostreamGc.PATH,
-        consumes = PostMicrostreamGc.CONSUMES,
-        produces = PostMicrostreamGc.PRODUCES
+        value = PostGc.PATH,
+        consumes = PostGc.CONSUMES,
+        produces = PostGc.PRODUCES
     )
-    public void postMicrostreamGc() throws HttpResponseException
+    public void postDataGridGc() throws HttpResponseException
     {
-        this.call(this.controller::postMicrostreamGc);
+        this.call(this.controller::postDataGridGc);
     }
 
-    @GetMapping(value = GetMicrostreamGc.PATH, produces = GetMicrostreamGc.PRODUCES)
-    public boolean getMicrostreamGc() throws HttpResponseException
+    @GetMapping(value = GetGc.PATH, produces = GetGc.PRODUCES)
+    public boolean getDataGridGc() throws HttpResponseException
     {
-        return this.call(this.controller::getMicrostreamGc);
+        return this.call(this.controller::getDataGridGc);
     }
 
     private <T> T call(final Supplier<T> s)

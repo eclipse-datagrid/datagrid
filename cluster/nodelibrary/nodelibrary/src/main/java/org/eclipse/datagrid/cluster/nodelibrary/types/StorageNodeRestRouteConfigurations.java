@@ -14,13 +14,12 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * #L%
  */
 
-public final class ClusterRestRouteConfigurations
+public final class StorageNodeRestRouteConfigurations
 {
     public static final class MediaTypes
     {
         private static final String WILDCARD = "*/*";
         private static final String APPLICATION_JSON = "application/json";
-        private static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
         private static final String TEXT_PLAIN = "text/plain";
 
         private MediaTypes()
@@ -30,69 +29,69 @@ public final class ClusterRestRouteConfigurations
 
     public static final String ROOT_PATH = "/eclipse-datagrid-cluster-controller";
 
-    public static final class GetMicrostreamDistributor
+    public static final class GetDistributor
     {
         public static final String PATH = "/eclipse-datagrid-distributor";
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-        private GetMicrostreamDistributor()
+        private GetDistributor()
         {
         }
     }
 
-    public static final class PostMicrostreamActivateDistributorStart
+    public static final class PostActivateDistributorStart
     {
         public static final String PATH = "/eclipse-datagrid-activate-distributor/start";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
-        private PostMicrostreamActivateDistributorStart()
+        private PostActivateDistributorStart()
         {
         }
     }
 
-    public static final class PostMicrostreamActivateDistributorFinish
+    public static final class PostActivateDistributorFinish
     {
         public static final String PATH = "/eclipse-datagrid-activate-distributor/finish";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-        private PostMicrostreamActivateDistributorFinish()
+        private PostActivateDistributorFinish()
         {
         }
     }
 
-    public static final class GetMicrostreamHealth
+    public static final class GetHealth
     {
         public static final String PATH = "/eclipse-datagrid-health";
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
-        private GetMicrostreamHealth()
+        private GetHealth()
         {
         }
     }
 
-    public static final class GetMicrostreamHealthReady
+    public static final class GetHealthReady
     {
         public static final String PATH = "/eclipse-datagrid-health/ready";
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
-        private GetMicrostreamHealthReady()
+        private GetHealthReady()
         {
         }
     }
 
-    public static final class GetMicrostreamStorageBytes
+    public static final class GetStorageBytes
     {
         public static final String PATH = "/eclipse-datagrid-storage-bytes";
         public static final String PRODUCES = MediaTypes.TEXT_PLAIN;
 
-        private GetMicrostreamStorageBytes()
+        private GetStorageBytes()
         {
         }
     }
 
-    public static final class PostMicrostreamBackup
+    public static final class PostBackup
     {
         public static final String PATH = "/eclipse-datagrid-backup";
         public static final String CONSUMES = MediaTypes.APPLICATION_JSON;
@@ -113,76 +112,76 @@ public final class ClusterRestRouteConfigurations
             }
         }
 
-        private PostMicrostreamBackup()
+        private PostBackup()
         {
         }
     }
 
-    public static final class GetMicrostreamBackup
+    public static final class GetBackup
     {
         public static final String PATH = "/eclipse-datagrid-backup";
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
 
-        private GetMicrostreamBackup()
+        private GetBackup()
         {
         }
     }
 
-    public static final class PostMicrostreamUpdates
+    public static final class PostUpdates
     {
         public static final String PATH = "/eclipse-datagrid-updates";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
-        private PostMicrostreamUpdates()
+        private PostUpdates()
         {
         }
     }
 
-    public static final class GetMicrostreamUpdates
+    public static final class GetUpdates
     {
         public static final String PATH = "/eclipse-datagrid-updates";
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-        private GetMicrostreamUpdates()
+        private GetUpdates()
         {
         }
     }
 
-    public static final class PostMicrostreamResumeUpdates
+    public static final class PostResumeUpdates
     {
         public static final String PATH = "/eclipse-datagrid-resume-updates";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
-        private PostMicrostreamResumeUpdates()
+        private PostResumeUpdates()
         {
         }
     }
 
-    public static final class PostMicrostreamGc
+    public static final class PostGc
     {
         public static final String PATH = "/eclipse-datagrid-gc";
         public static final String CONSUMES = MediaTypes.WILDCARD;
         public static final String PRODUCES = MediaTypes.WILDCARD;
 
-        private PostMicrostreamGc()
+        private PostGc()
         {
         }
     }
 
-    public static final class GetMicrostreamGc
+    public static final class GetGc
     {
         public static final String PATH = "/eclipse-datagrid-gc";
         public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-        private GetMicrostreamGc()
+        private GetGc()
         {
         }
     }
 
-    private ClusterRestRouteConfigurations()
+    private StorageNodeRestRouteConfigurations()
     {
     }
 }

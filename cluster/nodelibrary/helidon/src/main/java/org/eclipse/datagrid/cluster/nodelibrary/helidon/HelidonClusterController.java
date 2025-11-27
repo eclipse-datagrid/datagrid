@@ -18,14 +18,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.*;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
-import static org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.*;
+import static org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.*;
 
 
 @ApplicationScoped
-@Path(ClusterRestRouteConfigurations.ROOT_PATH)
+@Path(StorageNodeRestRouteConfigurations.ROOT_PATH)
 public class HelidonClusterController
 {
     private final ClusterRestRequestController requestController;
@@ -36,112 +36,112 @@ public class HelidonClusterController
     }
 
     @GET
-    @Path(GetMicrostreamDistributor.PATH)
-    @Produces(GetMicrostreamDistributor.PRODUCES)
-    public boolean getMicrostreamDistributor() throws HttpResponseException
+    @Path(GetDistributor.PATH)
+    @Produces(GetDistributor.PRODUCES)
+    public boolean getDataGridDistributor() throws HttpResponseException
     {
-        return this.requestController.getMicrostreamDistributor();
+        return this.requestController.getDataGridDistributor();
     }
 
     @POST
-    @Path(PostMicrostreamActivateDistributorStart.PATH)
-    @Consumes(PostMicrostreamActivateDistributorStart.CONSUMES)
-    @Produces(PostMicrostreamActivateDistributorStart.PRODUCES)
-    public void postMicrostreamActivateDistributorStart() throws HttpResponseException
+    @Path(PostActivateDistributorStart.PATH)
+    @Consumes(PostActivateDistributorStart.CONSUMES)
+    @Produces(PostActivateDistributorStart.PRODUCES)
+    public void postDataGridActivateDistributorStart() throws HttpResponseException
     {
-        this.requestController.postMicrostreamActivateDistributorStart();
+        this.requestController.postDataGridActivateDistributorStart();
     }
 
     @POST
-    @Path(PostMicrostreamActivateDistributorFinish.PATH)
-    @Consumes(PostMicrostreamActivateDistributorFinish.CONSUMES)
-    @Produces(PostMicrostreamActivateDistributorFinish.PRODUCES)
-    public boolean postMicrostreamActivateDistributorFinish() throws HttpResponseException
+    @Path(PostActivateDistributorFinish.PATH)
+    @Consumes(PostActivateDistributorFinish.CONSUMES)
+    @Produces(PostActivateDistributorFinish.PRODUCES)
+    public boolean postDataGridActivateDistributorFinish() throws HttpResponseException
     {
-        return this.requestController.postMicrostreamActivateDistributorFinish();
+        return this.requestController.postDataGridActivateDistributorFinish();
     }
 
     @GET
-    @Path(GetMicrostreamHealth.PATH)
-    @Produces(GetMicrostreamHealth.PRODUCES)
-    public void getMicrostreamHealth() throws HttpResponseException
+    @Path(GetHealth.PATH)
+    @Produces(GetHealth.PRODUCES)
+    public void getDataGridHealth() throws HttpResponseException
     {
-        this.requestController.getMicrostreamHealth();
+        this.requestController.getDataGridHealth();
     }
 
     @GET
-    @Path(GetMicrostreamHealthReady.PATH)
-    @Produces(GetMicrostreamHealthReady.PRODUCES)
-    public void getMicrostreamHealthReady() throws HttpResponseException
+    @Path(GetHealthReady.PATH)
+    @Produces(GetHealthReady.PRODUCES)
+    public void getDataGridHealthReady() throws HttpResponseException
     {
-        this.requestController.getMicrostreamHealthReady();
+        this.requestController.getDataGridHealthReady();
     }
 
     @GET
-    @Path(GetMicrostreamStorageBytes.PATH)
-    @Produces(GetMicrostreamStorageBytes.PRODUCES)
-    public String getMicrostreamStorageBytes() throws HttpResponseException
+    @Path(GetStorageBytes.PATH)
+    @Produces(GetStorageBytes.PRODUCES)
+    public String getDataGridStorageBytes() throws HttpResponseException
     {
-        return this.requestController.getMicrostreamStorageBytes();
+        return this.requestController.getDataGridStorageBytes();
     }
 
     @POST
-    @Path(PostMicrostreamBackup.PATH)
-    @Consumes(PostMicrostreamBackup.CONSUMES)
-    @Produces(PostMicrostreamBackup.PRODUCES)
-    public void postMicrostreamBackup(@RequestBody final PostMicrostreamBackup.Body body) throws HttpResponseException
+    @Path(PostBackup.PATH)
+    @Consumes(PostBackup.CONSUMES)
+    @Produces(PostBackup.PRODUCES)
+    public void postDataGridBackup(@RequestBody final PostBackup.Body body) throws HttpResponseException
     {
-        this.requestController.postMicrostreamBackup(body);
+        this.requestController.postDataGridBackup(body);
     }
 
     @GET
-    @Path(GetMicrostreamBackup.PATH)
-    @Produces(GetMicrostreamBackup.PRODUCES)
-    public boolean getMicrostreamBackup() throws HttpResponseException
+    @Path(GetBackup.PATH)
+    @Produces(GetBackup.PRODUCES)
+    public boolean getDataGridBackup() throws HttpResponseException
     {
-        return this.requestController.getMicrostreamBackup();
+        return this.requestController.getDataGridBackup();
     }
 
     @POST
-    @Path(PostMicrostreamUpdates.PATH)
-    @Consumes(PostMicrostreamUpdates.CONSUMES)
-    @Produces(PostMicrostreamUpdates.PRODUCES)
-    public void postMicrostreamUpdates() throws HttpResponseException
+    @Path(PostUpdates.PATH)
+    @Consumes(PostUpdates.CONSUMES)
+    @Produces(PostUpdates.PRODUCES)
+    public void postDataGridUpdates() throws HttpResponseException
     {
-        this.requestController.postMicrostreamUpdates();
+        this.requestController.postDataGridUpdates();
     }
 
     @GET
-    @Path(GetMicrostreamUpdates.PATH)
-    @Produces(GetMicrostreamUpdates.PRODUCES)
-    public boolean getMicrostreamUpdates() throws HttpResponseException
+    @Path(GetUpdates.PATH)
+    @Produces(GetUpdates.PRODUCES)
+    public boolean getDataGridUpdates() throws HttpResponseException
     {
-        return this.requestController.getMicrostreamUpdates();
+        return this.requestController.getDataGridUpdates();
     }
 
     @POST
-    @Path(PostMicrostreamResumeUpdates.PATH)
-    @Consumes(PostMicrostreamResumeUpdates.CONSUMES)
-    @Produces(PostMicrostreamResumeUpdates.PRODUCES)
-    public void postMicrostreamResumeUpdates() throws HttpResponseException
+    @Path(PostResumeUpdates.PATH)
+    @Consumes(PostResumeUpdates.CONSUMES)
+    @Produces(PostResumeUpdates.PRODUCES)
+    public void postDataGridResumeUpdates() throws HttpResponseException
     {
-        this.requestController.postMicrostreamResumeUpdates();
+        this.requestController.postDataGridResumeUpdates();
     }
 
     @POST
-    @Path(PostMicrostreamGc.PATH)
-    @Consumes(PostMicrostreamGc.CONSUMES)
-    @Produces(PostMicrostreamGc.PRODUCES)
-    public void postMicrostreamGc() throws HttpResponseException
+    @Path(PostGc.PATH)
+    @Consumes(PostGc.CONSUMES)
+    @Produces(PostGc.PRODUCES)
+    public void postDataGridGc() throws HttpResponseException
     {
-        this.requestController.postMicrostreamGc();
+        this.requestController.postDataGridGc();
     }
 
     @GET
-    @Path(GetMicrostreamGc.PATH)
-    @Produces(GetMicrostreamGc.PRODUCES)
-    public boolean getMicrostreamGc() throws HttpResponseException
+    @Path(GetGc.PATH)
+    @Produces(GetGc.PRODUCES)
+    public boolean getDataGridGc() throws HttpResponseException
     {
-        return this.requestController.getMicrostreamGc();
+        return this.requestController.getDataGridGc();
     }
 }
