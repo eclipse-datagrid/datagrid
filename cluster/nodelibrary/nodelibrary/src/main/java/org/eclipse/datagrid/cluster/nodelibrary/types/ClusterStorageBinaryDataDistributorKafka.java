@@ -257,7 +257,7 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
         private Thread createThread(final Runnable runnable)
         {
             final Thread thread = new Thread(runnable);
-            thread.setName("MicroStream-StorageDistributor-Kafka");
+            thread.setName("Eclipse-Datagrid-StorageDistributor-Kafka");
             return thread;
         }
 
