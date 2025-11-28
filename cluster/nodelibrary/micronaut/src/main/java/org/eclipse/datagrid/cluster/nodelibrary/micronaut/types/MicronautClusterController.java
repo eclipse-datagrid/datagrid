@@ -1,5 +1,19 @@
 package org.eclipse.datagrid.cluster.nodelibrary.micronaut.types;
 
+/*-
+ * #%L
+ * Eclipse Data Grid Cluster Nodelibrary Micronaut
+ * %%
+ * Copyright (C) 2025 MicroStream Software
+ * %%
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ * #L%
+ */
+
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
@@ -18,21 +32,6 @@ import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurat
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamUpdates;
 
 import io.micronaut.core.annotation.Introspected;
-
-/*-
- * #%L
- * Eclipse Data Grid Cluster Nodelibrary Micronaut
- * %%
- * Copyright (C) 2025 MicroStream Software
- * %%
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- * #L%
- */
-
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MutableHttpResponse;
@@ -43,7 +42,6 @@ import io.micronaut.http.annotation.Post;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.serde.annotation.SerdeImport;
-
 
 @Controller(ClusterRestRouteConfigurations.ROOT_PATH)
 @Introspected(classes = PostMicrostreamBackup.Body.class)
