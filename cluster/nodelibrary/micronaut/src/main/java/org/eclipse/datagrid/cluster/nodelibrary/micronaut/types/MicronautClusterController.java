@@ -14,6 +14,24 @@ package org.eclipse.datagrid.cluster.nodelibrary.micronaut.types;
  * #L%
  */
 
+import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamBackup;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamDistributor;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamGc;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamHealth;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamHealthReady;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamStorageBytes;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamUpdates;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamActivateDistributorFinish;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamActivateDistributorStart;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamBackup;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamGc;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamResumeUpdates;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamUpdates;
+
+import io.micronaut.core.annotation.Introspected;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MutableHttpResponse;
@@ -23,14 +41,11 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
-import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
-
-import static org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.*;
-
+import io.micronaut.serde.annotation.SerdeImport;
 
 @Controller(ClusterRestRouteConfigurations.ROOT_PATH)
+@Introspected(classes = PostMicrostreamBackup.Body.class)
+@SerdeImport(PostMicrostreamBackup.Body.class)
 public class MicronautClusterController
 {
     private final ClusterRestRequestController controller;
