@@ -37,9 +37,9 @@ public class ClusterStorageBinaryDistributedKafka
         return "packet-count";
     }
 
-    public static String keyMicrostreamOffset()
+    public static String keyMessageIndex()
     {
-        return "microstreamOffset";
+        return "messageIndex";
     }
 
     public static String keyPacketIndex()
@@ -63,14 +63,14 @@ public class ClusterStorageBinaryDistributedKafka
         final int messageLength,
         final int packetIndex,
         final int packetCount,
-        final long microstreamOffset
+        final long messageIndex
     )
     {
         headers.add(keyMessageType(), serializeString(messageType.name()));
         headers.add(keyMessageLength(), serializeInt(messageLength));
         headers.add(keyPacketIndex(), serializeInt(packetIndex));
         headers.add(keyPacketCount(), serializeInt(packetCount));
-        headers.add(keyMicrostreamOffset(), serializeLong(microstreamOffset));
+        headers.add(keyMessageIndex(), serializeLong(messageIndex));
     }
 
     public static MessageType messageType(final Headers headers)
@@ -93,9 +93,9 @@ public class ClusterStorageBinaryDistributedKafka
         return deserializeInt(headers.lastHeader(keyPacketCount()).value());
     }
 
-    public static long microstreamOffset(final Headers headers)
+    public static long messageIndex(final Headers headers)
     {
-        return deserializeLong(headers.lastHeader(keyMicrostreamOffset()).value());
+        return deserializeLong(headers.lastHeader(keyMessageIndex()).value());
     }
 
     public static byte[] serializeString(final String value)

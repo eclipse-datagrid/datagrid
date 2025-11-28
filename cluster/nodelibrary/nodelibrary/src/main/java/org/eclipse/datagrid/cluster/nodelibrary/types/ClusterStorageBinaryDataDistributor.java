@@ -22,9 +22,9 @@ import org.eclipse.serializer.persistence.binary.types.Binary;
 
 public interface ClusterStorageBinaryDataDistributor extends StorageBinaryDataDistributor
 {
-    void offset(long offset);
+    void messageIndex(long index);
 
-    long offset();
+    long messageIndex();
 
     void ignoreDistribution(boolean ignore);
 
@@ -63,15 +63,15 @@ public interface ClusterStorageBinaryDataDistributor extends StorageBinaryDataDi
         }
 
         @Override
-        public void offset(final long offset)
+        public void messageIndex(final long index)
         {
-            this.delegate.offset(offset);
+            this.delegate.messageIndex(index);
         }
 
         @Override
-        public long offset()
+        public long messageIndex()
         {
-            return this.delegate.offset();
+            return this.delegate.messageIndex();
         }
 
         @Override

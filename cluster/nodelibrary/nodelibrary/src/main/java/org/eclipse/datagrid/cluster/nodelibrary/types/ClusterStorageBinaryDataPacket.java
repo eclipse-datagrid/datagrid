@@ -25,11 +25,11 @@ import static org.eclipse.serializer.util.X.notNull;
 
 public interface ClusterStorageBinaryDataPacket extends StorageBinaryDataPacket
 {
-    long microstreamOffset();
+    long messageIndex();
 
-    public static ClusterStorageBinaryDataPacket New(final MessageType messageType, final int messageLength, final int packetIndex, final int packetCount, final long microstreamOffset, final ByteBuffer buffer)
+    public static ClusterStorageBinaryDataPacket New(final MessageType messageType, final int messageLength, final int packetIndex, final int packetCount, final long messageIndex, final ByteBuffer buffer)
     {
-        return new Default(notNull(messageType), notNegative(messageLength), notNegative(packetIndex), positive(packetCount), microstreamOffset, notNull(buffer));
+        return new Default(notNull(messageType), notNegative(messageLength), notNegative(packetIndex), positive(packetCount), messageIndex, notNull(buffer));
     }
 
     public static class Default implements ClusterStorageBinaryDataPacket
@@ -38,16 +38,16 @@ public interface ClusterStorageBinaryDataPacket extends StorageBinaryDataPacket
         private final int messageLength;
         private final int packetIndex;
         private final int packetCount;
-        private final long microstreamOffset;
+        private final long messageIndex;
         private final ByteBuffer buffer;
 
-        private Default(final MessageType messageType, final int messageLength, final int packetIndex, final int packetCount, final long microstreamOffset, final ByteBuffer buffer)
+        private Default(final MessageType messageType, final int messageLength, final int packetIndex, final int packetCount, final long messageIndex, final ByteBuffer buffer)
         {
             this.messageType = messageType;
             this.messageLength = messageLength;
             this.packetIndex = packetIndex;
             this.packetCount = packetCount;
-            this.microstreamOffset = microstreamOffset;
+            this.messageIndex = messageIndex;
             this.buffer = buffer;
         }
 
@@ -76,9 +76,9 @@ public interface ClusterStorageBinaryDataPacket extends StorageBinaryDataPacket
         }
 
         @Override
-        public long microstreamOffset()
+        public long messageIndex()
         {
-            return this.microstreamOffset;
+            return this.messageIndex;
         }
 
         @Override

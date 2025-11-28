@@ -64,7 +64,7 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
 
         private final String topicName;
         private final KafkaProducer<String, byte[]> producer;
-        private long offset = Long.MIN_VALUE;
+        private long messageIndex = Long.MIN_VALUE;
         private boolean ignoreDistribution = false;
 
         protected Abstract(final String topicName, final KafkaPropertiesProvider kafkaPropertiesProvider)
@@ -147,7 +147,7 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
 
                 final var kafkaRecord = new ProducerRecord<String, byte[]>(this.topicName, packet);
 
-                ++this.offset;
+                ++this.messageIndex;
 
                 ClusterStorageBinaryDistributedKafka.addPacketHeaders(
                     kafkaRecord.headers(),
@@ -155,12 +155,12 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
                     messageSize,
                     packetIndex,
                     packetCount,
-                    this.offset
+                    this.messageIndex
                 );
 
-                if (LOG.isDebugEnabled() && this.offset % 10_000 == 0)
+                if (LOG.isDebugEnabled() && this.messageIndex % 10_000 == 0)
                 {
-                    LOG.debug("Sending kafka packet at offset {}", this.offset);
+                    LOG.debug("Sending kafka packet at message index {}", this.messageIndex);
                 }
                 this.producer.send(kafkaRecord);
 
@@ -198,16 +198,16 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
         }
 
         @Override
-        public void offset(final long offset)
+        public void messageIndex(final long index)
         {
-            LOG.info("Setting distributor offset to {}", offset);
-            this.offset = offset;
+            LOG.info("Setting distributor message index to {}", index);
+            this.messageIndex = index;
         }
 
         @Override
-        public long offset()
+        public long messageIndex()
         {
-            return this.offset;
+            return this.messageIndex;
         }
 
         @Override
@@ -257,7 +257,7 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
         private Thread createThread(final Runnable runnable)
         {
             final Thread thread = new Thread(runnable);
-            thread.setName("MicroStream-StorageDistributor-Kafka");
+            thread.setName("Eclipse-Datagrid-StorageDistributor-Kafka");
             return thread;
         }
 

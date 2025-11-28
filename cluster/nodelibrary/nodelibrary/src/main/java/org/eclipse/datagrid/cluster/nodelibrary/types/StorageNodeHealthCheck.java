@@ -58,7 +58,7 @@ public interface StorageNodeHealthCheck extends AutoCloseable
         private static final Logger LOG = LoggerFactory.getLogger(StorageNodeHealthCheck.class);
         private static final long KAFKA_MESSAGE_LAG_TOLERANCE = 10;
 
-        private final KafkaOffsetProvider kafka;
+        private final KafkaMessageInfoProvider kafka;
         private final StorageController storageController;
         private final ClusterStorageBinaryDataClient dataClient;
 
@@ -72,7 +72,7 @@ public interface StorageNodeHealthCheck extends AutoCloseable
             final KafkaPropertiesProvider kafkaPropertiesProvider
         )
         {
-            this.kafka = KafkaOffsetProvider.New(topic, groupId, kafkaPropertiesProvider);
+            this.kafka = KafkaMessageInfoProvider.New(topic, groupId, kafkaPropertiesProvider);
             this.storageController = storageController;
             this.dataClient = dataClient;
         }
@@ -135,25 +135,25 @@ public interface StorageNodeHealthCheck extends AutoCloseable
 
             return this.tryRun(() ->
             {
-                final long latestOffset = this.kafka.provideLatestOffset();
-                final long currentOffset = this.dataClient.offsetInfo().msOffset();
+                final long latestMessageIndex = this.kafka.provideLatestMessageIndex();
+                final long currentMessageIndex = this.dataClient.messageInfo().messageIndex();
 
-                if (LOG.isTraceEnabled() && latestOffset - currentOffset > 1_000)
+                if (LOG.isTraceEnabled() && latestMessageIndex - currentMessageIndex > 1_000)
                 {
                     LOG.trace(
-                        "Current Offset: {}, Latest Offset: {}, Difference: {}",
-                        currentOffset,
-                        latestOffset,
-                        latestOffset - currentOffset
+                        "Current MessageIndex: {}, Latest MessageIndex: {}, Difference: {}",
+                        currentMessageIndex,
+                        latestMessageIndex,
+                        latestMessageIndex - currentMessageIndex
                     );
                 }
 
-                if (currentOffset >= latestOffset)
+                if (currentMessageIndex >= latestMessageIndex)
                 {
                     return true;
                 }
 
-                return latestOffset - currentOffset <= KAFKA_MESSAGE_LAG_TOLERANCE;
+                return latestMessageIndex - currentMessageIndex <= KAFKA_MESSAGE_LAG_TOLERANCE;
             });
         }
 
@@ -173,7 +173,7 @@ public interface StorageNodeHealthCheck extends AutoCloseable
             }
             catch (final KafkaException e)
             {
-                LOG.error("Failed to close kafka offset getter", e);
+                LOG.error("Failed to close KafkaMessageInfoProvider", e);
             }
 
             this.isActive = false;
