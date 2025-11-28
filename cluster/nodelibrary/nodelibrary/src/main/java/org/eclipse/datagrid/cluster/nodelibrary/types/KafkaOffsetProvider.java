@@ -110,23 +110,23 @@ public class KafkaOffsetProvider implements AutoCloseable
 	 */
 	public long provideLatestOffset() throws KafkaException
 	{
-		long lastMicrostreamOffset = Long.MIN_VALUE;
+		long lastMessageIndex = Long.MIN_VALUE;
 		
 		this.seekToLastOffsets();
 		
 //		LOG.trace("Polling latest messages for topic {}", this.topic);
 		for (final var rec : this.kafka.poll(POLL_TIMEOUT))
 		{
-            final long microstreamOffset = ClusterStorageBinaryDistributedKafka.deserializeLong(
-                rec.headers().lastHeader(ClusterStorageBinaryDistributedKafka.keyMicrostreamOffset()).value()
+            final long messageIndex = ClusterStorageBinaryDistributedKafka.deserializeLong(
+                rec.headers().lastHeader(ClusterStorageBinaryDistributedKafka.keyMessageIndex()).value()
             );
-			if (microstreamOffset > lastMicrostreamOffset)
+			if (messageIndex > lastMessageIndex)
 			{
-				lastMicrostreamOffset = microstreamOffset;
+				lastMessageIndex = messageIndex;
 			}
 		}
 		
-		return lastMicrostreamOffset;
+		return lastMessageIndex;
 	}
 
     public OffsetInfo provideLatestOffsetInfo()

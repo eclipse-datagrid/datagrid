@@ -31,9 +31,9 @@ public interface StorageNodeManager extends ClusterNodeManager
 
     boolean finishDistributonSwitch() throws NotADistributorException;
 
-    long getCurrentMicrostreamOffset();
+    long getCurrentMessageIndex();
 
-    long getLatestMicrostreamOffset();
+    long getLatestMessageIndex();
 
 
     static StorageNodeManager New(
@@ -185,7 +185,7 @@ public interface StorageNodeManager extends ClusterNodeManager
         }
 
         @Override
-        public long getCurrentMicrostreamOffset()
+        public long getCurrentMessageIndex()
         {
             if (this.isDistributor())
             {
@@ -198,7 +198,7 @@ public interface StorageNodeManager extends ClusterNodeManager
         }
 
         @Override
-        public long getLatestMicrostreamOffset()
+        public long getLatestMessageIndex()
         {
             return this.kafkaOffsetProvider.provideLatestOffset();
         }

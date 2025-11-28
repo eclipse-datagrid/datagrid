@@ -368,19 +368,19 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
 
             for (final var packet : packets)
             {
-                if (this.cachedOffset >= packet.microstreamOffset())
+                if (this.cachedOffset >= packet.messageIndex())
 
                 {
                     LOG.warn(
                         "Skipping packet with offset {} (current: {})",
-                        packet.microstreamOffset(),
+                        packet.messageIndex(),
                         this.cachedOffset
                     );
                     continue;
                 }
 
 
-                this.cachedOffset = packet.microstreamOffset();
+                this.cachedOffset = packet.messageIndex();
 
 
 
@@ -417,7 +417,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                 ClusterStorageBinaryDistributedKafka.messageLength(headers),
                 ClusterStorageBinaryDistributedKafka.packetIndex(headers),
                 ClusterStorageBinaryDistributedKafka.packetCount(headers),
-                ClusterStorageBinaryDistributedKafka.microstreamOffset(headers),
+                ClusterStorageBinaryDistributedKafka.messageIndex(headers),
                 ByteBuffer.wrap(record.value())
             );
         }
