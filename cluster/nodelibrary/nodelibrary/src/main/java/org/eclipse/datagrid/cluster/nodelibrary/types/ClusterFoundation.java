@@ -101,9 +101,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
     F setAfterDataMessageConsumedListener(AfterDataMessageConsumedListener listener);
 
-    StoredOffsetManager getStoredOffsetManager();
+    StoredMessageIndexManager getStoredMessageIndexManager();
 
-    F setStoredOffsetManager(StoredOffsetManager manager);
+    F setStoredMessageIndexManager(StoredMessageIndexManager manager);
 
     StorageBackupManager getStorageBackupManager();
 
@@ -157,9 +157,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
     F setEnableAsyncDistribution(boolean enable);
 
-    KafkaOffsetProvider getKafkaOffsetProvider();
+    KafkaMessageInfoProvider getKafkaMessageInfoProvider();
 
-    F setKafkaOffsetProvider(KafkaOffsetProvider provider);
+    F setKafkaMessageInfoProvider(KafkaMessageInfoProvider provider);
 
     static ClusterFoundation<?> New()
     {
@@ -201,9 +201,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         private AfterDataMessageConsumedListener afterDataMessageConsumedListener;
         private ClusterStorageBinaryDataMerger dataMerger;
         private ClusterStorageBinaryDataPacketAcceptor dataPacketAcceptor;
-        private StoredOffsetManager storedOffsetManager;
+        private StoredMessageIndexManager storedMessageInfoManager;
         private KafkaPropertiesProvider kafkaPropertiesProvider;
-        private KafkaOffsetProvider kafkaOffsetProvider;
+        private KafkaMessageInfoProvider kafkaMessageInfoProvider;
 
         // cached created types
         private ClusterStorageManager<?> clusterStorageManager;
@@ -223,7 +223,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         {
             // TODO: Hardcoded path
             final var props = this.getNodelibraryPropertiesProvider();
-            final StoredOffsetManager.Creator offsetManagerCreator = StoredOffsetManager::New;
+            final StoredMessageIndexManager.Creator messageIndexManagerCreator = StoredMessageIndexManager::New;
 
             if (props.backupTarget() == BackupTarget.SAAS)
             {
@@ -242,12 +242,12 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 return NetworkArchiveBackupBackend.New(
                     scratchSpace,
                     this.getBackupProxyHttpClient(),
-                    offsetManagerCreator
+                    messageIndexManagerCreator
                 );
             }
             else
             {
-                return FilesystemVolumeBackupBackend.New(Paths.get("/backups"), offsetManagerCreator);
+                return FilesystemVolumeBackupBackend.New(Paths.get("/backups"), messageIndexManagerCreator);
             }
         }
 
@@ -309,7 +309,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             );
         }
 
-        protected KafkaOffsetProvider ensureKafkaOffsetProvider()
+        protected KafkaMessageInfoProvider ensureKafkaMessageInfoProvider()
         {
             final var nodelibProps = this.getNodelibraryPropertiesProvider();
             final var kafkaProps = this.getKafkaPropertiesProvider();
@@ -317,7 +317,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             final String topic = nodelibProps.kafkaTopicName();
             final String groupId = String.format("%s-%s-offsetgetter", topic, nodelibProps.myPodName());
 
-            return KafkaOffsetProvider.New(topic, groupId, kafkaProps);
+            return KafkaMessageInfoProvider.New(topic, groupId, kafkaProps);
         }
 
         protected KafkaPropertiesProvider ensureKafkaPropertiesProvider()
@@ -325,29 +325,29 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             return KafkaPropertiesProvider.New(this.getNodelibraryPropertiesProvider());
         }
 
-        protected StoredOffsetManager ensureStoredOffsetManager()
+        protected StoredMessageIndexManager ensureStoredMessageIndexManager()
         {
             // TODO: Hardcoded path
-            final var offsetPath = Paths.get("/storage/offset");
-            LOG.trace("Creating stored offset manager for offset file at {}", offsetPath);
-            return StoredOffsetManager.New(NioFileSystem.New().ensureFile(offsetPath).tryUseWriting());
+            final var messageInfoPath = Paths.get("/storage/offset");
+            LOG.trace("Creating stored offset manager for offset file at {}", messageInfoPath);
+            return StoredMessageIndexManager.New(NioFileSystem.New().ensureFile(messageInfoPath).tryUseWriting());
         }
 
         protected AfterDataMessageConsumedListener ensureAfterDataMessageConsumedListener()
         {
             final var props = this.getNodelibraryPropertiesProvider();
 
-            final var storedOffsetUpdater = new AfterDataMessageConsumedListener()
+            final var storedMessageInfoUpdater = new AfterDataMessageConsumedListener()
             {
-                final StoredOffsetManager delegate = ClusterFoundation.Default.this.getStoredOffsetManager();
+                final StoredMessageIndexManager delegate = ClusterFoundation.Default.this.getStoredMessageIndexManager();
 
                 @Override
-                public void onChange(final OffsetInfo offsetInfo) throws NodelibraryException
+                public void onChange(final MessageInfo messageInfo) throws NodelibraryException
                 {
                     if (props.isBackupNode())
                     {
-                        // only backup nodes shall update the stored offset
-                        this.delegate.set(offsetInfo);
+                        // only backup nodes shall update the stored message index
+                        this.delegate.set(messageInfo);
                     }
                 }
 
@@ -358,10 +358,10 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 }
             };
             LOG.trace(
-                "Created AfterDataMessageConsumedListener->StoredOffsetManager delegate. WillRun={}",
+                "Created AfterDataMessageConsumedListener->StoredMessageInfoManager delegate. WillRun={}",
                 props.isBackupNode()
             );
-            return storedOffsetUpdater;
+            return storedMessageInfoUpdater;
         }
 
         protected StorageBackupManager ensureStorageBackupManager()
@@ -369,14 +369,14 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             final var props = this.getNodelibraryPropertiesProvider();
             final int maxBackupCount = props.keptBackupsCount();
 
-            final Supplier<OffsetInfo> offsetProvider = this.getClusterStorageBinaryDataClient()::offsetInfo;
+            final Supplier<MessageInfo> messageInfoProvider = this.getClusterStorageBinaryDataClient()::messageInfo;
 
             return StorageBackupManager.New(
                 this.clusterStorageManager,
 
                 maxBackupCount,
                 this.getStorageBackupBackend(),
-                offsetProvider,
+                messageInfoProvider,
                 this.getClusterStorageBinaryDataClient()
             );
         }
@@ -431,7 +431,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 topic,
                 groupId,
                 this.getAfterDataMessageConsumedListener(),
-                this.getStoredOffsetManager().get(),
+                this.getStoredMessageIndexManager().get(),
                 this.getKafkaPropertiesProvider(),
                 doCommitOffset
             );
@@ -483,7 +483,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 this.getStorageNodeHealthCheck(),
                 this.clusterStorageManager,
                 this.getStorageDiskSpaceReader(),
-                this.getKafkaOffsetProvider()
+                this.getKafkaMessageInfoProvider()
             );
         }
 
@@ -961,36 +961,36 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         }
 
         @Override
-        public StoredOffsetManager getStoredOffsetManager()
+        public StoredMessageIndexManager getStoredMessageIndexManager()
         {
-            if (this.storedOffsetManager == null)
+            if (this.storedMessageInfoManager == null)
             {
-                this.storedOffsetManager = this.dispatch(this.ensureStoredOffsetManager());
+                this.storedMessageInfoManager = this.dispatch(this.ensureStoredMessageIndexManager());
             }
-            return this.storedOffsetManager;
+            return this.storedMessageInfoManager;
         }
 
         @Override
-        public F setStoredOffsetManager(final StoredOffsetManager manager)
+        public F setStoredMessageIndexManager(final StoredMessageIndexManager manager)
         {
-            this.storedOffsetManager = manager;
+            this.storedMessageInfoManager = manager;
             return this.$();
         }
 
         @Override
-        public KafkaOffsetProvider getKafkaOffsetProvider()
+        public KafkaMessageInfoProvider getKafkaMessageInfoProvider()
         {
-            if (this.kafkaOffsetProvider == null)
+            if (this.kafkaMessageInfoProvider == null)
             {
-                this.kafkaOffsetProvider = this.dispatch(this.ensureKafkaOffsetProvider());
+                this.kafkaMessageInfoProvider = this.dispatch(this.ensureKafkaMessageInfoProvider());
             }
-            return this.kafkaOffsetProvider;
+            return this.kafkaMessageInfoProvider;
         }
 
         @Override
-        public F setKafkaOffsetProvider(final KafkaOffsetProvider provider)
+        public F setKafkaMessageInfoProvider(final KafkaMessageInfoProvider provider)
         {
-            this.kafkaOffsetProvider = provider;
+            this.kafkaMessageInfoProvider = provider;
             return this.$();
         }
 
@@ -1042,15 +1042,15 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         {
             LOG.info("Starting backup cluster node");
 
-            this.getKafkaOffsetProvider().init();
+            this.getKafkaMessageInfoProvider().init();
 
 
             // TODO: Hardcoded paths
             final var storageParentPath = Paths.get("/storage/");
             final var storageRootPath = storageParentPath.resolve("storage");
 
-            // if we use a downloaded storage, always scroll to the latest offset so we don't read old messages
-            boolean useLatestOffset = false;
+            // if we use a downloaded storage, always scroll to the latest message so we don't read old messages
+            boolean useLatestMessageIndex = false;
             boolean requiresStorageUpload = false;
 
             // don't send messages generated by starting the storage and storing the empty root
@@ -1070,7 +1070,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             {
                 LOG.info("Downloading user uploaded storage");
 
-                useLatestOffset = true;
+                useLatestMessageIndex = true;
                 // since the storage is now different than before the storage nodes
                 // also need the exact same storage
                 requiresStorageUpload = true;
@@ -1088,11 +1088,11 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 LOG.info("Starting with local storage");
             }
 
-            if (useLatestOffset)
+            if (useLatestMessageIndex)
             {
-                final var offsets = this.getKafkaOffsetProvider().provideLatestOffsetInfo();
-                LOG.debug("Set starting offset to offsets: {}", offsets);
-                this.getStoredOffsetManager().set(offsets);
+                final var info = this.getKafkaMessageInfoProvider().provideLatestMessageInfo();
+                LOG.debug("Set starting message info to: {}", info);
+                this.getStoredMessageIndexManager().set(info);
             }
 
             LOG.info("Creating nodelibrary cluster controller");
@@ -1190,7 +1190,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             // TODO: Hardcoded paths
             final var storageParentPath = Paths.get("/storage/");
             final var storageRootPath = storageParentPath.resolve("storage");
-            final var offsetPath = storageParentPath.resolve("offset");
+            final var messageInfoPath = storageParentPath.resolve("offset");
 
             if (Files.exists(storageRootPath))
             {
@@ -1198,15 +1198,15 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 this.deleteDirectory(storageRootPath);
             }
 
-            if (Files.exists(offsetPath))
+            if (Files.exists(messageInfoPath))
             {
                 try
                 {
-                    Files.delete(offsetPath);
+                    Files.delete(messageInfoPath);
                 }
                 catch (final IOException e)
                 {
-                    throw new NodelibraryException("Failed to delete offset file", e);
+                    throw new NodelibraryException("Failed to delete message info file", e);
                 }
             }
 
@@ -1233,7 +1233,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
             // don't send messages generated by starting the storage and storing the empty root
             this.getClusterStorageBinaryDataDistributor().ignoreDistribution(true);
 
-            this.getKafkaOffsetProvider().init();
+            this.getKafkaMessageInfoProvider().init();
 
             final var embeddedStorageFoundation = this.getEmbeddedStorageFoundation();
             // replace the storage live file provider from the provided embedded storage foundation

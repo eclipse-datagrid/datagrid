@@ -316,7 +316,7 @@ public interface ClusterRestRequestController extends AutoCloseable
         public void postUpdates() throws HttpResponseException
         {
             LOG.trace("Handling postDataGridUpdates request");
-            this.handleRequest(this.backupNodeManager::stopReadingAtLatestOffset);
+            this.handleRequest(this.backupNodeManager::stopReadingAtLatestMessage);
         }
 
         @Override

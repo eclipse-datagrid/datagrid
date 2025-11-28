@@ -41,9 +41,9 @@ import static org.eclipse.serializer.util.X.notNull;
 
 public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
 {
-    void stopAtLatestOffset();
+    void stopAtLatestMessage();
 
-    OffsetInfo offsetInfo();
+    MessageInfo messageInfo();
 
     boolean isRunning();
 
@@ -55,7 +55,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         final String topicName,
         final String groupId,
         final AfterDataMessageConsumedListener offsetChangedListener,
-        final OffsetInfo startingOffsetInfo,
+        final MessageInfo startingMessageInfo,
         final KafkaPropertiesProvider kafkaPropertiesProvider,
         final boolean doCommitOffset
     )
@@ -65,7 +65,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
             notNull(topicName),
             notNull(groupId),
             notNull(offsetChangedListener),
-            notNull(startingOffsetInfo),
+            notNull(startingMessageInfo),
             notNull(kafkaPropertiesProvider),
             doCommitOffset
         );
@@ -90,9 +90,9 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         private final KafkaPropertiesProvider kafkaPropertiesProvider;
         private final boolean doCommitOffset;
 
-        private final AtomicReference<OffsetInfo> offsetInfo;
-        private long cachedOffset;
-        private final AtomicBoolean stopAtLatestOffset = new AtomicBoolean();
+        private final AtomicReference<MessageInfo> messageInfo;
+        private long cachedMessageIndex;
+        private final AtomicBoolean stopAtLatestMessage = new AtomicBoolean();
         private final AtomicBoolean requestStop = new AtomicBoolean();
         private final AtomicBoolean running = new AtomicBoolean();
 
@@ -103,7 +103,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
             final String topicName,
             final String groupId,
             final AfterDataMessageConsumedListener offsetChangedListener,
-            final OffsetInfo startingOffsetInfo,
+            final MessageInfo startingMessageInfo,
             final KafkaPropertiesProvider kafkaPropertiesProvider,
             final boolean doCommitOffset
         )
@@ -112,8 +112,8 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
             this.topicName = topicName;
             this.groupId = groupId;
             this.offsetChangedListener = offsetChangedListener;
-            this.offsetInfo = new AtomicReference<>(startingOffsetInfo);
-            this.cachedOffset = startingOffsetInfo.msOffset();
+            this.messageInfo = new AtomicReference<>(startingMessageInfo);
+            this.cachedMessageIndex = startingMessageInfo.messageIndex();
             this.kafkaPropertiesProvider = kafkaPropertiesProvider;
             this.doCommitOffset = doCommitOffset;
         }
@@ -125,9 +125,9 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         }
 
         @Override
-        public OffsetInfo offsetInfo()
+        public MessageInfo messageInfo()
         {
-            return this.offsetInfo.get();
+            return this.messageInfo.get();
         }
 
         @Override
@@ -135,7 +135,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
         {
             if (LOG.isInfoEnabled())
             {
-                LOG.info("Starting kafka data client at offsets {}", this.offsetInfo.get().msOffset());
+                LOG.info("Starting kafka data client at message index {}", this.messageInfo.get().messageIndex());
             }
             this.runner = new Thread(this::tryRun);
             this.runner.start();
@@ -185,8 +185,8 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                 }
 
                 // Seek to correct offsets
-                final var cachedOffsetInfo = this.offsetInfo.get();
-                for (final var entry : cachedOffsetInfo.kafkaPartitionOffsets())
+                final var cachedMessageInfo = this.messageInfo.get();
+                for (final var entry : cachedMessageInfo.kafkaPartitionOffsets())
                 {
                     final var partition = entry.key();
                     final long offset = entry.value();
@@ -195,7 +195,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                 }
                 final var missingPartitions = consumer.assignment()
                     .stream()
-                    .filter(a -> !cachedOffsetInfo.kafkaPartitionOffsets().containsSearched(kv -> kv.key().equals(a)))
+                    .filter(a -> !cachedMessageInfo.kafkaPartitionOffsets().containsSearched(kv -> kv.key().equals(a)))
                     .toList();
                 if (!missingPartitions.isEmpty())
                 {
@@ -209,16 +209,16 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                 boolean run = true;
                 while (run && !this.requestStop.get())
                 {
-                    if (!this.stopAtLatestOffset.get())
+                    if (!this.stopAtLatestMessage.get())
                     {
                         this.pollAndConsume(consumer);
                     }
                     else
                     {
-                        LOG.info("Data client is now stopping at latest offset.");
+                        LOG.info("Data client is now stopping at latest message.");
                         final long stopAt;
                         try (
-                            final var offsetProvider = KafkaOffsetProvider.New(
+                            final var offsetProvider = KafkaMessageInfoProvider.New(
                                 this.topicName,
                                 this.groupId + "-offsetgetter",
                                 this.kafkaPropertiesProvider
@@ -226,17 +226,17 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                         )
                         {
                             offsetProvider.init();
-                            stopAt = offsetProvider.provideLatestOffset();
+                            stopAt = offsetProvider.provideLatestMessageIndex();
                         }
-                        LOG.info("Stopping at offset {}", stopAt);
+                        LOG.info("Stopping at message index {}", stopAt);
 
-                        while (this.cachedOffset < stopAt && !this.requestStop.get())
+                        while (this.cachedMessageIndex < stopAt && !this.requestStop.get())
                         {
                             this.pollAndConsume(consumer);
                         }
-                        LOG.info("Data client is now at latest offset ({})", this.cachedOffset);
+                        LOG.info("Data client is now at latest offset ({})", this.cachedMessageIndex);
 
-                        this.stopAtLatestOffset.set(false);
+                        this.stopAtLatestMessage.set(false);
                         run = false;
                     }
 
@@ -251,11 +251,11 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
             LOG.info("DataClient run finished");
         }
 
-        private OffsetInfo updateOffsets(final KafkaConsumer<String, byte[]> consumer)
+        private MessageInfo updateOffsets(final KafkaConsumer<String, byte[]> consumer)
         {
-            if (LOG.isDebugEnabled() && this.cachedOffset % 10_000 == 0)
+            if (LOG.isDebugEnabled() && this.cachedMessageIndex % 10_000 == 0)
             {
-                LOG.debug("Polling and updating offset info for offset {}", this.cachedOffset);
+                LOG.debug("Polling and updating message info for message index {}", this.cachedMessageIndex);
             }
             final EqHashTable<TopicPartition, Long> map = EqHashTable.New();
             for (final var partition : consumer.assignment())
@@ -266,8 +266,8 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                 offset = Math.max(offset - this.cachedPackets.size(), 0);
                 map.put(partition, offset);
             }
-            final var info = OffsetInfo.New(this.cachedOffset, map.immure());
-            this.offsetInfo.set(info);
+            final var info = MessageInfo.New(this.cachedMessageIndex, map.immure());
+            this.messageInfo.set(info);
             return info;
         }
 
@@ -368,25 +368,25 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
 
             for (final var packet : packets)
             {
-                if (this.cachedOffset >= packet.messageIndex())
+                if (this.cachedMessageIndex >= packet.messageIndex())
 
                 {
                     LOG.warn(
                         "Skipping packet with offset {} (current: {})",
                         packet.messageIndex(),
-                        this.cachedOffset
+                        this.cachedMessageIndex
                     );
                     continue;
                 }
 
 
-                this.cachedOffset = packet.messageIndex();
+                this.cachedMessageIndex = packet.messageIndex();
 
 
 
-                if (LOG.isTraceEnabled() && this.cachedOffset % 10_000 == 0)
+                if (LOG.isTraceEnabled() && this.cachedMessageIndex % 10_000 == 0)
                 {
-                    LOG.trace("Consuming packet with offset {}", this.cachedOffset);
+                    LOG.trace("Consuming packet with offset {}", this.cachedMessageIndex);
                 }
 
                 newPackets.add(packet);
@@ -397,9 +397,9 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
 
             if (!newPackets.isEmpty())
             {
-                if (LOG.isDebugEnabled() && this.cachedOffset % 10_000 == 0)
+                if (LOG.isDebugEnabled() && this.cachedMessageIndex % 10_000 == 0)
                 {
-                    LOG.debug("Applying packets at offset {}", this.cachedOffset);
+                    LOG.debug("Applying packets at offset {}", this.cachedMessageIndex);
                 }
                 this.packetAcceptor.accept(newPackets);
                 final var newInfo = this.updateOffsets(consumer);
@@ -427,19 +427,19 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
          * reached.
          */
         @Override
-        public void stopAtLatestOffset()
+        public void stopAtLatestMessage()
         {
             LOG.info("DataClient will stop at latest offset");
-            this.stopAtLatestOffset.set(true);
+            this.stopAtLatestMessage.set(true);
         }
 
         @Override
         public void resume() throws NodelibraryException
         {
-            if (this.stopAtLatestOffset.get())
+            if (this.stopAtLatestMessage.get())
             {
                 throw new NodelibraryException(
-                    new IllegalStateException("Client is sill reading up to the latest offset")
+                    new IllegalStateException("Client is sill reading up to the latest message index")
                 );
             }
             if (this.isRunning())

@@ -32,41 +32,45 @@ import static org.apache.kafka.common.IsolationLevel.READ_COMMITTED;
 import static org.eclipse.serializer.util.X.notNull;
 
 /**
- * Tool to ask kafka for the last microstream offset available
+ * Tool to ask kafka for the last message info available
  */
-public class KafkaOffsetProvider implements AutoCloseable
+public class KafkaMessageInfoProvider implements AutoCloseable
 {
-    public static KafkaOffsetProvider New(
-        final String topic,
-        final String groupInstanceId,
-        final KafkaPropertiesProvider kafkaPropertiesProvider
-    )
-    {
-        return new KafkaOffsetProvider(notNull(topic), notNull(groupInstanceId), notNull(kafkaPropertiesProvider));
-    }
-	
-	private static final Logger LOG = LoggerFactory.getLogger(KafkaOffsetProvider.class);
+	public static KafkaMessageInfoProvider New(
+		final String topic,
+		final String groupInstanceId,
+		final KafkaPropertiesProvider kafkaPropertiesProvider
+	)
+	{
+		return new KafkaMessageInfoProvider(
+			notNull(topic),
+			notNull(groupInstanceId),
+			notNull(kafkaPropertiesProvider)
+		);
+	}
+
+	private static final Logger LOG = LoggerFactory.getLogger(KafkaMessageInfoProvider.class);
 	private static final long PARTITION_ASSIGNMENT_TIMEOUT_MS = 10_000L;
 	private static final Duration POLL_TIMEOUT = Duration.ofMillis(250L);
-	
+
 	private final KafkaConsumer<String, byte[]> kafka;
-    private final KafkaPropertiesProvider kafkaPropertiesProvider;
+	private final KafkaPropertiesProvider kafkaPropertiesProvider;
 	private final String topic;
 
-    private KafkaOffsetProvider(
-        final String topic,
-        final String groupInstanceId,
-        final KafkaPropertiesProvider kafkaPropertiesProvider
-    )
-    {
-        this.topic = topic;
-        this.kafkaPropertiesProvider = kafkaPropertiesProvider;
-        this.kafka = this.createKafkaConsumer(groupInstanceId);
-    }
-	
+	private KafkaMessageInfoProvider(
+		final String topic,
+		final String groupInstanceId,
+		final KafkaPropertiesProvider kafkaPropertiesProvider
+	)
+	{
+		this.topic = topic;
+		this.kafkaPropertiesProvider = kafkaPropertiesProvider;
+		this.kafka = this.createKafkaConsumer(groupInstanceId);
+	}
+
 	private KafkaConsumer<String, byte[]> createKafkaConsumer(final String groupInstanceId)
 	{
-        final var properties = this.kafkaPropertiesProvider.provide();
+		final var properties = this.kafkaPropertiesProvider.provide();
 		properties.setProperty(GROUP_ID_CONFIG, groupInstanceId);
 		properties.setProperty(GROUP_INSTANCE_ID_CONFIG, groupInstanceId);
 		properties.setProperty(CLIENT_ID_CONFIG, groupInstanceId);
@@ -78,19 +82,19 @@ public class KafkaOffsetProvider implements AutoCloseable
 		properties.setProperty(ISOLATION_LEVEL_CONFIG, READ_COMMITTED.toString().toLowerCase(Locale.ROOT));
 		return new KafkaConsumer<>(properties);
 	}
-	
+
 	@Override
 	public void close() throws KafkaException
 	{
-        LOG.trace("Closing KafkaOffsetProvider.");
+		LOG.trace("Closing KafkaMessageInfoProvider");
 		this.kafka.close();
 	}
-	
+
 	public void init() throws KafkaException
 	{
-        LOG.trace("Initializing kafka offset provider. Subscribing to topic {}", this.topic);
+		LOG.trace("Initializing KafkaMessageInfoProvider. Subscribing to topic {}", this.topic);
 		this.kafka.subscribe(Collections.singleton(this.topic));
-		
+
 		LOG.trace("Polling consumer until we have partitions assigned.");
 		final long startMs = System.currentTimeMillis();
 		final long endMs = startMs + PARTITION_ASSIGNMENT_TIMEOUT_MS;
@@ -103,46 +107,46 @@ public class KafkaOffsetProvider implements AutoCloseable
 			this.kafka.poll(POLL_TIMEOUT);
 		}
 	}
-	
+
 	/**
 	 * Creates a new kafka consumer and asks for the last message in the topic,
-	 * returns the microstream offset of that message
+	 * returns the message index of that message
 	 */
-	public long provideLatestOffset() throws KafkaException
+	public long provideLatestMessageIndex() throws KafkaException
 	{
 		long lastMessageIndex = Long.MIN_VALUE;
-		
+
 		this.seekToLastOffsets();
-		
-//		LOG.trace("Polling latest messages for topic {}", this.topic);
+
+		//		LOG.trace("Polling latest messages for topic {}", this.topic);
 		for (final var rec : this.kafka.poll(POLL_TIMEOUT))
 		{
-            final long messageIndex = ClusterStorageBinaryDistributedKafka.deserializeLong(
-                rec.headers().lastHeader(ClusterStorageBinaryDistributedKafka.keyMessageIndex()).value()
-            );
+			final long messageIndex = ClusterStorageBinaryDistributedKafka.deserializeLong(
+				rec.headers().lastHeader(ClusterStorageBinaryDistributedKafka.keyMessageIndex()).value()
+			);
 			if (messageIndex > lastMessageIndex)
 			{
 				lastMessageIndex = messageIndex;
 			}
 		}
-		
+
 		return lastMessageIndex;
 	}
 
-    public OffsetInfo provideLatestOffsetInfo()
-    {
-        final var msOffset = this.provideLatestOffset();
+	public MessageInfo provideLatestMessageInfo()
+	{
+		final var messageIndex = this.provideLatestMessageIndex();
 
-        final EqHashTable<TopicPartition, Long> kafkaOffsets = EqHashTable.New();
-        for (final var partition : this.kafka.assignment())
-        {
-            final long offset = this.kafka.position(partition);
-            kafkaOffsets.put(partition, offset);
-        }
+		final EqHashTable<TopicPartition, Long> kafkaOffsets = EqHashTable.New();
+		for (final var partition : this.kafka.assignment())
+		{
+			final long offset = this.kafka.position(partition);
+			kafkaOffsets.put(partition, offset);
+		}
 
-        return OffsetInfo.New(msOffset, kafkaOffsets.immure());
-    }
-	
+		return MessageInfo.New(messageIndex, kafkaOffsets.immure());
+	}
+
 	private void seekToLastOffsets() throws KafkaException
 	{
 		LOG.trace("Seeking to last partition messages");
