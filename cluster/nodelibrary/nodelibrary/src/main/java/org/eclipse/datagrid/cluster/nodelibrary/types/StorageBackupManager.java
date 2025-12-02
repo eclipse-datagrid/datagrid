@@ -1,16 +1,17 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
+import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Supplier;
+
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.serializer.concurrency.XThreads;
 import org.eclipse.store.storage.types.StorageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
-import java.util.List;
-import java.util.function.Supplier;
-
 import static org.eclipse.serializer.math.XMath.positive;
+
 import static org.eclipse.serializer.util.X.notNull;
 
 public interface StorageBackupManager

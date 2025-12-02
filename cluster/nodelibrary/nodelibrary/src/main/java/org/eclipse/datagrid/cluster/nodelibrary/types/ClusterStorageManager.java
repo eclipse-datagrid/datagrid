@@ -1,7 +1,5 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import static org.eclipse.serializer.util.X.notNull;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
@@ -35,9 +33,22 @@ import org.eclipse.serializer.persistence.types.PersistenceTypeDictionaryExporte
 import org.eclipse.serializer.persistence.types.PersistenceTypeHandler;
 import org.eclipse.serializer.persistence.types.Storer;
 import org.eclipse.serializer.reference.Lazy;
-import org.eclipse.store.storage.types.*;
+import org.eclipse.store.storage.types.Database;
+import org.eclipse.store.storage.types.StorageAdjacencyDataExporter;
+import org.eclipse.store.storage.types.StorageConfiguration;
+import org.eclipse.store.storage.types.StorageConnection;
+import org.eclipse.store.storage.types.StorageEntityCacheEvaluator;
+import org.eclipse.store.storage.types.StorageEntityTypeExportFileProvider;
+import org.eclipse.store.storage.types.StorageEntityTypeExportStatistics;
+import org.eclipse.store.storage.types.StorageEntityTypeHandler;
+import org.eclipse.store.storage.types.StorageLiveFileProvider;
+import org.eclipse.store.storage.types.StorageManager;
+import org.eclipse.store.storage.types.StorageRawFileStatistics;
+import org.eclipse.store.storage.types.StorageTypeDictionary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface ClusterStorageManager<T> extends StorageManager
 {

@@ -1,10 +1,10 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import org.apache.kafka.common.header.Headers;
-import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.MessageType;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+
+import org.apache.kafka.common.header.Headers;
+import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.MessageType;
 
 public class ClusterStorageBinaryDistributedKafka
 {

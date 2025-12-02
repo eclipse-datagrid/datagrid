@@ -1,12 +1,12 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import static org.eclipse.serializer.util.X.notNull;
-
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NotADistributorException;
 import org.eclipse.store.storage.types.StorageController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface StorageNodeManager extends ClusterNodeManager
 {

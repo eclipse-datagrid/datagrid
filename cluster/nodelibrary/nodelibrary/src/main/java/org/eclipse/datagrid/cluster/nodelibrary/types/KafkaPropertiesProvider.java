@@ -5,11 +5,12 @@ import static org.apache.kafka.clients.CommonClientConfigs.SECURITY_PROTOCOL_CON
 import static org.apache.kafka.common.config.SaslConfigs.SASL_JAAS_CONFIG;
 import static org.apache.kafka.common.config.SaslConfigs.SASL_MECHANISM;
 import static org.apache.kafka.common.security.auth.SecurityProtocol.SASL_PLAINTEXT;
-import static org.eclipse.serializer.util.X.notNull;
 
 import java.util.Properties;
 
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface KafkaPropertiesProvider
 {

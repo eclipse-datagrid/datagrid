@@ -1,7 +1,5 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import static org.eclipse.serializer.util.X.notNull;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,6 +10,8 @@ import java.util.stream.Collectors;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.store.storage.types.Storage;
 import org.eclipse.store.storage.types.StorageConnection;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface FilesystemVolumeBackupBackend extends StorageBackupBackend
 {

@@ -1,7 +1,5 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types.cronjob;
 
-import static org.eclipse.serializer.util.X.notNull;
-
 import org.eclipse.store.storage.types.StorageConnection;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
@@ -9,6 +7,8 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface GcWorkaroundQuartzCronJobManager extends QuartzCronJobManager
 {

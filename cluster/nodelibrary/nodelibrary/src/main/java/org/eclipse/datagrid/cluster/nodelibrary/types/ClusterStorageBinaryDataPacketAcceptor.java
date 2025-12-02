@@ -1,7 +1,5 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import static org.eclipse.serializer.util.X.notNull;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -13,6 +11,8 @@ import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacketAcc
 import org.eclipse.serializer.memory.XMemory;
 import org.eclipse.serializer.persistence.binary.types.ChunksWrapper;
 import org.eclipse.serializer.typing.Disposable;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 /**
  * A {@link StorageBinaryDataPacketAcceptor} that will not dispose the

@@ -1,10 +1,11 @@
 package org.eclipse.datagrid.cluster.nodelibrary.helidon;
 
+import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 
 @ApplicationScoped
 @Provider

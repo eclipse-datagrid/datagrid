@@ -1,5 +1,15 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
+import static org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG;
+import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
+import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
+import static org.eclipse.serializer.chars.XChars.notEmpty;
+
+import java.nio.ByteBuffer;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.record.CompressionType;
@@ -14,13 +24,6 @@ import org.eclipse.serializer.persistence.binary.types.ChunksWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static org.apache.kafka.clients.producer.ProducerConfig.*;
-import static org.eclipse.serializer.chars.XChars.notEmpty;
 import static org.eclipse.serializer.util.X.notNull;
 
 public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorageBinaryDataDistributor

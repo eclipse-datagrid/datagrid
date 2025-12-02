@@ -1,7 +1,5 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import static org.eclipse.serializer.util.X.notNull;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -18,6 +16,8 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface BackupProxyHttpClient
 {

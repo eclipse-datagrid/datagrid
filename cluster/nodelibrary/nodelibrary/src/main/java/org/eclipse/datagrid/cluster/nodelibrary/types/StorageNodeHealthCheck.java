@@ -1,12 +1,12 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
+import java.util.function.Supplier;
+
 import org.apache.kafka.common.KafkaException;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.store.storage.types.StorageController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.function.Supplier;
 
 import static org.eclipse.serializer.util.X.notNull;
 

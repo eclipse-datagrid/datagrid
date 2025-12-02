@@ -2,6 +2,9 @@ package org.eclipse.datagrid.cluster.nodelibrary.micronaut.types;
 
 import java.util.function.Supplier;
 
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterFoundation;
+import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
+
 import io.micronaut.context.BeanContext;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Property;
@@ -11,8 +14,6 @@ import io.micronaut.eclipsestore.conf.EmbeddedStorageConfigurationProvider;
 import io.micronaut.eclipsestore.conf.RootClassConfigurationProvider;
 import io.micronaut.inject.qualifiers.Qualifiers;
 import jakarta.inject.Singleton;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterFoundation;
-import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
 
 @Factory
 public class ClusterFoundationFactory

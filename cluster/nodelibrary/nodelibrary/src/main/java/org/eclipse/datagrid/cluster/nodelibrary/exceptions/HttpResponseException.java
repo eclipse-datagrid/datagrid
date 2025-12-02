@@ -1,9 +1,9 @@
 package org.eclipse.datagrid.cluster.nodelibrary.exceptions;
 
-import org.eclipse.datagrid.cluster.nodelibrary.types.HttpHeader;
-
 import java.util.Collection;
 import java.util.Collections;
+
+import org.eclipse.datagrid.cluster.nodelibrary.types.HttpHeader;
 
 /**
  * When a subclass of this is thrown it should be mapped to the corresponding

@@ -2,7 +2,6 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
 
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.store.storage.types.StorageController;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

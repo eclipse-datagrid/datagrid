@@ -1,10 +1,11 @@
 package org.eclipse.datagrid.cluster.nodelibrary.micronaut.types;
 
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
+
 import io.micronaut.context.annotation.EachBean;
 import io.micronaut.context.annotation.Replaces;
 import io.micronaut.eclipsestore.DefaultRootProvider;
 import io.micronaut.eclipsestore.RootProvider;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
 
 @EachBean(ClusterStorageManager.class)
 @Replaces(DefaultRootProvider.class)

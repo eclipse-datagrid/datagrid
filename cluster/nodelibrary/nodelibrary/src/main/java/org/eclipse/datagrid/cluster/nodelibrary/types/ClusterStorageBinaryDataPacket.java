@@ -1,12 +1,13 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacket;
-import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.MessageType;
-
 import java.nio.ByteBuffer;
+
+import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.MessageType;
+import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacket;
 
 import static org.eclipse.serializer.math.XMath.notNegative;
 import static org.eclipse.serializer.math.XMath.positive;
+
 import static org.eclipse.serializer.util.X.notNull;
 
 public interface ClusterStorageBinaryDataPacket extends StorageBinaryDataPacket

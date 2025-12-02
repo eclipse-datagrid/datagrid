@@ -1,12 +1,12 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
+import java.io.InputStream;
+
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.serializer.meta.NotImplementedYetError;
 import org.eclipse.store.storage.types.StorageController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.InputStream;
 
 import static org.eclipse.serializer.util.X.notNull;
 

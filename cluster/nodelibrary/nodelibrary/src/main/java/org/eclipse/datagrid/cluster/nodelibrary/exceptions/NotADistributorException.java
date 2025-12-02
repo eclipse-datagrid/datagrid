@@ -1,10 +1,10 @@
 package org.eclipse.datagrid.cluster.nodelibrary.exceptions;
 
-import org.eclipse.datagrid.cluster.nodelibrary.types.HttpHeader;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+
+import org.eclipse.datagrid.cluster.nodelibrary.types.HttpHeader;
 
 public class NotADistributorException extends BadRequestException
 {

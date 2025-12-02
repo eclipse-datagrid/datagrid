@@ -1,9 +1,9 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import static org.eclipse.serializer.util.X.notNull;
-
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataDistributor;
 import org.eclipse.serializer.persistence.binary.types.Binary;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface ClusterStorageBinaryDataDistributor extends StorageBinaryDataDistributor
 {

@@ -1,7 +1,5 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types.cronjob;
 
-import static org.eclipse.serializer.util.X.notNull;
-
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.CronJobException;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
@@ -9,6 +7,8 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface QuartzCronJobScheduler
 {

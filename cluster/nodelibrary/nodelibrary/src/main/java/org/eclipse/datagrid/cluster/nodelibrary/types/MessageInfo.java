@@ -1,10 +1,10 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import static org.eclipse.serializer.util.X.notNull;
-
 import org.apache.kafka.common.TopicPartition;
 import org.eclipse.serializer.chars.VarString;
 import org.eclipse.serializer.collections.types.XImmutableMap;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface MessageInfo
 {

@@ -1,5 +1,8 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types.cronjob;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
 import org.eclipse.datagrid.cluster.nodelibrary.types.StorageDiskSpaceReader;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
@@ -8,10 +11,8 @@ import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-
 import static org.eclipse.serializer.math.XMath.positive;
+
 import static org.eclipse.serializer.util.X.notNull;
 
 public interface StorageLimitCheckerQuartzCronJobManager extends QuartzCronJobManager
