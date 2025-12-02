@@ -1,11 +1,5 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
-import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NotADistributorException;
-import org.eclipse.store.storage.types.StorageController;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /*-
  * #%L
  * Eclipse Data Grid Cluster Nodelibrary
@@ -22,192 +16,200 @@ import org.slf4j.LoggerFactory;
 
 import static org.eclipse.serializer.util.X.notNull;
 
+import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
+import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NotADistributorException;
+import org.eclipse.store.storage.types.StorageController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 public interface StorageNodeManager extends ClusterNodeManager
 {
-	boolean isDistributor();
+    boolean isDistributor();
 
-	void switchToDistribution();
+    void switchToDistribution();
 
-	boolean finishDistributonSwitch() throws NotADistributorException;
+    boolean finishDistributonSwitch() throws NotADistributorException;
 
-	long getCurrentMessageIndex();
+    long getCurrentMessageIndex();
 
-	long getLatestMessageIndex();
+    long getLatestMessageIndex();
 
-	static StorageNodeManager New(
-		final ClusterStorageBinaryDataDistributor dataDistributor,
-		final StorageTaskExecutor storageTaskExecutor,
-		final ClusterStorageBinaryDataClient dataClient,
-		final StorageNodeHealthCheck healthCheck,
-		final StorageController storageController,
-		final StorageDiskSpaceReader storageDiskSpaceReader,
-		final KafkaMessageInfoProvider kafkaMessageInfoProvider
-	)
-	{
-		return new Default(
-			notNull(dataDistributor),
-			notNull(storageTaskExecutor),
-			notNull(dataClient),
-			notNull(healthCheck),
-			notNull(storageController),
-			notNull(storageDiskSpaceReader),
-			notNull(kafkaMessageInfoProvider)
-		);
-	}
 
-	final class Default implements StorageNodeManager
-	{
-		private static final Logger LOG = LoggerFactory.getLogger(StorageNodeManager.class);
+    static StorageNodeManager New(
+        final ClusterStorageBinaryDataDistributor dataDistributor,
+        final StorageTaskExecutor storageTaskExecutor,
+        final ClusterStorageBinaryDataClient dataClient,
+        final StorageNodeHealthCheck healthCheck,
+        final StorageController storageController,
+        final StorageDiskSpaceReader storageDiskSpaceReader,
+        final KafkaMessageInfoProvider kafkaMessageInfoProvider
+    )
+    {
+        return new Default(
+            notNull(dataDistributor),
+            notNull(storageTaskExecutor),
+            notNull(dataClient),
+            notNull(healthCheck),
+            notNull(storageController),
+            notNull(storageDiskSpaceReader),
+            notNull(kafkaMessageInfoProvider)
+        );
+    }
 
-		private final ClusterStorageBinaryDataDistributor dataDistributor;
-		private StorageTaskExecutor storageTaskExecutor;
-		private final ClusterStorageBinaryDataClient dataClient;
-		private final StorageNodeHealthCheck healthCheck;
-		private final StorageController storageController;
-		private final StorageDiskSpaceReader storageDiskSpaceReader;
-		private final KafkaMessageInfoProvider kafkaMessageInfoProvider;
+    final class Default implements StorageNodeManager
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(StorageNodeManager.class);
 
-		private boolean isDistributor;
-		private boolean isSwitchingToDistributor;
+        private final ClusterStorageBinaryDataDistributor dataDistributor;
+        private StorageTaskExecutor storageTaskExecutor;
+        private final ClusterStorageBinaryDataClient dataClient;
+        private final StorageNodeHealthCheck healthCheck;
+        private final StorageController storageController;
+        private final StorageDiskSpaceReader storageDiskSpaceReader;
+        private final KafkaMessageInfoProvider kafkaMessageInfoProvider;
 
-		public Default(
-			final ClusterStorageBinaryDataDistributor dataDistributor,
-			final StorageTaskExecutor storageTaskExecutor,
-			final ClusterStorageBinaryDataClient dataClient,
-			final StorageNodeHealthCheck healthCheck,
-			final StorageController storageController,
-			final StorageDiskSpaceReader storageDiskSpaceReader,
-			final KafkaMessageInfoProvider kafkaMessageInfoProvider
-		)
-		{
-			this.dataDistributor = dataDistributor;
-			this.dataClient = dataClient;
-			this.healthCheck = healthCheck;
-			this.storageController = storageController;
-			this.storageDiskSpaceReader = storageDiskSpaceReader;
-			this.storageTaskExecutor = storageTaskExecutor;
-			this.kafkaMessageInfoProvider = kafkaMessageInfoProvider;
-		}
+        private boolean isDistributor;
+        private boolean isSwitchingToDistributor;
 
-		@Override
-		public void startStorageChecks()
-		{
-			this.storageTaskExecutor.runChecks();
-		}
+        public Default(
+            final ClusterStorageBinaryDataDistributor dataDistributor,
+            final StorageTaskExecutor storageTaskExecutor,
+            final ClusterStorageBinaryDataClient dataClient,
+            final StorageNodeHealthCheck healthCheck,
+            final StorageController storageController,
+            final StorageDiskSpaceReader storageDiskSpaceReader,
+            final KafkaMessageInfoProvider kafkaMessageInfoProvider
+        )
+        {
+            this.dataDistributor = dataDistributor;
+            this.dataClient = dataClient;
+            this.healthCheck = healthCheck;
+            this.storageController = storageController;
+            this.storageDiskSpaceReader = storageDiskSpaceReader;
+            this.storageTaskExecutor = storageTaskExecutor;
+            this.kafkaMessageInfoProvider = kafkaMessageInfoProvider;
+        }
 
-		@Override
-		public boolean isRunningStorageChecks()
-		{
-			return this.storageTaskExecutor.isRunningChecks();
-		}
+        @Override
+        public void startStorageChecks()
+        {
+            this.storageTaskExecutor.runChecks();
+        }
 
-		@Override
-		public boolean isReady() throws NodelibraryException
-		{
-			if (this.isDistributor)
-			{
-				return this.storageController.isRunning() && !this.storageController.isStartingUp();
-			}
-			else
-			{
-				return this.healthCheck.isReady();
-			}
-		}
+        @Override
+        public boolean isRunningStorageChecks()
+        {
+            return this.storageTaskExecutor.isRunningChecks();
+        }
 
-		@Override
-		public boolean isHealthy()
-		{
-			if (this.isDistributor)
-			{
-				return this.storageController.isRunning() && !this.storageController.isStartingUp();
-			}
-			else
-			{
-				return this.healthCheck.isHealthy();
-			}
-		}
+        @Override
+        public boolean isReady() throws NodelibraryException
+        {
+            if (this.isDistributor)
+            {
+                return this.storageController.isRunning() && !this.storageController.isStartingUp();
+            }
+            else
+            {
+                return this.healthCheck.isReady();
+            }
+        }
 
-		@Override
-		public long readStorageSizeBytes() throws NodelibraryException
-		{
-			return this.storageDiskSpaceReader.readUsedDiskSpaceBytes();
-		}
+        @Override
+        public boolean isHealthy()
+        {
+            if (this.isDistributor)
+            {
+                return this.storageController.isRunning() && !this.storageController.isStartingUp();
+            }
+            else
+            {
+                return this.healthCheck.isHealthy();
+            }
+        }
 
-		@Override
-		public boolean isDistributor()
-		{
-			return this.isDistributor;
-		}
+        @Override
+        public long readStorageSizeBytes() throws NodelibraryException
+        {
+            return this.storageDiskSpaceReader.readUsedDiskSpaceBytes();
+        }
 
-		@Override
-		public void switchToDistribution()
-		{
-			if (this.isDistributor() || this.isSwitchingToDistributor)
-			{
-				return;
-			}
+        @Override
+        public boolean isDistributor()
+        {
+            return this.isDistributor;
+        }
 
-			LOG.info("Turning on distribution.");
-			this.isSwitchingToDistributor = true;
-			this.dataClient.stopAtLatestMessage();
-		}
+        @Override
+        public void switchToDistribution()
+        {
+            if (this.isDistributor() || this.isSwitchingToDistributor)
+            {
+                return;
+            }
 
-		@Override
-		public boolean finishDistributonSwitch() throws NotADistributorException
-		{
-			if (!this.isSwitchingToDistributor)
-			{
-				throw new NotADistributorException("switchToDistribution() has to be called first");
-			}
+            LOG.info("Turning on distribution.");
+            this.isSwitchingToDistributor = true;
+            this.dataClient.stopAtLatestMessage();
+        }
 
-			if (this.isDistributor)
-			{
-				return true;
-			}
+        @Override
+        public boolean finishDistributonSwitch() throws NotADistributorException
+        {
+            if (!this.isSwitchingToDistributor)
+            {
+                throw new NotADistributorException("switchToDistribution() has to be called first");
+            }
 
-			if (this.dataClient.isRunning())
-			{
-				return false;
-			}
+            if (this.isDistributor)
+            {
+                return true;
+            }
 
-			final var messageInfo = this.dataClient.messageInfo();
+            if (this.dataClient.isRunning())
+            {
+                return false;
+            }
 
-			// once a node has been switched to distribution it will never become a reader node anymore
-			this.healthCheck.close();
-			this.dataClient.dispose();
-			this.dataDistributor.messageIndex(messageInfo.messageIndex());
+            final var messageInfo = this.dataClient.messageInfo();
 
-			this.isDistributor = true;
-			this.isSwitchingToDistributor = false;
-			return true;
-		}
+            // once a node has been switched to distribution it will never become a reader node anymore
+            this.healthCheck.close();
+            this.dataClient.dispose();
+            this.dataDistributor.messageIndex(messageInfo.messageIndex());
 
-		@Override
-		public long getCurrentMessageIndex()
-		{
-			if (this.isDistributor())
-			{
-				return this.dataDistributor.messageIndex();
-			}
-			else
-			{
-				return this.dataClient.messageInfo().messageIndex();
-			}
-		}
+            this.isDistributor = true;
+            this.isSwitchingToDistributor = false;
+            return true;
+        }
 
-		@Override
-		public long getLatestMessageIndex()
-		{
-			return this.kafkaMessageInfoProvider.provideLatestMessageIndex();
-		}
+        @Override
+        public long getCurrentMessageIndex()
+        {
+            if (this.isDistributor())
+            {
+                return this.dataDistributor.messageIndex();
+            }
+            else
+            {
+                return this.dataClient.messageInfo().messageIndex();
+            }
+        }
 
-		@Override
-		public void close()
-		{
-			LOG.info("Closing StorageNodeManager");
-			this.dataDistributor.dispose();
-			this.dataClient.dispose();
-			this.healthCheck.close();
-		}
-	}
+        @Override
+        public long getLatestMessageIndex()
+        {
+            return this.kafkaMessageInfoProvider.provideLatestMessageIndex();
+        }
+
+        @Override
+        public void close()
+        {
+            LOG.info("Closing StorageNodeManager");
+            this.dataDistributor.dispose();
+            this.dataClient.dispose();
+            this.healthCheck.close();
+        }
+    }
 }

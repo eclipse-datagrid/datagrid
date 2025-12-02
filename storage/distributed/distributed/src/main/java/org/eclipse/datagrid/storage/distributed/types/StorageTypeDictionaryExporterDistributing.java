@@ -1,9 +1,5 @@
 package org.eclipse.datagrid.storage.distributed.types;
 
-import org.eclipse.serializer.persistence.types.PersistenceTypeDictionary;
-import org.eclipse.serializer.persistence.types.PersistenceTypeDictionaryAssembler;
-import org.eclipse.serializer.persistence.types.PersistenceTypeDictionaryExporter;
-
 /*-
  * #%L
  * Eclipse Data Grid Storage Distributed
@@ -20,11 +16,15 @@ import org.eclipse.serializer.persistence.types.PersistenceTypeDictionaryExporte
 
 import static org.eclipse.serializer.util.X.notNull;
 
+import org.eclipse.serializer.persistence.types.PersistenceTypeDictionary;
+import org.eclipse.serializer.persistence.types.PersistenceTypeDictionaryAssembler;
+import org.eclipse.serializer.persistence.types.PersistenceTypeDictionaryExporter;
+
 public interface StorageTypeDictionaryExporterDistributing extends PersistenceTypeDictionaryExporter
 {
 	public static StorageTypeDictionaryExporterDistributing New(
-		final PersistenceTypeDictionaryExporter delegate,
-		final StorageBinaryDataDistributor distributor
+		final PersistenceTypeDictionaryExporter  delegate   ,
+		final StorageBinaryDataDistributor       distributor
 	)
 	{
 		return new StorageTypeDictionaryExporterDistributing.Default(
@@ -33,22 +33,23 @@ public interface StorageTypeDictionaryExporterDistributing extends PersistenceTy
 			notNull(distributor)
 		);
 	}
-
+	
+	
 	public static class Default implements StorageTypeDictionaryExporterDistributing
 	{
-		private final PersistenceTypeDictionaryExporter delegate;
-		private final PersistenceTypeDictionaryAssembler assembler;
-		private final StorageBinaryDataDistributor distributor;
-
+		private final PersistenceTypeDictionaryExporter  delegate   ;
+		private final PersistenceTypeDictionaryAssembler assembler  ;
+		private final StorageBinaryDataDistributor       distributor;
+		
 		Default(
-			final PersistenceTypeDictionaryExporter delegate,
-			final PersistenceTypeDictionaryAssembler assembler,
-			final StorageBinaryDataDistributor distributor
+			final PersistenceTypeDictionaryExporter  delegate   ,
+			final PersistenceTypeDictionaryAssembler assembler  ,
+			final StorageBinaryDataDistributor       distributor
 		)
 		{
 			super();
-			this.delegate = delegate;
-			this.assembler = assembler;
+			this.delegate    = delegate;
+			this.assembler   = assembler;
 			this.distributor = distributor;
 		}
 
@@ -56,9 +57,11 @@ public interface StorageTypeDictionaryExporterDistributing extends PersistenceTy
 		public void exportTypeDictionary(final PersistenceTypeDictionary typeDictionary)
 		{
 			this.delegate.exportTypeDictionary(typeDictionary);
-			this.distributor.distributeTypeDictionary(this.assembler.assemble(typeDictionary));
+			this.distributor.distributeTypeDictionary(
+				this.assembler.assemble(typeDictionary)
+			);
 		}
-
+		
 	}
-
+	
 }

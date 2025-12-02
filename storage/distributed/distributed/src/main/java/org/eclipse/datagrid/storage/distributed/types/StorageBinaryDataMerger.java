@@ -1,7 +1,5 @@
 package org.eclipse.datagrid.storage.distributed.types;
 
-import java.nio.ByteBuffer;
-
 /*-
  * #%L
  * Eclipse Data Grid Storage Distributed
@@ -29,40 +27,43 @@ import org.eclipse.serializer.util.logging.Logging;
 import org.eclipse.store.storage.types.StorageConnection;
 import org.slf4j.Logger;
 
+import java.nio.ByteBuffer;
+
 import static org.eclipse.serializer.util.X.notNull;
 
 public interface StorageBinaryDataMerger extends StorageBinaryDataReceiver
 {
 	public static StorageBinaryDataMerger New(
-		final BinaryPersistenceFoundation<?> foundation,
-		final StorageConnection storage,
-		final ObjectGraphUpdateHandler objectGraphUpdateHandler
+		final BinaryPersistenceFoundation<?> foundation              ,
+		final StorageConnection              storage                 ,
+		final ObjectGraphUpdateHandler       objectGraphUpdateHandler
 	)
 	{
 		return new StorageBinaryDataMerger.Default(
-			notNull(foundation),
-			notNull(storage),
+			notNull(foundation              ),
+			notNull(storage                 ),
 			notNull(objectGraphUpdateHandler)
 		);
 	}
-
+	
+	
 	public static class Default implements StorageBinaryDataMerger
 	{
 		private final static Logger logger = Logging.getLogger(StorageBinaryDataMerger.class);
-
-		private final BinaryPersistenceFoundation<?> foundation;
-		private final StorageConnection storage;
-		private final ObjectGraphUpdateHandler objectGraphUpdateHandler;
-
+		
+		private final BinaryPersistenceFoundation<?> foundation              ;
+		private final StorageConnection              storage                 ;
+		private final ObjectGraphUpdateHandler       objectGraphUpdateHandler;
+		
 		Default(
-			final BinaryPersistenceFoundation<?> foundation,
-			final StorageConnection storage,
-			final ObjectGraphUpdateHandler objectGraphUpdateHandler
+			final BinaryPersistenceFoundation<?> foundation              ,
+			final StorageConnection              storage                 ,
+			final ObjectGraphUpdateHandler       objectGraphUpdateHandler
 		)
 		{
 			super();
-			this.foundation = foundation;
-			this.storage = storage;
+			this.foundation               = foundation              ;
+			this.storage                  = storage                 ;
 			this.objectGraphUpdateHandler = objectGraphUpdateHandler;
 		}
 
@@ -72,51 +73,56 @@ public interface StorageBinaryDataMerger extends StorageBinaryDataReceiver
 			logger.debug("Importing data");
 			this.storage.importData(X.Enum(data.buffers()));
 
-			final ObjectGraphUpdater updater = () ->
-			{
-				logger.debug("Updating object graph");
+            final ObjectGraphUpdater updater = () ->
+            {
+                logger.debug("Updating object graph");
 
-				final ObjectMaterializer materializer = new ObjectMaterializer(this.storage.persistenceManager());
+                final ObjectMaterializer materializer = new ObjectMaterializer(this.storage.persistenceManager());
 
-				final BinaryEntityRawDataIterator iterator = BinaryEntityRawDataIterator.New();
-				for (final ByteBuffer buffer : data.buffers())
-				{
-					final long address = XMemory.getDirectByteBufferAddress(buffer);
-					iterator.iterateEntityRawData(address, address + buffer.limit(), materializer);
-				}
+                final BinaryEntityRawDataIterator iterator = BinaryEntityRawDataIterator.New();
+                for (final ByteBuffer buffer : data.buffers())
+                {
+                    final long address = XMemory.getDirectByteBufferAddress(buffer);
+                    iterator.iterateEntityRawData(
+                        address,
+                        address + buffer.limit(),
+                        materializer
+                    );
+                }
 
-				materializer.materialize();
-			};
+                materializer.materialize();
+            };
 			this.objectGraphUpdateHandler.objectGraphUpdateAvailable(updater);
 		}
-
+		
 		@Override
 		public synchronized void receiveTypeDictionary(final String typeDictionaryData)
 		{
 			final PersistenceTypeDictionary remoteTypeDictionary = BinaryPersistence.Foundation()
-				.setClassLoaderProvider(this.foundation.getClassLoaderProvider())
+				.setClassLoaderProvider    (this.foundation.getClassLoaderProvider()      )
 				.setFieldEvaluatorPersister(this.foundation.getFieldEvaluatorPersistable())
-				.setTypeDictionaryLoader(() -> typeDictionaryData)
-				.getTypeDictionaryProvider()
-				.provideTypeDictionary();
+				.setTypeDictionaryLoader   (() -> typeDictionaryData                      )
+				.getTypeDictionaryProvider ()
+				.provideTypeDictionary     ()
+			;
 			final PersistenceTypeDictionary localTypeDictionary = this.storage.persistenceManager().typeDictionary();
-
+			
 			remoteTypeDictionary.iterateAllTypeDefinitions(remoteType ->
 			{
-				final PersistenceTypeDefinition localType = localTypeDictionary.lookupTypeById(remoteType.typeId());
-				if (localType == null)
+				final PersistenceTypeDefinition localType = localTypeDictionary .lookupTypeById(remoteType.typeId());
+				if(localType == null)
 				{
 					logger.debug("New type: {}", remoteType.typeName());
 					this.foundation.getTypeHandlerManager().ensureTypeHandler(remoteType);
-
+					
 				}
-				else if (!PersistenceTypeDescription.equalStructure(localType, remoteType))
+				else if(!PersistenceTypeDescription.equalStructure(localType, remoteType))
 				{
 					throw new RuntimeException(localType + " <> " + remoteType);
 				}
 			});
 		}
-
+		
 	}
-
+	
 }

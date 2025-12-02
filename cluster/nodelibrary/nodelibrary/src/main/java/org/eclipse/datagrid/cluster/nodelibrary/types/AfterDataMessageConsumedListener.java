@@ -18,8 +18,8 @@ import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 
 public interface AfterDataMessageConsumedListener extends AutoCloseable
 {
-	void onChange(MessageInfo messageInfo) throws NodelibraryException;
+    void onChange(MessageInfo messageInfo) throws NodelibraryException;
 
-	@Override
-	void close();
+    @Override
+    void close();
 }

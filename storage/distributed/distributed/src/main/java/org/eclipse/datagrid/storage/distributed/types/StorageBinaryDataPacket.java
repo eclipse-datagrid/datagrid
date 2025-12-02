@@ -1,9 +1,5 @@
 package org.eclipse.datagrid.storage.distributed.types;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.MessageType;
-
 /*-
  * #%L
  * Eclipse Data Grid Storage Distributed
@@ -20,60 +16,65 @@ import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.M
 
 import static org.eclipse.serializer.math.XMath.notNegative;
 import static org.eclipse.serializer.math.XMath.positive;
-
 import static org.eclipse.serializer.util.X.notNull;
+
+import java.nio.ByteBuffer;
+
+import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.MessageType;
 
 public interface StorageBinaryDataPacket
 {
 	public MessageType messageType();
-
+	
 	public int messageLength();
-
+	
 	public int packetIndex();
-
+	
 	public int packetCount();
 
 	public ByteBuffer buffer();
-
+	
+	
 	public static StorageBinaryDataPacket New(
-		final MessageType messageType,
-		final int messageLength,
-		final int packetIndex,
-		final int packetCount,
-		final ByteBuffer buffer
+		final MessageType messageType  ,
+		final int         messageLength,
+		final int         packetIndex  ,
+		final int         packetCount  ,
+		final ByteBuffer  buffer
 	)
 	{
 		return new StorageBinaryDataPacket.Default(
-			notNull(messageType),
-			notNegative(messageLength),
-			notNegative(packetIndex),
-			positive(packetCount),
-			notNull(buffer)
+			notNull    (messageType   ),
+			notNegative(messageLength ),
+			notNegative(packetIndex   ),
+			positive   (packetCount   ),
+			notNull    (buffer        )
 		);
 	}
-
+	
+	
 	public static class Default implements StorageBinaryDataPacket
 	{
-		private final MessageType messageType;
-		private final int messageLength;
-		private final int packetIndex;
-		private final int packetCount;
-		private final ByteBuffer buffer;
-
+		private final MessageType messageType  ;
+		private final int         messageLength;
+		private final int         packetIndex  ;
+		private final int         packetCount  ;
+		private final ByteBuffer  buffer       ;
+		
 		Default(
-			final MessageType messageType,
-			final int messageLength,
-			final int packetIndex,
-			final int packetCount,
-			final ByteBuffer buffer
+			final MessageType messageType  ,
+			final int         messageLength,
+			final int         packetIndex  ,
+			final int         packetCount  ,
+			final ByteBuffer  buffer
 		)
 		{
 			super();
-			this.messageType = messageType;
+			this.messageType   = messageType;
 			this.messageLength = messageLength;
-			this.packetIndex = packetIndex;
-			this.packetCount = packetCount;
-			this.buffer = buffer;
+			this.packetIndex   = packetIndex;
+			this.packetCount   = packetCount;
+			this.buffer        = buffer;
 		}
 
 		@Override
@@ -105,7 +106,7 @@ public interface StorageBinaryDataPacket
 		{
 			return this.buffer;
 		}
-
+		
 	}
-
+	
 }

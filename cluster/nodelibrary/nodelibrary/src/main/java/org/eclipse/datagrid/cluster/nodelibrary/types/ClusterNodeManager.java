@@ -18,16 +18,16 @@ import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 
 public interface ClusterNodeManager extends AutoCloseable
 {
-	@Override
-	void close();
+    @Override
+    void close();
 
-	void startStorageChecks();
+    void startStorageChecks();
 
-	boolean isRunningStorageChecks();
+    boolean isRunningStorageChecks();
 
-	boolean isReady() throws NodelibraryException;
+    boolean isReady() throws NodelibraryException;
 
-	boolean isHealthy();
+    boolean isHealthy();
 
-	long readStorageSizeBytes() throws NodelibraryException;
+    long readStorageSizeBytes() throws NodelibraryException;
 }

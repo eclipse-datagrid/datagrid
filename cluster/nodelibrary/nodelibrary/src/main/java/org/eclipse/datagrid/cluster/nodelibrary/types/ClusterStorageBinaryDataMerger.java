@@ -1,5 +1,9 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
+import static org.eclipse.serializer.math.XMath.notNegative;
+import static org.eclipse.serializer.math.XMath.positive;
+import static org.eclipse.serializer.util.X.notNull;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
@@ -44,11 +48,6 @@ import org.eclipse.serializer.util.X;
 import org.eclipse.serializer.util.logging.Logging;
 import org.eclipse.store.storage.types.StorageConnection;
 import org.slf4j.Logger;
-
-import static org.eclipse.serializer.math.XMath.notNegative;
-import static org.eclipse.serializer.math.XMath.positive;
-
-import static org.eclipse.serializer.util.X.notNull;
 
 public interface ClusterStorageBinaryDataMerger extends StorageBinaryDataMerger, Disposable
 {

@@ -107,9 +107,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 	F setAfterDataMessageConsumedListener(AfterDataMessageConsumedListener listener);
 
-	StoredMessageIndexManager getStoredMessageIndexManager();
+    StoredMessageIndexManager getStoredMessageIndexManager();
 
-	F setStoredMessageIndexManager(StoredMessageIndexManager manager);
+    F setStoredMessageIndexManager(StoredMessageIndexManager manager);
 
 	StorageBackupManager getStorageBackupManager();
 
@@ -163,9 +163,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 	F setEnableAsyncDistribution(boolean enable);
 
-	KafkaMessageInfoProvider getKafkaMessageInfoProvider();
+    KafkaMessageInfoProvider getKafkaMessageInfoProvider();
 
-	F setKafkaMessageInfoProvider(KafkaMessageInfoProvider provider);
+    F setKafkaMessageInfoProvider(KafkaMessageInfoProvider provider);
 
 	static ClusterFoundation<?> New()
 	{
@@ -182,34 +182,34 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 	{
 		private static final Logger LOG = LoggerFactory.getLogger(ClusterFoundation.class);
 
-		private StorageBackupBackend backupBackend;
-		private BackupProxyHttpClient backupProxyHttpClient;
-		private EmbeddedStorageFoundation<?> embeddedStorageFoundation;
-		private QuartzCronJobScheduler cronJobScheduler;
-		private QuartzCronJobJobFactory cronJobFactory;
-		private StorageBackupQuartzCronJobManager backupCronjobManager;
-		private GcWorkaroundQuartzCronJobManager gcWorkaroundManager;
-		private StorageLimitCheckerQuartzCronJobManager limitCheckerManager;
-		private BackupNodeManager backupNodeManager;
-		private ClusterStorageBinaryDataClient dataClient;
-		private ClusterStorageBinaryDataDistributor dataDistributor;
-		private MicroNodeManager microNodeManager;
-		private StorageNodeHealthCheck healthCheck;
-		private NodelibraryPropertiesProvider propertiesProvider;
-		private StorageTaskExecutor storageTaskExecutor;
-		private StorageBackupTaskExecutor storageBackupTaskExecutor;
-		private StorageDiskSpaceReader storageDiskSpaceReader;
-		private StorageNodeManager storageNodeManager;
-		private boolean enableAsyncDistribution;
-		private Supplier<Object> rootSupplier;
-		private ObjectGraphUpdateHandler graphUpdateHandler;
-		private StorageBackupManager storageBackupManager;
-		private AfterDataMessageConsumedListener afterDataMessageConsumedListener;
-		private ClusterStorageBinaryDataMerger dataMerger;
-		private ClusterStorageBinaryDataPacketAcceptor dataPacketAcceptor;
-		private StoredMessageIndexManager storedMessageInfoManager;
-		private KafkaPropertiesProvider kafkaPropertiesProvider;
-		private KafkaMessageInfoProvider kafkaMessageInfoProvider;
+        private StorageBackupBackend backupBackend;
+        private BackupProxyHttpClient backupProxyHttpClient;
+        private EmbeddedStorageFoundation<?> embeddedStorageFoundation;
+        private QuartzCronJobScheduler cronJobScheduler;
+        private QuartzCronJobJobFactory cronJobFactory;
+        private StorageBackupQuartzCronJobManager backupCronjobManager;
+        private GcWorkaroundQuartzCronJobManager gcWorkaroundManager;
+        private StorageLimitCheckerQuartzCronJobManager limitCheckerManager;
+        private BackupNodeManager backupNodeManager;
+        private ClusterStorageBinaryDataClient dataClient;
+        private ClusterStorageBinaryDataDistributor dataDistributor;
+        private MicroNodeManager microNodeManager;
+        private StorageNodeHealthCheck healthCheck;
+        private NodelibraryPropertiesProvider propertiesProvider;
+        private StorageTaskExecutor storageTaskExecutor;
+        private StorageBackupTaskExecutor storageBackupTaskExecutor;
+        private StorageDiskSpaceReader storageDiskSpaceReader;
+        private StorageNodeManager storageNodeManager;
+        private boolean enableAsyncDistribution;
+        private Supplier<Object> rootSupplier;
+        private ObjectGraphUpdateHandler graphUpdateHandler;
+        private StorageBackupManager storageBackupManager;
+        private AfterDataMessageConsumedListener afterDataMessageConsumedListener;
+        private ClusterStorageBinaryDataMerger dataMerger;
+        private ClusterStorageBinaryDataPacketAcceptor dataPacketAcceptor;
+        private StoredMessageIndexManager storedMessageInfoManager;
+        private KafkaPropertiesProvider kafkaPropertiesProvider;
+        private KafkaMessageInfoProvider kafkaMessageInfoProvider;
 
 		// cached created types
 		private ClusterStorageManager<?> clusterStorageManager;
@@ -225,37 +225,37 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			return (F)this;
 		}
 
-		protected StorageBackupBackend ensureBackupBackend()
-		{
-			// TODO: Hardcoded path
-			final var props = this.getNodelibraryPropertiesProvider();
-			final StoredMessageIndexManager.Creator messageIndexManagerCreator = StoredMessageIndexManager::New;
+        protected StorageBackupBackend ensureBackupBackend()
+        {
+            // TODO: Hardcoded path
+            final var props = this.getNodelibraryPropertiesProvider();
+            final StoredMessageIndexManager.Creator messageIndexManagerCreator = StoredMessageIndexManager::New;
 
-			if (props.backupTarget() == BackupTarget.SAAS)
-			{
-				final var scratchSpace = Paths.get("/storage/backup/");
-				if (!Files.exists(scratchSpace))
-				{
-					try
-					{
-						Files.createDirectories(scratchSpace);
-					}
-					catch (final IOException e)
-					{
-						throw new NodelibraryException("Failed to create scratch space", e);
-					}
-				}
-				return NetworkArchiveBackupBackend.New(
-					scratchSpace,
-					this.getBackupProxyHttpClient(),
-					messageIndexManagerCreator
-				);
-			}
-			else
-			{
-				return FilesystemVolumeBackupBackend.New(Paths.get("/backups"), messageIndexManagerCreator);
-			}
-		}
+            if (props.backupTarget() == BackupTarget.SAAS)
+            {
+                final var scratchSpace = Paths.get("/storage/backup/");
+                if (!Files.exists(scratchSpace))
+                {
+                    try
+                    {
+                        Files.createDirectories(scratchSpace);
+                    }
+                    catch (final IOException e)
+                    {
+                        throw new NodelibraryException("Failed to create scratch space", e);
+                    }
+                }
+                return NetworkArchiveBackupBackend.New(
+                    scratchSpace,
+                    this.getBackupProxyHttpClient(),
+                    messageIndexManagerCreator
+                );
+            }
+            else
+            {
+                return FilesystemVolumeBackupBackend.New(Paths.get("/backups"), messageIndexManagerCreator);
+            }
+        }
 
 		protected StorageTaskExecutor ensureStorageTaskExecutor()
 		{
@@ -315,78 +315,77 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			);
 		}
 
-		protected KafkaMessageInfoProvider ensureKafkaMessageInfoProvider()
-		{
-			final var nodelibProps = this.getNodelibraryPropertiesProvider();
-			final var kafkaProps = this.getKafkaPropertiesProvider();
+        protected KafkaMessageInfoProvider ensureKafkaMessageInfoProvider()
+        {
+            final var nodelibProps = this.getNodelibraryPropertiesProvider();
+            final var kafkaProps = this.getKafkaPropertiesProvider();
 
 			final String topic = nodelibProps.kafkaTopicName();
 			final String groupId = String.format("%s-%s-offsetgetter", topic, nodelibProps.myPodName());
 
-			return KafkaMessageInfoProvider.New(topic, groupId, kafkaProps);
-		}
+            return KafkaMessageInfoProvider.New(topic, groupId, kafkaProps);
+        }
 
 		protected KafkaPropertiesProvider ensureKafkaPropertiesProvider()
 		{
 			return KafkaPropertiesProvider.New(this.getNodelibraryPropertiesProvider());
 		}
 
-		protected StoredMessageIndexManager ensureStoredMessageIndexManager()
-		{
-			// TODO: Hardcoded path
-			final var messageInfoPath = Paths.get("/storage/offset");
-			LOG.trace("Creating stored offset manager for offset file at {}", messageInfoPath);
-			return StoredMessageIndexManager.New(NioFileSystem.New().ensureFile(messageInfoPath).tryUseWriting());
-		}
+        protected StoredMessageIndexManager ensureStoredMessageIndexManager()
+        {
+            // TODO: Hardcoded path
+            final var messageInfoPath = Paths.get("/storage/offset");
+            LOG.trace("Creating stored offset manager for offset file at {}", messageInfoPath);
+            return StoredMessageIndexManager.New(NioFileSystem.New().ensureFile(messageInfoPath).tryUseWriting());
+        }
 
 		protected AfterDataMessageConsumedListener ensureAfterDataMessageConsumedListener()
 		{
 			final var props = this.getNodelibraryPropertiesProvider();
 
-			final var storedMessageInfoUpdater = new AfterDataMessageConsumedListener()
-			{
-				final StoredMessageIndexManager delegate = ClusterFoundation.Default.this
-					.getStoredMessageIndexManager();
+            final var storedMessageInfoUpdater = new AfterDataMessageConsumedListener()
+            {
+                final StoredMessageIndexManager delegate = ClusterFoundation.Default.this.getStoredMessageIndexManager();
 
-				@Override
-				public void onChange(final MessageInfo messageInfo) throws NodelibraryException
-				{
-					if (props.isBackupNode())
-					{
-						// only backup nodes shall update the stored message index
-						this.delegate.set(messageInfo);
-					}
-				}
+                @Override
+                public void onChange(final MessageInfo messageInfo) throws NodelibraryException
+                {
+                    if (props.isBackupNode())
+                    {
+                        // only backup nodes shall update the stored message index
+                        this.delegate.set(messageInfo);
+                    }
+                }
 
-				@Override
-				public void close()
-				{
-					this.delegate.close();
-				}
-			};
-			LOG.trace(
-				"Created AfterDataMessageConsumedListener->StoredMessageInfoManager delegate. WillRun={}",
-				props.isBackupNode()
-			);
-			return storedMessageInfoUpdater;
-		}
+                @Override
+                public void close()
+                {
+                    this.delegate.close();
+                }
+            };
+            LOG.trace(
+                "Created AfterDataMessageConsumedListener->StoredMessageInfoManager delegate. WillRun={}",
+                props.isBackupNode()
+            );
+            return storedMessageInfoUpdater;
+        }
 
 		protected StorageBackupManager ensureStorageBackupManager()
 		{
 			final var props = this.getNodelibraryPropertiesProvider();
 			final int maxBackupCount = props.keptBackupsCount();
 
-			final Supplier<MessageInfo> messageInfoProvider = this.getClusterStorageBinaryDataClient()::messageInfo;
+            final Supplier<MessageInfo> messageInfoProvider = this.getClusterStorageBinaryDataClient()::messageInfo;
 
 			return StorageBackupManager.New(
 				this.clusterStorageManager,
 
-				maxBackupCount,
-				this.getStorageBackupBackend(),
-				messageInfoProvider,
-				this.getClusterStorageBinaryDataClient()
-			);
-		}
+                maxBackupCount,
+                this.getStorageBackupBackend(),
+                messageInfoProvider,
+                this.getClusterStorageBinaryDataClient()
+            );
+        }
 
 		protected Supplier<Object> ensureRootSupplier()
 		{
@@ -415,34 +414,34 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			);
 		}
 
-		protected ClusterStorageBinaryDataClient ensureClusterStorageBinaryDataClient()
-		{
-			final var props = this.getNodelibraryPropertiesProvider();
-			final var topic = props.kafkaTopicName();
-			final String groupId;
-			final boolean doCommitOffset;
-			if (props.isBackupNode())
-			{
-				groupId = topic + "-backup";
-				doCommitOffset = true;
-			}
-			else
-			{
-				final var podName = props.myPodName();
-				groupId = topic + "-" + podName;
-				doCommitOffset = false;
-			}
-			LOG.trace("Created data client with group id {}", groupId);
-			return ClusterStorageBinaryDataClient.New(
-				this.getClusterStorageBinaryDataPacketAcceptor(),
-				topic,
-				groupId,
-				this.getAfterDataMessageConsumedListener(),
-				this.getStoredMessageIndexManager().get(),
-				this.getKafkaPropertiesProvider(),
-				doCommitOffset
-			);
-		}
+        protected ClusterStorageBinaryDataClient ensureClusterStorageBinaryDataClient()
+        {
+            final var props = this.getNodelibraryPropertiesProvider();
+            final var topic = props.kafkaTopicName();
+            final String groupId;
+            final boolean doCommitOffset;
+            if (props.isBackupNode())
+            {
+                groupId = topic + "-backup";
+                doCommitOffset = true;
+            }
+            else
+            {
+                final var podName = props.myPodName();
+                groupId = topic + "-" + podName;
+                doCommitOffset = false;
+            }
+            LOG.trace("Created data client with group id {}", groupId);
+            return ClusterStorageBinaryDataClient.New(
+                this.getClusterStorageBinaryDataPacketAcceptor(),
+                topic,
+                groupId,
+                this.getAfterDataMessageConsumedListener(),
+                this.getStoredMessageIndexManager().get(),
+                this.getKafkaPropertiesProvider(),
+                doCommitOffset
+            );
+        }
 
 		protected MicroNodeManager ensureMicroNodeManager()
 		{
@@ -482,18 +481,18 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			);
 		}
 
-		protected StorageNodeManager ensureStorageNodeManager()
-		{
-			return StorageNodeManager.New(
-				this.getClusterStorageBinaryDataDistributor(),
-				this.getStorageTaskExecutor(),
-				this.getClusterStorageBinaryDataClient(),
-				this.getStorageNodeHealthCheck(),
-				this.clusterStorageManager,
-				this.getStorageDiskSpaceReader(),
-				this.getKafkaMessageInfoProvider()
-			);
-		}
+        protected StorageNodeManager ensureStorageNodeManager()
+        {
+            return StorageNodeManager.New(
+                this.getClusterStorageBinaryDataDistributor(),
+                this.getStorageTaskExecutor(),
+                this.getClusterStorageBinaryDataClient(),
+                this.getStorageNodeHealthCheck(),
+                this.clusterStorageManager,
+                this.getStorageDiskSpaceReader(),
+                this.getKafkaMessageInfoProvider()
+            );
+        }
 
 		protected ClusterStorageBinaryDataDistributor ensureDataDistributor()
 		{
@@ -974,39 +973,39 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			return this.$();
 		}
 
-		@Override
-		public StoredMessageIndexManager getStoredMessageIndexManager()
-		{
-			if (this.storedMessageInfoManager == null)
-			{
-				this.storedMessageInfoManager = this.dispatch(this.ensureStoredMessageIndexManager());
-			}
-			return this.storedMessageInfoManager;
-		}
+        @Override
+        public StoredMessageIndexManager getStoredMessageIndexManager()
+        {
+            if (this.storedMessageInfoManager == null)
+            {
+                this.storedMessageInfoManager = this.dispatch(this.ensureStoredMessageIndexManager());
+            }
+            return this.storedMessageInfoManager;
+        }
 
-		@Override
-		public F setStoredMessageIndexManager(final StoredMessageIndexManager manager)
-		{
-			this.storedMessageInfoManager = manager;
-			return this.$();
-		}
+        @Override
+        public F setStoredMessageIndexManager(final StoredMessageIndexManager manager)
+        {
+            this.storedMessageInfoManager = manager;
+            return this.$();
+        }
 
-		@Override
-		public KafkaMessageInfoProvider getKafkaMessageInfoProvider()
-		{
-			if (this.kafkaMessageInfoProvider == null)
-			{
-				this.kafkaMessageInfoProvider = this.dispatch(this.ensureKafkaMessageInfoProvider());
-			}
-			return this.kafkaMessageInfoProvider;
-		}
+        @Override
+        public KafkaMessageInfoProvider getKafkaMessageInfoProvider()
+        {
+            if (this.kafkaMessageInfoProvider == null)
+            {
+                this.kafkaMessageInfoProvider = this.dispatch(this.ensureKafkaMessageInfoProvider());
+            }
+            return this.kafkaMessageInfoProvider;
+        }
 
-		@Override
-		public F setKafkaMessageInfoProvider(final KafkaMessageInfoProvider provider)
-		{
-			this.kafkaMessageInfoProvider = provider;
-			return this.$();
-		}
+        @Override
+        public F setKafkaMessageInfoProvider(final KafkaMessageInfoProvider provider)
+        {
+            this.kafkaMessageInfoProvider = provider;
+            return this.$();
+        }
 
 		@Override
 		public ClusterRestRequestController startController() throws NodelibraryException
@@ -1056,15 +1055,16 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 		{
 			LOG.info("Starting backup cluster node");
 
-			this.getKafkaMessageInfoProvider().init();
+            this.getKafkaMessageInfoProvider().init();
+
 
 			// TODO: Hardcoded paths
 			final var storageParentPath = Paths.get("/storage/");
 			final var storageRootPath = storageParentPath.resolve("storage");
 
-			// if we use a downloaded storage, always scroll to the latest message so we don't read old messages
-			boolean useLatestMessageIndex = false;
-			boolean requiresStorageUpload = false;
+            // if we use a downloaded storage, always scroll to the latest message so we don't read old messages
+            boolean useLatestMessageIndex = false;
+            boolean requiresStorageUpload = false;
 
 			// don't send messages generated by starting the storage and storing the empty root
 			this.getClusterStorageBinaryDataDistributor().ignoreDistribution(true);
@@ -1083,30 +1083,30 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			{
 				LOG.info("Downloading user uploaded storage");
 
-				useLatestMessageIndex = true;
-				// since the storage is now different than before the storage nodes
-				// also need the exact same storage
-				requiresStorageUpload = true;
-				this.deleteDirectory(storageRootPath);
-				backend.downloadUserUploadedStorage(storageParentPath);
-				backend.deleteUserUploadedStorage();
-			}
-			else if (containsBackups && !Files.exists(storageRootPath))
-			{
-				LOG.info("Downloading latest storage backup");
-				backend.downloadLatestBackup(storageParentPath);
-			}
-			else
-			{
-				LOG.info("Starting with local storage");
-			}
+                useLatestMessageIndex = true;
+                // since the storage is now different than before the storage nodes
+                // also need the exact same storage
+                requiresStorageUpload = true;
+                this.deleteDirectory(storageRootPath);
+                backend.downloadUserUploadedStorage(storageParentPath);
+                backend.deleteUserUploadedStorage();
+            }
+            else if (containsBackups && !Files.exists(storageRootPath))
+            {
+                LOG.info("Downloading latest storage backup");
+                backend.downloadLatestBackup(storageParentPath);
+            }
+            else
+            {
+                LOG.info("Starting with local storage");
+            }
 
-			if (useLatestMessageIndex)
-			{
-				final var info = this.getKafkaMessageInfoProvider().provideLatestMessageInfo();
-				LOG.debug("Set starting message info to: {}", info);
-				this.getStoredMessageIndexManager().set(info);
-			}
+            if (useLatestMessageIndex)
+            {
+                final var info = this.getKafkaMessageInfoProvider().provideLatestMessageInfo();
+                LOG.debug("Set starting message info to: {}", info);
+                this.getStoredMessageIndexManager().set(info);
+            }
 
 			LOG.info("Creating nodelibrary cluster controller");
 
@@ -1200,10 +1200,10 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 		{
 			LOG.info("Starting storage cluster node");
 
-			// TODO: Hardcoded paths
-			final var storageParentPath = Paths.get("/storage/");
-			final var storageRootPath = storageParentPath.resolve("storage");
-			final var messageInfoPath = storageParentPath.resolve("offset");
+            // TODO: Hardcoded paths
+            final var storageParentPath = Paths.get("/storage/");
+            final var storageRootPath = storageParentPath.resolve("storage");
+            final var messageInfoPath = storageParentPath.resolve("offset");
 
 			if (Files.exists(storageRootPath))
 			{
@@ -1211,17 +1211,17 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 				this.deleteDirectory(storageRootPath);
 			}
 
-			if (Files.exists(messageInfoPath))
-			{
-				try
-				{
-					Files.delete(messageInfoPath);
-				}
-				catch (final IOException e)
-				{
-					throw new NodelibraryException("Failed to delete message info file", e);
-				}
-			}
+            if (Files.exists(messageInfoPath))
+            {
+                try
+                {
+                    Files.delete(messageInfoPath);
+                }
+                catch (final IOException e)
+                {
+                    throw new NodelibraryException("Failed to delete message info file", e);
+                }
+            }
 
 			// don't send messages generated by starting the storage and storing the empty root
 			this.getClusterStorageBinaryDataDistributor().ignoreDistribution(true);
@@ -1246,7 +1246,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			// don't send messages generated by starting the storage and storing the empty root
 			this.getClusterStorageBinaryDataDistributor().ignoreDistribution(true);
 
-			this.getKafkaMessageInfoProvider().init();
+            this.getKafkaMessageInfoProvider().init();
 
 			final var embeddedStorageFoundation = this.getEmbeddedStorageFoundation();
 			// replace the storage live file provider from the provided embedded storage foundation

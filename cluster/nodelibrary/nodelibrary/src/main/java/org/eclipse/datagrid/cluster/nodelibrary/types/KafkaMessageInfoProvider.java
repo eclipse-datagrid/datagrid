@@ -1,20 +1,5 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import static org.apache.kafka.clients.consumer.ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.CLIENT_ID_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.GROUP_ID_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.GROUP_INSTANCE_ID_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.ISOLATION_LEVEL_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
-import static org.apache.kafka.common.IsolationLevel.READ_COMMITTED;
-
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Locale;
-
 /*-
  * #%L
  * Eclipse Data Grid Cluster Nodelibrary
@@ -38,6 +23,12 @@ import org.eclipse.serializer.collections.EqHashTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Locale;
+
+import static org.apache.kafka.clients.consumer.ConsumerConfig.*;
+import static org.apache.kafka.common.IsolationLevel.READ_COMMITTED;
 import static org.eclipse.serializer.util.X.notNull;
 
 /**
@@ -51,7 +42,11 @@ public class KafkaMessageInfoProvider implements AutoCloseable
 		final KafkaPropertiesProvider kafkaPropertiesProvider
 	)
 	{
-		return new KafkaMessageInfoProvider(notNull(topic), notNull(groupInstanceId), notNull(kafkaPropertiesProvider));
+		return new KafkaMessageInfoProvider(
+			notNull(topic),
+			notNull(groupInstanceId),
+			notNull(kafkaPropertiesProvider)
+		);
 	}
 
 	private static final Logger LOG = LoggerFactory.getLogger(KafkaMessageInfoProvider.class);

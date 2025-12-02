@@ -20,10 +20,12 @@ import org.eclipse.serializer.concurrency.XThreads;
 public interface ObjectGraphUpdateHandler
 {
 	public void objectGraphUpdateAvailable(ObjectGraphUpdater updater);
-
+	
+	
 	public static ObjectGraphUpdateHandler Synchronized()
 	{
 		return updater -> XThreads.executeSynchronized(updater::updateObjectGraph);
 	}
-
+	
+	
 }
