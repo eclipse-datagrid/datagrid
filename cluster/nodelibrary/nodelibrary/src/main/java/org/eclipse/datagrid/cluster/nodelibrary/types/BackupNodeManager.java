@@ -24,7 +24,7 @@ import static org.eclipse.serializer.util.X.notNull;
 
 public interface BackupNodeManager extends ClusterNodeManager
 {
-    void stopReadingAtLatestOffset();
+    void stopReadingAtLatestMessage();
 
     void resumeReading() throws NodelibraryException;
 
@@ -83,10 +83,10 @@ public interface BackupNodeManager extends ClusterNodeManager
         }
 
         @Override
-        public void stopReadingAtLatestOffset()
+        public void stopReadingAtLatestMessage()
         {
             this.validateRunning();
-            this.dataClient.stopAtLatestOffset();
+            this.dataClient.stopAtLatestMessage();
         }
 
         @Override

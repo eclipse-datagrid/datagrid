@@ -43,7 +43,7 @@ public interface StorageBackupBackend
 
     void deleteBackup(BackupMetadata backup) throws NodelibraryException;
 
-    void createAndUploadBackup(StorageConnection connection, final OffsetInfo offsetInfo, BackupMetadata backup)
+    void createAndUploadBackup(StorageConnection connection, final MessageInfo messageInfo, BackupMetadata backup)
         throws NodelibraryException;
 
     void downloadBackup(Path storageDestinationParentPath, BackupMetadata backup) throws NodelibraryException;

@@ -22,7 +22,7 @@ import java.util.Collections;
 
 public class NotADistributorException extends BadRequestException
 {
-    public static final String NAD_HEADER_KEY = "Microstream-NAD";
+    public static final String NAD_HEADER_KEY = "StorageNode-NAD";
     public static final String NAD_HEADER_VALUE = Boolean.TRUE.toString();
 
     public NotADistributorException()

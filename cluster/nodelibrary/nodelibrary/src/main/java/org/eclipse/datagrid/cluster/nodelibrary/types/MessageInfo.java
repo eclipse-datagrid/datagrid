@@ -20,25 +20,25 @@ import org.apache.kafka.common.TopicPartition;
 import org.eclipse.serializer.chars.VarString;
 import org.eclipse.serializer.collections.types.XImmutableMap;
 
-public interface OffsetInfo
+public interface MessageInfo
 {
-    long msOffset();
+    long messageIndex();
 
     XImmutableMap<TopicPartition, Long> kafkaPartitionOffsets();
 
-    static OffsetInfo New(final long msOffset, final XImmutableMap<TopicPartition, Long> kafkaPartitionOffsets)
+    static MessageInfo New(final long messageIndex, final XImmutableMap<TopicPartition, Long> kafkaPartitionOffsets)
     {
-        return new Default(msOffset, notNull(kafkaPartitionOffsets));
+        return new Default(messageIndex, notNull(kafkaPartitionOffsets));
     }
 
-    final class Default implements OffsetInfo
+    final class Default implements MessageInfo
     {
-        private final long msOffset;
+        private final long messageIndex;
         private final XImmutableMap<TopicPartition, Long> kafkaPartitionOffsets;
 
-        private Default(final long msOffset, final XImmutableMap<TopicPartition, Long> kafkaPartitionOffsets)
+        private Default(final long messageIndex, final XImmutableMap<TopicPartition, Long> kafkaPartitionOffsets)
         {
-            this.msOffset = msOffset;
+            this.messageIndex = messageIndex;
             this.kafkaPartitionOffsets = kafkaPartitionOffsets;
         }
 
@@ -49,17 +49,17 @@ public interface OffsetInfo
         }
 
         @Override
-        public long msOffset()
+        public long messageIndex()
         {
-            return this.msOffset;
+            return this.messageIndex;
         }
 
         @Override
         public String toString()
         {
             return VarString.New()
-                .add("OffsetInfo{msOffset=")
-                .add(this.msOffset)
+                .add("MessageInfo{messageIndex=")
+                .add(this.messageIndex)
                 .add(",kafkaPartitionOffsets=")
                 .add(this.kafkaPartitionOffsets.toString())
                 .add('}')

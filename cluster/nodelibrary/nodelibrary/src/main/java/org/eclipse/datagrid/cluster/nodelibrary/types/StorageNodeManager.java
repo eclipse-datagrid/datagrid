@@ -31,9 +31,9 @@ public interface StorageNodeManager extends ClusterNodeManager
 
     boolean finishDistributonSwitch() throws NotADistributorException;
 
-    long getCurrentMicrostreamOffset();
+    long getCurrentMessageIndex();
 
-    long getLatestMicrostreamOffset();
+    long getLatestMessageIndex();
 
 
     static StorageNodeManager New(
@@ -43,7 +43,7 @@ public interface StorageNodeManager extends ClusterNodeManager
         final StorageNodeHealthCheck healthCheck,
         final StorageController storageController,
         final StorageDiskSpaceReader storageDiskSpaceReader,
-        final KafkaOffsetProvider kafkaOffsetProvider
+        final KafkaMessageInfoProvider kafkaMessageInfoProvider
     )
     {
         return new Default(
@@ -53,7 +53,7 @@ public interface StorageNodeManager extends ClusterNodeManager
             notNull(healthCheck),
             notNull(storageController),
             notNull(storageDiskSpaceReader),
-            notNull(kafkaOffsetProvider)
+            notNull(kafkaMessageInfoProvider)
         );
     }
 
@@ -67,7 +67,7 @@ public interface StorageNodeManager extends ClusterNodeManager
         private final StorageNodeHealthCheck healthCheck;
         private final StorageController storageController;
         private final StorageDiskSpaceReader storageDiskSpaceReader;
-        private final KafkaOffsetProvider kafkaOffsetProvider;
+        private final KafkaMessageInfoProvider kafkaMessageInfoProvider;
 
         private boolean isDistributor;
         private boolean isSwitchingToDistributor;
@@ -79,7 +79,7 @@ public interface StorageNodeManager extends ClusterNodeManager
             final StorageNodeHealthCheck healthCheck,
             final StorageController storageController,
             final StorageDiskSpaceReader storageDiskSpaceReader,
-            final KafkaOffsetProvider kafkaOffsetProvider
+            final KafkaMessageInfoProvider kafkaMessageInfoProvider
         )
         {
             this.dataDistributor = dataDistributor;
@@ -88,7 +88,7 @@ public interface StorageNodeManager extends ClusterNodeManager
             this.storageController = storageController;
             this.storageDiskSpaceReader = storageDiskSpaceReader;
             this.storageTaskExecutor = storageTaskExecutor;
-            this.kafkaOffsetProvider = kafkaOffsetProvider;
+            this.kafkaMessageInfoProvider = kafkaMessageInfoProvider;
         }
 
         @Override
@@ -151,7 +151,7 @@ public interface StorageNodeManager extends ClusterNodeManager
 
             LOG.info("Turning on distribution.");
             this.isSwitchingToDistributor = true;
-            this.dataClient.stopAtLatestOffset();
+            this.dataClient.stopAtLatestMessage();
         }
 
         @Override
@@ -172,12 +172,12 @@ public interface StorageNodeManager extends ClusterNodeManager
                 return false;
             }
 
-            final var offsetInfo = this.dataClient.offsetInfo();
+            final var messageInfo = this.dataClient.messageInfo();
 
             // once a node has been switched to distribution it will never become a reader node anymore
             this.healthCheck.close();
             this.dataClient.dispose();
-            this.dataDistributor.offset(offsetInfo.msOffset());
+            this.dataDistributor.messageIndex(messageInfo.messageIndex());
 
             this.isDistributor = true;
             this.isSwitchingToDistributor = false;
@@ -185,22 +185,22 @@ public interface StorageNodeManager extends ClusterNodeManager
         }
 
         @Override
-        public long getCurrentMicrostreamOffset()
+        public long getCurrentMessageIndex()
         {
             if (this.isDistributor())
             {
-                return this.dataDistributor.offset();
+                return this.dataDistributor.messageIndex();
             }
             else
             {
-                return this.dataClient.offsetInfo().msOffset();
+                return this.dataClient.messageInfo().messageIndex();
             }
         }
 
         @Override
-        public long getLatestMicrostreamOffset()
+        public long getLatestMessageIndex()
         {
-            return this.kafkaOffsetProvider.provideLatestOffset();
+            return this.kafkaMessageInfoProvider.provideLatestMessageIndex();
         }
 
         @Override

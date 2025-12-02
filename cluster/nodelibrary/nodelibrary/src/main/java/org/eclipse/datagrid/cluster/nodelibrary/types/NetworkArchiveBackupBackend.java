@@ -35,13 +35,13 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
     static NetworkArchiveBackupBackend New(
         final Path storageExportScratchSpacePath,
         final BackupProxyHttpClient backupProxyHttpClient,
-        final StoredOffsetManager.Creator storedOffsetManagerCreator
+        final StoredMessageIndexManager.Creator storedMessageInfoManagerCreator
     )
     {
         return new Default(
             notNull(storageExportScratchSpacePath),
             notNull(backupProxyHttpClient),
-            notNull(storedOffsetManagerCreator)
+            notNull(storedMessageInfoManagerCreator)
         );
     }
 
@@ -52,17 +52,17 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
 
         private final Path storageExportScratchSpacePath;
         private final BackupProxyHttpClient http;
-        private final StoredOffsetManager.Creator offsetManagerCreator;
+        private final StoredMessageIndexManager.Creator messageInfoManagerCreator;
 
         private Default(
             final Path storageExportScratchSpacePath,
             final BackupProxyHttpClient backupProxyHttpClient,
-            final StoredOffsetManager.Creator storedOffsetManagerCreator
+            final StoredMessageIndexManager.Creator storedMessageInfoManagerCreator
         )
         {
             this.storageExportScratchSpacePath = storageExportScratchSpacePath;
             this.http = backupProxyHttpClient;
-            this.offsetManagerCreator = storedOffsetManagerCreator;
+            this.messageInfoManagerCreator = storedMessageInfoManagerCreator;
         }
 
         @Override
@@ -96,7 +96,7 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
         @Override
         public void createAndUploadBackup(
             final StorageConnection connection,
-            final OffsetInfo offsetInfo,
+            final MessageInfo messageInfo,
             final BackupMetadata backup
         ) throws NodelibraryException
         {
@@ -112,12 +112,12 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
             connection.issueFullBackup(fs.ensureDirectory(this.storageExportScratchSpacePath.resolve("storage")));
             // TODO: Hardcoded offset file name
             try (
-                final var offsetWriter = this.offsetManagerCreator.create(
+                final var infoWriter = this.messageInfoManagerCreator.create(
                     fs.ensureFile(this.storageExportScratchSpacePath.resolve("offset")).tryUseWriting()
                 )
             )
             {
-                offsetWriter.set(offsetInfo);
+                infoWriter.set(messageInfo);
             }
 
             this.compressStorage(this.storageExportScratchSpacePath.toString(), archiveFilePath);
@@ -175,16 +175,16 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
         private void clearScratchSpace()
         {
             final Path storagePath = this.storageExportScratchSpacePath.resolve("storage");
-            final Path offsetPath = this.storageExportScratchSpacePath.resolve("offset");
+            final Path messageInfoPath = this.storageExportScratchSpacePath.resolve("offset");
 
             if (Files.exists(storagePath))
             {
                 this.deleteDirectory(storagePath);
             }
 
-            if(Files.exists(offsetPath))
+            if(Files.exists(messageInfoPath))
             {
-                this.deleteFile(offsetPath);
+                this.deleteFile(messageInfoPath);
             }
         }
 

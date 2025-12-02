@@ -16,20 +16,20 @@ package org.eclipse.datagrid.cluster.nodelibrary.micronaut.types;
 
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.HttpResponseException;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamBackup;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamDistributor;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamGc;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamHealth;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamHealthReady;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamStorageBytes;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.GetMicrostreamUpdates;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamActivateDistributorFinish;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamActivateDistributorStart;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamBackup;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamGc;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamResumeUpdates;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRouteConfigurations.PostMicrostreamUpdates;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.GetBackup;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.GetDistributor;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.GetGc;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.GetHealth;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.GetHealthReady;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.GetStorageBytes;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.GetUpdates;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.PostActivateDistributorFinish;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.PostActivateDistributorStart;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.PostBackup;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.PostGc;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.PostResumeUpdates;
+import org.eclipse.datagrid.cluster.nodelibrary.types.StorageNodeRestRouteConfigurations.PostUpdates;
 
 import io.micronaut.core.annotation.Introspected;
 import io.micronaut.http.HttpResponse;
@@ -43,9 +43,9 @@ import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.serde.annotation.SerdeImport;
 
-@Controller(ClusterRestRouteConfigurations.ROOT_PATH)
-@Introspected(classes = PostMicrostreamBackup.Body.class)
-@SerdeImport(PostMicrostreamBackup.Body.class)
+@Controller(StorageNodeRestRouteConfigurations.ROOT_PATH)
+@Introspected(classes = PostBackup.Body.class)
+@SerdeImport(PostBackup.Body.class)
 public class MicronautClusterController
 {
     private final ClusterRestRequestController controller;
@@ -66,103 +66,103 @@ public class MicronautClusterController
         return response;
     }
 
-    @Get(value = GetMicrostreamDistributor.PATH, produces = GetMicrostreamDistributor.PRODUCES)
-    public boolean getMicrostreamDistributor() throws HttpResponseException
+    @Get(value = GetDistributor.PATH, produces = GetDistributor.PRODUCES)
+    public boolean getDistributor() throws HttpResponseException
     {
-        return this.controller.getMicrostreamDistributor();
+        return this.controller.getDistributor();
     }
 
     @Post(
-        value = PostMicrostreamActivateDistributorStart.PATH,
-        consumes = PostMicrostreamActivateDistributorStart.CONSUMES,
-        produces = PostMicrostreamActivateDistributorStart.PRODUCES
+        value = PostActivateDistributorStart.PATH,
+        consumes = PostActivateDistributorStart.CONSUMES,
+        produces = PostActivateDistributorStart.PRODUCES
     )
-    public void postMicrostreamActivateDistributorStart() throws HttpResponseException
+    public void postActivateDistributorStart() throws HttpResponseException
     {
-        this.controller.postMicrostreamActivateDistributorStart();
+        this.controller.postActivateDistributorStart();
     }
 
     @Post(
-        value = PostMicrostreamActivateDistributorFinish.PATH,
-        consumes = PostMicrostreamActivateDistributorFinish.CONSUMES,
-        produces = PostMicrostreamActivateDistributorFinish.PRODUCES
+        value = PostActivateDistributorFinish.PATH,
+        consumes = PostActivateDistributorFinish.CONSUMES,
+        produces = PostActivateDistributorFinish.PRODUCES
     )
-    public boolean postMicrostreamActivateDistributorFinish() throws HttpResponseException
+    public boolean postActivateDistributorFinish() throws HttpResponseException
     {
-        return this.controller.postMicrostreamActivateDistributorFinish();
+        return this.controller.postActivateDistributorFinish();
     }
 
-    @Get(value = GetMicrostreamHealth.PATH, produces = GetMicrostreamHealth.PRODUCES)
-    public void getMicrostreamHealth() throws HttpResponseException
+    @Get(value = GetHealth.PATH, produces = GetHealth.PRODUCES)
+    public void getHealth() throws HttpResponseException
     {
-        this.controller.getMicrostreamHealth();
+        this.controller.getHealth();
     }
 
-    @Get(value = GetMicrostreamHealthReady.PATH, produces = GetMicrostreamHealthReady.PRODUCES)
+    @Get(value = GetHealthReady.PATH, produces = GetHealthReady.PRODUCES)
     @ExecuteOn(TaskExecutors.IO)
-    public void getMicrostreamHealthReady() throws HttpResponseException
+    public void getHealthReady() throws HttpResponseException
     {
-        this.controller.getMicrostreamHealthReady();
+        this.controller.getHealthReady();
     }
 
-    @Get(value = GetMicrostreamStorageBytes.PATH, produces = GetMicrostreamStorageBytes.PRODUCES)
+    @Get(value = GetStorageBytes.PATH, produces = GetStorageBytes.PRODUCES)
     @ExecuteOn(TaskExecutors.IO)
-    public String getMicrostreamStorageBytes() throws HttpResponseException
+    public String getStorageBytes() throws HttpResponseException
     {
-        return this.controller.getMicrostreamStorageBytes();
+        return this.controller.getStorageBytes();
     }
 
     @Post(
-        value = PostMicrostreamBackup.PATH,
-        consumes = PostMicrostreamBackup.CONSUMES,
-        produces = PostMicrostreamBackup.PRODUCES
+        value = PostBackup.PATH,
+        consumes = PostBackup.CONSUMES,
+        produces = PostBackup.PRODUCES
     )
-    public void postMicrostreamBackup(@Body final PostMicrostreamBackup.Body body) throws HttpResponseException
+    public void postBackup(@Body final PostBackup.Body body) throws HttpResponseException
     {
-        this.controller.postMicrostreamBackup(body);
+        this.controller.postBackup(body);
     }
 
-    @Get(value = GetMicrostreamBackup.PATH, produces = GetMicrostreamBackup.PRODUCES)
-    public boolean getMicrostreamBackup() throws HttpResponseException
+    @Get(value = GetBackup.PATH, produces = GetBackup.PRODUCES)
+    public boolean getBackup() throws HttpResponseException
     {
-        return this.controller.getMicrostreamBackup();
+        return this.controller.getBackup();
     }
 
     @Post(
-        value = PostMicrostreamUpdates.PATH,
-        consumes = PostMicrostreamUpdates.CONSUMES,
-        produces = PostMicrostreamUpdates.PRODUCES
+        value = PostUpdates.PATH,
+        consumes = PostUpdates.CONSUMES,
+        produces = PostUpdates.PRODUCES
     )
-    public void postMicrostreamUpdates() throws HttpResponseException
+    public void postUpdates() throws HttpResponseException
     {
-        this.controller.postMicrostreamUpdates();
+        this.controller.postUpdates();
     }
 
-    @Get(value = GetMicrostreamUpdates.PATH, produces = GetMicrostreamUpdates.PRODUCES)
-    public boolean getMicrostreamUpdates() throws HttpResponseException
+    @Get(value = GetUpdates.PATH, produces = GetUpdates.PRODUCES)
+    public boolean getUpdates() throws HttpResponseException
     {
-        return this.controller.getMicrostreamUpdates();
+        return this.controller.getUpdates();
     }
 
     @Post(
-        value = PostMicrostreamResumeUpdates.PATH,
-        consumes = PostMicrostreamResumeUpdates.CONSUMES,
-        produces = PostMicrostreamResumeUpdates.PRODUCES
+        value = PostResumeUpdates.PATH,
+        consumes = PostResumeUpdates.CONSUMES,
+        produces = PostResumeUpdates.PRODUCES
     )
-    public void postMicrostreamResumeUpdates() throws HttpResponseException
+    public void postResumeUpdates() throws HttpResponseException
     {
-        this.controller.postMicrostreamResumeUpdates();
+        this.controller.postResumeUpdates();
     }
 
-    @Post(value = PostMicrostreamGc.PATH, consumes = PostMicrostreamGc.CONSUMES, produces = PostMicrostreamGc.PRODUCES)
-    public void postMicrostreamGc() throws HttpResponseException
+    @Post(value = PostGc.PATH, consumes = PostGc.CONSUMES, produces = PostGc.PRODUCES)
+    public void postGc() throws HttpResponseException
     {
-        this.controller.postMicrostreamGc();
+        this.controller.postGc();
     }
 
-    @Get(value = GetMicrostreamGc.PATH, produces = GetMicrostreamGc.PRODUCES)
-    public boolean getMicrostreamGc() throws HttpResponseException
+    @Get(value = GetGc.PATH, produces = GetGc.PRODUCES)
+    public boolean getGc() throws HttpResponseException
     {
-        return this.controller.getMicrostreamGc();
+        return this.controller.getGc();
     }
 }

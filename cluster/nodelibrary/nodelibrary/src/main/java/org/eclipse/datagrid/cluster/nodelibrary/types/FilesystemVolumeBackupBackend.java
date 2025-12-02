@@ -32,23 +32,23 @@ public interface FilesystemVolumeBackupBackend extends StorageBackupBackend
 {
     static FilesystemVolumeBackupBackend New(
         final Path backupVolumePath,
-        final StoredOffsetManager.Creator storedOffsetManagerCreator
+        final StoredMessageIndexManager.Creator storedmessageIndexManagerCreator
     )
     {
-        return new Default(notNull(backupVolumePath), notNull(storedOffsetManagerCreator));
+        return new Default(notNull(backupVolumePath), notNull(storedmessageIndexManagerCreator));
     }
 
     static class Default implements FilesystemVolumeBackupBackend
     {
         private final Path backupVolumePath;
         private final Path userUploadedStorageFolderPath;
-        private final StoredOffsetManager.Creator offsetManagerCreator;
+        private final StoredMessageIndexManager.Creator messageIndexManagerCreator;
 
-        private Default(final Path backupVolumePath, final StoredOffsetManager.Creator storedOffsetManagerCreator)
+        private Default(final Path backupVolumePath, final StoredMessageIndexManager.Creator storedMessageIndexManagerCreator)
         {
             this.backupVolumePath = backupVolumePath;
             this.userUploadedStorageFolderPath = backupVolumePath.resolve("user-uploaded-storage");
-            this.offsetManagerCreator = storedOffsetManagerCreator;
+            this.messageIndexManagerCreator = storedMessageIndexManagerCreator;
         }
 
         @Override
@@ -70,7 +70,7 @@ public interface FilesystemVolumeBackupBackend extends StorageBackupBackend
         @Override
         public void createAndUploadBackup(
             final StorageConnection connection,
-            final OffsetInfo offsetInfo,
+            final MessageInfo messageInfo,
             final BackupMetadata backup
         ) throws NodelibraryException
         {
@@ -80,12 +80,12 @@ public interface FilesystemVolumeBackupBackend extends StorageBackupBackend
             connection.issueFullBackup(fs.ensureDirectory(backupRootPath.resolve("storage")));
             // TODO: Hardcoded offset file name
             try (
-                final var offsetWriter = this.offsetManagerCreator.create(
+                final var infoWriter = this.messageIndexManagerCreator.create(
                     fs.ensureFile(backupRootPath.resolve("offset")).tryUseWriting()
                 )
             )
             {
-                offsetWriter.set(offsetInfo);
+                infoWriter.set(messageInfo);
             }
             try
             {

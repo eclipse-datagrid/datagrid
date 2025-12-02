@@ -59,7 +59,7 @@ public interface StorageBackupManager
 
         final int maxBackupCount,
         final StorageBackupBackend storageBackupBackend,
-        final Supplier<OffsetInfo> offsetSupplier,
+        final Supplier<MessageInfo> messageInfoSupplier,
         final ClusterStorageBinaryDataClient dataClient
     )
     {
@@ -67,7 +67,7 @@ public interface StorageBackupManager
             notNull(storageConnection),
             positive(maxBackupCount),
             notNull(storageBackupBackend),
-            notNull(offsetSupplier),
+            notNull(messageInfoSupplier),
             notNull(dataClient)
         );
     }
@@ -79,7 +79,7 @@ public interface StorageBackupManager
         private final StorageConnection storageConnection;
         private final int maxBackupCount;
         private final StorageBackupBackend backend;
-        private final Supplier<OffsetInfo> offsetSupplier;
+        private final Supplier<MessageInfo> messageInfoSupplier;
         private final ClusterStorageBinaryDataClient dataClient;
 
         private Default(
@@ -87,14 +87,14 @@ public interface StorageBackupManager
 
             final int maxBackupCount,
             final StorageBackupBackend backupBackend,
-            final Supplier<OffsetInfo> offsetSupplier,
+            final Supplier<MessageInfo> messageInfoSupplier,
             final ClusterStorageBinaryDataClient dataClient
         )
         {
             this.storageConnection = storageConnection;
             this.maxBackupCount = maxBackupCount;
             this.backend = backupBackend;
-            this.offsetSupplier = offsetSupplier;
+            this.messageInfoSupplier = messageInfoSupplier;
             this.dataClient = dataClient;
         }
 
@@ -127,7 +127,7 @@ public interface StorageBackupManager
 
             this.stopDataClient();
 
-            this.backend.createAndUploadBackup(this.storageConnection, this.offsetSupplier.get(), newBackup);
+            this.backend.createAndUploadBackup(this.storageConnection, this.messageInfoSupplier.get(), newBackup);
 
             this.dataClient.resume();
         }
@@ -183,7 +183,7 @@ public interface StorageBackupManager
         private void stopDataClient()
         {
             LOG.trace("Waiting for data client to stop reading");
-            this.dataClient.stopAtLatestOffset();
+            this.dataClient.stopAtLatestMessage();
             while (this.dataClient.isRunning())
             {
                 XThreads.sleep(500);
