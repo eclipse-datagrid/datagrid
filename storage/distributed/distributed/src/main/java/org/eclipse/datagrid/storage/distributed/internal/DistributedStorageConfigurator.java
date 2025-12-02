@@ -14,6 +14,7 @@ package org.eclipse.datagrid.storage.distributed.internal;
  * #L%
  */
 
+
 import static org.eclipse.serializer.util.X.notNull;
 
 import org.eclipse.serializer.functional.InstanceDispatcherLogic;
@@ -39,23 +40,22 @@ public class DistributedStorageConfigurator implements InstanceDispatcherLogic
 	@Override
 	public <T> T apply(final T subject)
 	{
-		if(subject instanceof PersistenceTarget)
+		if (subject instanceof PersistenceTarget)
 		{
 			return (T)StorageBinaryTargetDistributing.New(
 				(PersistenceTarget<Binary>)subject,
 				this.distributor
 			);
 		}
-		if(subject instanceof PersistenceTypeDictionaryExporter)
+		if (subject instanceof PersistenceTypeDictionaryExporter)
 		{
 			return (T)StorageTypeDictionaryExporterDistributing.New(
 				(PersistenceTypeDictionaryExporter)subject,
 				this.distributor
 			);
 		}
-		
+
 		return subject;
 	}
-	
-	
+
 }

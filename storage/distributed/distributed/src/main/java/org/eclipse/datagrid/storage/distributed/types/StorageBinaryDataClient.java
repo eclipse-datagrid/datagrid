@@ -14,6 +14,7 @@ package org.eclipse.datagrid.storage.distributed.types;
  * #L%
  */
 
+
 import org.eclipse.serializer.typing.Disposable;
 
 public interface StorageBinaryDataClient extends Disposable

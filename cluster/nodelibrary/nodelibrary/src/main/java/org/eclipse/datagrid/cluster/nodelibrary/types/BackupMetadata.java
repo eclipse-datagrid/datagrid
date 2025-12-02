@@ -9,29 +9,30 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
+ * 
  * SPDX-License-Identifier: EPL-2.0
  * #L%
  */
 
+
 public final class BackupMetadata
 {
-    private final boolean manualSlot;
-    private final long timestamp;
+	private final boolean manualSlot;
+	private final long timestamp;
 
-    public BackupMetadata(final long timestamp, final boolean manualSlot)
-    {
-        this.timestamp = timestamp;
-        this.manualSlot = manualSlot;
-    }
+	public BackupMetadata(final long timestamp, final boolean manualSlot)
+	{
+		this.timestamp = timestamp;
+		this.manualSlot = manualSlot;
+	}
 
-    public long timestamp()
-    {
-        return this.timestamp;
-    }
+	public long timestamp()
+	{
+		return this.timestamp;
+	}
 
-    public boolean manualSlot()
-    {
-        return this.manualSlot;
-    }
+	public boolean manualSlot()
+	{
+		return this.manualSlot;
+	}
 }

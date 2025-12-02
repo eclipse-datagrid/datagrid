@@ -9,73 +9,74 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
+ * 
  * SPDX-License-Identifier: EPL-2.0
  * #L%
  */
 
-import static org.eclipse.serializer.util.X.notNull;
 
 import org.eclipse.store.storage.types.StorageConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.serializer.util.X.notNull;
+
 public interface StorageTaskExecutor
 {
-    void runChecks();
+	void runChecks();
 
-    boolean isRunningChecks();
+	boolean isRunningChecks();
 
-    static StorageTaskExecutor New(final StorageConnection connection)
-    {
-        return new Default(notNull(connection));
-    }
+	static StorageTaskExecutor New(final StorageConnection connection)
+	{
+		return new Default(notNull(connection));
+	}
 
-    class Abstract implements StorageTaskExecutor
-    {
-        private static final Logger LOG = LoggerFactory.getLogger(Abstract.class);
-        private final StorageConnection connection;
+	class Abstract implements StorageTaskExecutor
+	{
+		private static final Logger LOG = LoggerFactory.getLogger(Abstract.class);
+		private final StorageConnection connection;
 
-        private Thread checksThread;
+		private Thread checksThread;
 
-        protected Abstract(final StorageConnection connection)
-        {
-            this.connection = connection;
-        }
+		protected Abstract(final StorageConnection connection)
+		{
+			this.connection = connection;
+		}
 
-        @Override
-        public void runChecks()
-        {
-            if (this.checksThread == null || !this.checksThread.isAlive())
-            {
-                LOG.debug("Issuing new storage checks");
-                this.checksThread = new Thread(() ->
-                {
-                    this.connection.issueFullGarbageCollection();
-                    this.connection.issueFullCacheCheck();
-                    this.connection.issueFullFileCheck();
-                }, "EclipseStore-StorageChecks");
-                this.checksThread.start();
-            }
-        }
+		@Override
+		public void runChecks()
+		{
+			if (this.checksThread == null || !this.checksThread.isAlive())
+			{
+				LOG.debug("Issuing new storage checks");
+				this.checksThread = new Thread(() ->
+				{
+					this.connection.issueFullGarbageCollection();
+					this.connection.issueFullCacheCheck();
+					this.connection.issueFullFileCheck();
+				}, "EclipseStore-StorageChecks");
+				this.checksThread.start();
+			}
+		}
 
-        @Override
-        public boolean isRunningChecks()
-        {
-            if (this.checksThread != null && !this.checksThread.isAlive())
-            {
-                LOG.trace("Cleanup previous storage checks thread");
-                this.checksThread = null;
-            }
-            return this.checksThread != null;
-        }
-    }
+		@Override
+		public boolean isRunningChecks()
+		{
+			if (this.checksThread != null && !this.checksThread.isAlive())
+			{
+				LOG.trace("Cleanup previous storage checks thread");
+				this.checksThread = null;
+			}
+			return this.checksThread != null;
+		}
+	}
 
-    final class Default extends Abstract implements StorageTaskExecutor
-    {
-        private Default(final StorageConnection connection)
-        {
-            super(connection);
-        }
-    }
+	final class Default extends Abstract implements StorageTaskExecutor
+	{
+		private Default(final StorageConnection connection)
+		{
+			super(connection);
+		}
+	}
 }

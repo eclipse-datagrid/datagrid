@@ -14,6 +14,7 @@ package org.eclipse.datagrid.storage.distributed.kafka.types;
  * #L%
  */
 
+
 import static org.eclipse.serializer.chars.XChars.notEmpty;
 import static org.eclipse.serializer.util.X.notNull;
 
@@ -35,101 +36,99 @@ import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacket;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacketAcceptor;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataReceiver;
 
-
 public interface StorageBinaryDataClientKafka extends StorageBinaryDataClient
 {
 	public static StorageBinaryDataClientKafka New(
-		final Properties                kafkaProperties,
-		final String                    topicName      ,
-		final String                    clientId       ,
+		final Properties kafkaProperties,
+		final String topicName,
+		final String clientId,
 		final StorageBinaryDataReceiver receiver
 	)
 	{
 		return New(
-			kafkaProperties                              ,
-			topicName                                    ,
-			clientId                                     ,
+			kafkaProperties,
+			topicName,
+			clientId,
 			StorageBinaryDataPacketAcceptor.New(receiver)
 		);
 	}
-	
+
 	public static StorageBinaryDataClientKafka New(
-		final Properties                      kafkaProperties,
-		final String                          topicName      ,
-		final String                          clientId       ,
+		final Properties kafkaProperties,
+		final String topicName,
+		final String clientId,
 		final StorageBinaryDataPacketAcceptor packetAcceptor
 	)
 	{
 		return new StorageBinaryDataClientKafka.Default(
-			notNull (kafkaProperties),
-			notEmpty(topicName      ),
-			notEmpty(clientId       ),
-			notNull (packetAcceptor )
+			notNull(kafkaProperties),
+			notEmpty(topicName),
+			notEmpty(clientId),
+			notNull(packetAcceptor)
 		);
 	}
-	
-	
+
 	public static class Default implements StorageBinaryDataClientKafka
 	{
-		private final Properties                      kafkaProperties;
-		private final String                          topicName      ;
-		private final String                          clientId       ;
-		private final StorageBinaryDataPacketAcceptor packetAcceptor ;
-		private final AtomicBoolean                   active         = new AtomicBoolean();
-	
+		private final Properties kafkaProperties;
+		private final String topicName;
+		private final String clientId;
+		private final StorageBinaryDataPacketAcceptor packetAcceptor;
+		private final AtomicBoolean active = new AtomicBoolean();
+
 		Default(
-			final Properties                      kafkaProperties,
-			final String                          topicName      ,
-			final String                          clientId       ,
+			final Properties kafkaProperties,
+			final String topicName,
+			final String clientId,
 			final StorageBinaryDataPacketAcceptor packetAcceptor
 		)
 		{
 			super();
 			this.kafkaProperties = kafkaProperties;
-			this.topicName       = topicName      ;
-			this.clientId        = clientId       ;
-			this.packetAcceptor  = packetAcceptor ;
+			this.topicName = topicName;
+			this.clientId = clientId;
+			this.packetAcceptor = packetAcceptor;
 		}
-		
+
 		@Override
 		public void start()
 		{
 			this.active.set(true);
-			
+
 			final Thread thread = new Thread(this::run);
 			thread.setDaemon(true);
 			thread.start();
 		}
-		
+
 		private void run()
 		{
 			final Properties properties = new Properties();
 			properties.putAll(this.kafkaProperties);
 			properties.put(ConsumerConfig.GROUP_ID_CONFIG, this.clientId);
 			properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-			properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG  , StringDeserializer   .class.getName());
+			properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 			properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-	//		properties.putIfAbsent(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, Duration.ofSeconds(3).toMillis());
-			
-			try(final KafkaConsumer<String, byte[]> consumer = new KafkaConsumer<>(properties))
+			//		properties.putIfAbsent(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, Duration.ofSeconds(3).toMillis());
+
+			try (final KafkaConsumer<String, byte[]> consumer = new KafkaConsumer<>(properties))
 			{
 				consumer.subscribe(Collections.singletonList(this.topicName));
-				while(this.active.get())
+				while (this.active.get())
 				{
 					this.consume(consumer.poll(Duration.ofMillis(Long.MAX_VALUE)));
 					consumer.commitSync();
 				}
 			}
 		}
-		
+
 		private void consume(final ConsumerRecords<String, byte[]> records)
 		{
-			final List<StorageBinaryDataPacket>            packets  = new ArrayList<>();
-			for(final ConsumerRecord<String, byte[]> record : records)
+			final List<StorageBinaryDataPacket> packets = new ArrayList<>();
+			for (final ConsumerRecord<String, byte[]> record : records)
 			{
 				packets.add(this.createDataPacket(record));
 			}
-			if(!packets.isEmpty())
+			if (!packets.isEmpty())
 			{
 				this.packetAcceptor.accept(packets);
 			}
@@ -146,13 +145,13 @@ public interface StorageBinaryDataClientKafka extends StorageBinaryDataClient
 				ByteBuffer.wrap(record.value())
 			);
 		}
-		
+
 		@Override
 		public void dispose()
 		{
 			this.active.set(false);
 		}
-		
+
 	}
-	
+
 }

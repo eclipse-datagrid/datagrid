@@ -14,6 +14,7 @@ package org.eclipse.datagrid.storage.distributed.types;
  * #L%
  */
 
+
 import static org.eclipse.serializer.util.X.notNull;
 
 import org.eclipse.serializer.persistence.types.PersistenceTypeDictionary;
@@ -23,8 +24,8 @@ import org.eclipse.serializer.persistence.types.PersistenceTypeDictionaryExporte
 public interface StorageTypeDictionaryExporterDistributing extends PersistenceTypeDictionaryExporter
 {
 	public static StorageTypeDictionaryExporterDistributing New(
-		final PersistenceTypeDictionaryExporter  delegate   ,
-		final StorageBinaryDataDistributor       distributor
+		final PersistenceTypeDictionaryExporter delegate,
+		final StorageBinaryDataDistributor distributor
 	)
 	{
 		return new StorageTypeDictionaryExporterDistributing.Default(
@@ -33,23 +34,22 @@ public interface StorageTypeDictionaryExporterDistributing extends PersistenceTy
 			notNull(distributor)
 		);
 	}
-	
-	
+
 	public static class Default implements StorageTypeDictionaryExporterDistributing
 	{
-		private final PersistenceTypeDictionaryExporter  delegate   ;
-		private final PersistenceTypeDictionaryAssembler assembler  ;
-		private final StorageBinaryDataDistributor       distributor;
-		
+		private final PersistenceTypeDictionaryExporter delegate;
+		private final PersistenceTypeDictionaryAssembler assembler;
+		private final StorageBinaryDataDistributor distributor;
+
 		Default(
-			final PersistenceTypeDictionaryExporter  delegate   ,
-			final PersistenceTypeDictionaryAssembler assembler  ,
-			final StorageBinaryDataDistributor       distributor
+			final PersistenceTypeDictionaryExporter delegate,
+			final PersistenceTypeDictionaryAssembler assembler,
+			final StorageBinaryDataDistributor distributor
 		)
 		{
 			super();
-			this.delegate    = delegate;
-			this.assembler   = assembler;
+			this.delegate = delegate;
+			this.assembler = assembler;
 			this.distributor = distributor;
 		}
 
@@ -61,7 +61,7 @@ public interface StorageTypeDictionaryExporterDistributing extends PersistenceTy
 				this.assembler.assemble(typeDictionary)
 			);
 		}
-		
+
 	}
-	
+
 }

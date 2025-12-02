@@ -1,8 +1,18 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
-import static org.eclipse.serializer.math.XMath.notNegative;
-import static org.eclipse.serializer.math.XMath.positive;
-import static org.eclipse.serializer.util.X.notNull;
+/*-
+ * #%L
+ * Eclipse Data Grid Cluster Nodelibrary
+ * %%
+ * Copyright (C) 2025 MicroStream Software
+ * %%
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ * 
+ * SPDX-License-Identifier: EPL-2.0
+ * #L%
+ */
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -14,20 +24,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-/*-
- * #%L
- * Eclipse Data Grid Cluster Nodelibrary
- * %%
- * Copyright (C) 2025 MicroStream Software
- * %%
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- * #L%
- */
 
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
@@ -48,6 +44,11 @@ import org.eclipse.serializer.util.X;
 import org.eclipse.serializer.util.logging.Logging;
 import org.eclipse.store.storage.types.StorageConnection;
 import org.slf4j.Logger;
+
+import static org.eclipse.serializer.math.XMath.notNegative;
+import static org.eclipse.serializer.math.XMath.positive;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface ClusterStorageBinaryDataMerger extends StorageBinaryDataMerger, Disposable
 {

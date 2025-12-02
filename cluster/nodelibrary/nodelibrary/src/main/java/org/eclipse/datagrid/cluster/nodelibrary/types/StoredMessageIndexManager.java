@@ -9,12 +9,11 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
+ * 
  * SPDX-License-Identifier: EPL-2.0
  * #L%
  */
 
-import static org.eclipse.serializer.util.X.notNull;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +25,8 @@ import org.eclipse.serializer.chars.VarString;
 import org.eclipse.serializer.collections.EqHashTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface StoredMessageIndexManager extends AutoCloseable
 {

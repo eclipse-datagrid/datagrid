@@ -9,46 +9,47 @@ package org.eclipse.datagrid.cluster.nodelibrary.exceptions;
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
+ * 
  * SPDX-License-Identifier: EPL-2.0
  * #L%
  */
 
+
 public class InternalServerErrorException extends HttpResponseException
 {
-    public InternalServerErrorException()
-    {
-        super();
-    }
+	public InternalServerErrorException()
+	{
+		super();
+	}
 
-    public InternalServerErrorException(final String message)
-    {
-        super(message);
-    }
+	public InternalServerErrorException(final String message)
+	{
+		super(message);
+	}
 
-    public InternalServerErrorException(final Throwable cause)
-    {
-        super(cause);
-    }
+	public InternalServerErrorException(final Throwable cause)
+	{
+		super(cause);
+	}
 
-    public InternalServerErrorException(final String message, final Throwable cause)
-    {
-        super(message, cause);
-    }
+	public InternalServerErrorException(final String message, final Throwable cause)
+	{
+		super(message, cause);
+	}
 
-    public InternalServerErrorException(
-        final String message,
-        final Throwable cause,
-        final boolean enableSuppression,
-        final boolean writableStackTrace
-    )
-    {
-        super(message, cause, enableSuppression, writableStackTrace);
-    }
+	public InternalServerErrorException(
+		final String message,
+		final Throwable cause,
+		final boolean enableSuppression,
+		final boolean writableStackTrace
+	)
+	{
+		super(message, cause, enableSuppression, writableStackTrace);
+	}
 
-    @Override
-    public int statusCode()
-    {
-        return 500;
-    }
+	@Override
+	public int statusCode()
+	{
+		return 500;
+	}
 }

@@ -14,6 +14,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.springboot;
  * #L%
  */
 
+
 public interface RootProvider<T>
 {
 	T root();

@@ -14,6 +14,7 @@ package org.eclipse.datagrid.storage.distributed.types;
  * #L%
  */
 
+
 @FunctionalInterface
 public interface ObjectGraphUpdater
 {

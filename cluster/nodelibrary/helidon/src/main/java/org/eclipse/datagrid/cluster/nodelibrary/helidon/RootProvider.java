@@ -14,6 +14,7 @@ package org.eclipse.datagrid.cluster.nodelibrary.helidon;
  * #L%
  */
 
+
 public interface RootProvider
 {
 	Object root();
