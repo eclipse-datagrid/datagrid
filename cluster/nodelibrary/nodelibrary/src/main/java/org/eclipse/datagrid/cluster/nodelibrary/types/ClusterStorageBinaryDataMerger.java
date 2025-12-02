@@ -1,5 +1,20 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
+import static org.eclipse.serializer.math.XMath.notNegative;
+import static org.eclipse.serializer.math.XMath.positive;
+import static org.eclipse.serializer.util.X.notNull;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 /*-
  * #%L
  * Eclipse Data Grid Cluster Nodelibrary
@@ -19,7 +34,6 @@ import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
 import org.eclipse.datagrid.storage.distributed.types.ObjectMaterializer;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMerger;
 import org.eclipse.serializer.collections.types.XEnum;
-import org.eclipse.serializer.collections.types.XList;
 import org.eclipse.serializer.concurrency.XThreads;
 import org.eclipse.serializer.memory.XMemory;
 import org.eclipse.serializer.persistence.binary.types.Binary;
@@ -35,161 +49,183 @@ import org.eclipse.serializer.util.logging.Logging;
 import org.eclipse.store.storage.types.StorageConnection;
 import org.slf4j.Logger;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.*;
-
-import static org.eclipse.serializer.math.XMath.notNegative;
-import static org.eclipse.serializer.util.X.notNull;
-
-
 public interface ClusterStorageBinaryDataMerger extends StorageBinaryDataMerger, Disposable
 {
-    static ClusterStorageBinaryDataMerger New(
-        final BinaryPersistenceFoundation<?> foundation,
-        final StorageConnection storage,
-        final ObjectGraphUpdateHandler objectGraphUpdateHandler,
-        final long cachingTimeoutMs
-    )
-    {
-        return new Default(
-            notNull(foundation),
-            notNull(storage),
-            notNull(objectGraphUpdateHandler),
-            notNegative(cachingTimeoutMs)
-        );
-    }
+	static ClusterStorageBinaryDataMerger New(
+		final BinaryPersistenceFoundation<?> foundation,
+		final StorageConnection storage,
+		final ObjectGraphUpdateHandler objectGraphUpdateHandler,
+		final long cachingTimeoutMs,
+		final long cachedBinaryLimit
+	)
+	{
+		return new Default(
+			notNull(foundation),
+			notNull(storage),
+			notNull(objectGraphUpdateHandler),
+			notNegative(cachingTimeoutMs),
+			positive(cachedBinaryLimit)
+		);
+	}
 
-    interface Defaults
-    {
-        static long cachingTimeoutMs()
-        {
-            return 10_000L;
-        }
-    }
+	interface Defaults
+	{
+		static long cachingTimeoutMs()
+		{
+			return 10_000L;
+		}
 
-    class Default implements ClusterStorageBinaryDataMerger
-    {
-        private static final Logger LOG = Logging.getLogger(ClusterStorageBinaryDataMerger.class);
+		static long cachingLimit()
+		{
+			return 50L;
+		}
+	}
 
-        private final ExecutorService executor = Executors.newSingleThreadExecutor();
-        private final ConcurrentLinkedQueue<XEnum<ByteBuffer>> cachedData = new ConcurrentLinkedQueue<>();
+	class Default implements ClusterStorageBinaryDataMerger
+	{
+		private static final Logger LOG = Logging.getLogger(ClusterStorageBinaryDataMerger.class);
 
-        private final BinaryPersistenceFoundation<?> foundation;
-        private final StorageConnection storage;
-        private final ObjectGraphUpdateHandler objectGraphUpdateHandler;
-        private final long cachingTimeoutMs;
+		private final ExecutorService executor = Executors.newSingleThreadExecutor();
+		private final ConcurrentLinkedQueue<ByteBuffer> cachedData = new ConcurrentLinkedQueue<>();
 
-        private Future<?> updateFuture = CompletableFuture.completedFuture(null);
+		private final BinaryPersistenceFoundation<?> foundation;
+		private final StorageConnection storage;
+		private final ObjectGraphUpdateHandler objectGraphUpdateHandler;
+		private final long cachingTimeoutMs;
+		private final long cacheLimit;
 
-        private Default(
-            final BinaryPersistenceFoundation<?> foundation,
-            final StorageConnection storage,
-            final ObjectGraphUpdateHandler objectGraphUpdateHandler,
-            final long cachingTimeoutMs
-        )
-        {
-            this.foundation = foundation;
-            this.storage = storage;
-            this.objectGraphUpdateHandler = objectGraphUpdateHandler;
-            this.cachingTimeoutMs = cachingTimeoutMs;
-        }
+		private Future<?> updateFuture = CompletableFuture.completedFuture(null);
 
-        @Override
-        public synchronized void receiveData(final Binary data)
-        {
-            final XEnum<ByteBuffer> dataEnum = X.Enum(data.buffers());
-            this.storage.importData(dataEnum);
-            this.cachedData.add(dataEnum);
+		private Default(
+			final BinaryPersistenceFoundation<?> foundation,
+			final StorageConnection storage,
+			final ObjectGraphUpdateHandler objectGraphUpdateHandler,
+			final long cachingTimeoutMs,
+			final long cacheLimit
+		)
+		{
+			this.foundation = foundation;
+			this.storage = storage;
+			this.objectGraphUpdateHandler = objectGraphUpdateHandler;
+			this.cachingTimeoutMs = cachingTimeoutMs;
+			this.cacheLimit = cacheLimit;
+		}
 
-            if (this.updateFuture.isDone())
-            {
-                this.updateFuture = this.executor.submit(() ->
-                {
-                    try
-                    {
-                        XThreads.sleep(this.cachingTimeoutMs);
-                        this.applyData();
-                    }
-                    catch (final Throwable t)
-                    {
-                        GlobalErrorHandling.handleFatalError(t);
-                    }
-                });
-            }
-        }
+		@Override
+		public synchronized void receiveData(final Binary data)
+		{
+			this.storage.importData(X.Enum(data.buffers()));
 
-        private void applyData()
-        {
-            final XList<XEnum<ByteBuffer>> data = X.List();
-            XEnum<ByteBuffer> next;
-            while ((next = this.cachedData.poll()) != null)
-            {
-                data.add(next);
-            }
+			this.cachedData.addAll(Arrays.asList(data.buffers()));
 
-            LOG.trace("Updating object graph");
-            this.objectGraphUpdateHandler.objectGraphUpdateAvailable(() ->
-            {
-                final ObjectMaterializer materializer = new ObjectMaterializer(this.storage.persistenceManager());
+			if (this.updateFuture.isDone())
+			{
+				this.updateFuture = this.executor.submit(() ->
+				{
+					try
+					{
+						XThreads.sleep(this.cachingTimeoutMs);
+						this.applyData();
+					}
+					catch (final Throwable t)
+					{
+						GlobalErrorHandling.handleFatalError(t);
+					}
+				});
+			}
 
-                final BinaryEntityRawDataIterator iterator = BinaryEntityRawDataIterator.New();
-                for (final var buffers : data)
-                {
-                    for (final ByteBuffer buffer : buffers)
-                    {
-                        final long address = XMemory.getDirectByteBufferAddress(buffer);
-                        iterator.iterateEntityRawData(address, address + buffer.limit(), materializer);
-                        XMemory.deallocateDirectByteBuffer(buffer);
+			if (this.cachedData.size() > this.cacheLimit)
+			{
+				while (!this.updateFuture.isDone())
+				{
+					try
+					{
+						this.updateFuture.get(500, TimeUnit.MILLISECONDS);
+					}
+					catch (final InterruptedException e)
+					{
+						LOG.debug("Interrupted while waiting for import data task", e);
+						Thread.currentThread().interrupt();
+					}
+					catch (final ExecutionException e)
+					{
+						// does not happen as any throwables are handled
+					}
+					catch (final TimeoutException e)
+					{
+						// no-op
+					}
+				}
+			}
+		}
 
-                    }
-                }
+		private void applyData()
+		{
+			final XEnum<ByteBuffer> data = X.Enum();
 
-                materializer.materialize();
-            });
-            LOG.trace("Finished");
-        }
+			ByteBuffer next;
+			while ((next = this.cachedData.poll()) != null)
+			{
+				data.add(next);
+			}
 
-        @Override
-        public synchronized void receiveTypeDictionary(final String typeDictionaryData)
-        {
-            final PersistenceTypeDictionary remoteTypeDictionary = BinaryPersistence.Foundation()
-                .setClassLoaderProvider(this.foundation.getClassLoaderProvider())
-                .setFieldEvaluatorPersister(this.foundation.getFieldEvaluatorPersistable())
-                .setTypeDictionaryLoader(() -> typeDictionaryData)
-                .getTypeDictionaryProvider()
-                .provideTypeDictionary();
-            final PersistenceTypeDictionary localTypeDictionary = this.storage.persistenceManager().typeDictionary();
+			this.objectGraphUpdateHandler.objectGraphUpdateAvailable(() ->
+			{
+				final ObjectMaterializer materializer = new ObjectMaterializer(this.storage.persistenceManager());
 
-            remoteTypeDictionary.iterateAllTypeDefinitions(remoteType ->
-            {
-                final PersistenceTypeDefinition localType = localTypeDictionary.lookupTypeById(remoteType.typeId());
-                if (localType == null)
-                {
-                    LOG.debug("New type: " + remoteType.typeName());
-                    this.foundation.getTypeHandlerManager().ensureTypeHandler(remoteType);
+				final BinaryEntityRawDataIterator iterator = BinaryEntityRawDataIterator.New();
+				for (final ByteBuffer buffer : data)
+				{
+					final long address = XMemory.getDirectByteBufferAddress(buffer);
+					iterator.iterateEntityRawData(address, address + buffer.limit(), materializer);
+					XMemory.deallocateDirectByteBuffer(buffer);
+				}
 
-                }
-                else if (!PersistenceTypeDescription.equalStructure(localType, remoteType))
-                {
-                    throw new RuntimeException(localType + " <> " + remoteType);
-                }
-            });
-        }
+				materializer.materialize();
+			});
+		}
 
-        @Override
-        public void dispose()
-        {
-            this.executor.shutdown();
-            try
-            {
-                // if any external processes like Kubernetes shuts us down, it will wait for the externally set
-                // grace period and then kill the process. But any other case we will await the task orderly like this.
-                this.executor.awaitTermination(30, TimeUnit.MINUTES);
-            }
-            catch (final InterruptedException e)
-            {
-                throw new NodelibraryException(e);
-            }
-        }
-    }
+		@Override
+		public synchronized void receiveTypeDictionary(final String typeDictionaryData)
+		{
+			final PersistenceTypeDictionary remoteTypeDictionary = BinaryPersistence.Foundation()
+				.setClassLoaderProvider(this.foundation.getClassLoaderProvider())
+				.setFieldEvaluatorPersister(this.foundation.getFieldEvaluatorPersistable())
+				.setTypeDictionaryLoader(() -> typeDictionaryData)
+				.getTypeDictionaryProvider()
+				.provideTypeDictionary();
+			final PersistenceTypeDictionary localTypeDictionary = this.storage.persistenceManager().typeDictionary();
+
+			remoteTypeDictionary.iterateAllTypeDefinitions(remoteType ->
+			{
+				final PersistenceTypeDefinition localType = localTypeDictionary.lookupTypeById(remoteType.typeId());
+				if (localType == null)
+				{
+					LOG.debug("New type: " + remoteType.typeName());
+					this.foundation.getTypeHandlerManager().ensureTypeHandler(remoteType);
+
+				}
+				else if (!PersistenceTypeDescription.equalStructure(localType, remoteType))
+				{
+					throw new RuntimeException(localType + " <> " + remoteType);
+				}
+			});
+		}
+
+		@Override
+		public void dispose()
+		{
+			this.executor.shutdown();
+			try
+			{
+				// if any external processes like Kubernetes shuts us down, it will wait for the externally set
+				// grace period and then kill the process. But any other case we will await the task orderly like this.
+				this.executor.awaitTermination(30, TimeUnit.MINUTES);
+			}
+			catch (final InterruptedException e)
+			{
+				throw new NodelibraryException(e);
+			}
+		}
+	}
 }
