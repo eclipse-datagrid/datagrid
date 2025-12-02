@@ -16,172 +16,171 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
 
 public final class StorageNodeRestRouteConfigurations
 {
-    public static final class MediaTypes
-    {
-        private static final String WILDCARD = "*/*";
-        private static final String APPLICATION_JSON = "application/json";
-        private static final String TEXT_PLAIN = "text/plain";
+	public static final class MediaTypes
+	{
+		private static final String WILDCARD = "*/*";
+		private static final String APPLICATION_JSON = "application/json";
+		private static final String TEXT_PLAIN = "text/plain";
 
-        private MediaTypes()
-        {
-        }
-    }
+		private MediaTypes()
+		{
+		}
+	}
 
-    public static final String ROOT_PATH = "/eclipse-datagrid";
+	public static final String ROOT_PATH = "/eclipse-datagrid";
 
-    public static final class GetDistributor
-    {
-        public static final String PATH = "/distributor";
-        public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
+	public static final class GetDistributor
+	{
+		public static final String PATH = "/distributor";
+		public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-        private GetDistributor()
-        {
-        }
-    }
+		private GetDistributor()
+		{
+		}
+	}
 
-    public static final class PostActivateDistributorStart
-    {
-        public static final String PATH = "/activate-distributor/start";
-        public static final String CONSUMES = MediaTypes.WILDCARD;
-        public static final String PRODUCES = MediaTypes.WILDCARD;
+	public static final class PostActivateDistributorStart
+	{
+		public static final String PATH = "/activate-distributor/start";
+		public static final String CONSUMES = MediaTypes.WILDCARD;
+		public static final String PRODUCES = MediaTypes.WILDCARD;
 
-        private PostActivateDistributorStart()
-        {
-        }
-    }
+		private PostActivateDistributorStart()
+		{
+		}
+	}
 
-    public static final class PostActivateDistributorFinish
-    {
-        public static final String PATH = "/activate-distributor/finish";
-        public static final String CONSUMES = MediaTypes.WILDCARD;
-        public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
+	public static final class PostActivateDistributorFinish
+	{
+		public static final String PATH = "/activate-distributor/finish";
+		public static final String CONSUMES = MediaTypes.WILDCARD;
+		public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-        private PostActivateDistributorFinish()
-        {
-        }
-    }
+		private PostActivateDistributorFinish()
+		{
+		}
+	}
 
-    public static final class GetHealth
-    {
-        public static final String PATH = "/health";
-        public static final String PRODUCES = MediaTypes.WILDCARD;
+	public static final class GetHealth
+	{
+		public static final String PATH = "/health";
+		public static final String PRODUCES = MediaTypes.WILDCARD;
 
-        private GetHealth()
-        {
-        }
-    }
+		private GetHealth()
+		{
+		}
+	}
 
-    public static final class GetHealthReady
-    {
-        public static final String PATH = "/health/ready";
-        public static final String PRODUCES = MediaTypes.WILDCARD;
+	public static final class GetHealthReady
+	{
+		public static final String PATH = "/health/ready";
+		public static final String PRODUCES = MediaTypes.WILDCARD;
 
-        private GetHealthReady()
-        {
-        }
-    }
+		private GetHealthReady()
+		{
+		}
+	}
 
-    public static final class GetStorageBytes
-    {
-        public static final String PATH = "/storage-bytes";
-        public static final String PRODUCES = MediaTypes.TEXT_PLAIN;
+	public static final class GetStorageBytes
+	{
+		public static final String PATH = "/storage-bytes";
+		public static final String PRODUCES = MediaTypes.TEXT_PLAIN;
 
-        private GetStorageBytes()
-        {
-        }
-    }
+		private GetStorageBytes()
+		{
+		}
+	}
 
-    public static final class PostBackup
-    {
-        public static final String PATH = "/backup";
-        public static final String CONSUMES = MediaTypes.APPLICATION_JSON;
-        public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
+	public static final class PostBackup
+	{
+		public static final String PATH = "/backup";
+		public static final String CONSUMES = MediaTypes.APPLICATION_JSON;
+		public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-        public static final class Body
-        {
-            private Boolean useManualSlot;
+		public static final class Body
+		{
+			private Boolean useManualSlot;
 
-            public Boolean getUseManualSlot()
-            {
-                return this.useManualSlot;
-            }
+			public Boolean getUseManualSlot()
+			{
+				return this.useManualSlot;
+			}
 
-            public void setUseManualSlot(final Boolean useManualSlot)
-            {
-                this.useManualSlot = useManualSlot;
-            }
-        }
+			public void setUseManualSlot(final Boolean useManualSlot)
+			{
+				this.useManualSlot = useManualSlot;
+			}
+		}
 
-        private PostBackup()
-        {
-        }
-    }
+		private PostBackup()
+		{
+		}
+	}
 
-    public static final class GetBackup
-    {
-        public static final String PATH = "/backup";
-        public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
+	public static final class GetBackup
+	{
+		public static final String PATH = "/backup";
+		public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
+		private GetBackup()
+		{
+		}
+	}
 
-        private GetBackup()
-        {
-        }
-    }
+	public static final class PostUpdates
+	{
+		public static final String PATH = "/updates";
+		public static final String CONSUMES = MediaTypes.WILDCARD;
+		public static final String PRODUCES = MediaTypes.WILDCARD;
 
-    public static final class PostUpdates
-    {
-        public static final String PATH = "/updates";
-        public static final String CONSUMES = MediaTypes.WILDCARD;
-        public static final String PRODUCES = MediaTypes.WILDCARD;
+		private PostUpdates()
+		{
+		}
+	}
 
-        private PostUpdates()
-        {
-        }
-    }
+	public static final class GetUpdates
+	{
+		public static final String PATH = "/updates";
+		public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-    public static final class GetUpdates
-    {
-        public static final String PATH = "/updates";
-        public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
+		private GetUpdates()
+		{
+		}
+	}
 
-        private GetUpdates()
-        {
-        }
-    }
+	public static final class PostResumeUpdates
+	{
+		public static final String PATH = "/resume-updates";
+		public static final String CONSUMES = MediaTypes.WILDCARD;
+		public static final String PRODUCES = MediaTypes.WILDCARD;
 
-    public static final class PostResumeUpdates
-    {
-        public static final String PATH = "/resume-updates";
-        public static final String CONSUMES = MediaTypes.WILDCARD;
-        public static final String PRODUCES = MediaTypes.WILDCARD;
+		private PostResumeUpdates()
+		{
+		}
+	}
 
-        private PostResumeUpdates()
-        {
-        }
-    }
+	public static final class PostGc
+	{
+		public static final String PATH = "/gc";
+		public static final String CONSUMES = MediaTypes.WILDCARD;
+		public static final String PRODUCES = MediaTypes.WILDCARD;
 
-    public static final class PostGc
-    {
-        public static final String PATH = "/gc";
-        public static final String CONSUMES = MediaTypes.WILDCARD;
-        public static final String PRODUCES = MediaTypes.WILDCARD;
+		private PostGc()
+		{
+		}
+	}
 
-        private PostGc()
-        {
-        }
-    }
+	public static final class GetGc
+	{
+		public static final String PATH = "/gc";
+		public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
 
-    public static final class GetGc
-    {
-        public static final String PATH = "/gc";
-        public static final String PRODUCES = MediaTypes.APPLICATION_JSON;
+		private GetGc()
+		{
+		}
+	}
 
-        private GetGc()
-        {
-        }
-    }
-
-    private StorageNodeRestRouteConfigurations()
-    {
-    }
+	private StorageNodeRestRouteConfigurations()
+	{
+	}
 }

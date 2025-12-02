@@ -1,5 +1,16 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+
+import org.apache.kafka.common.TopicPartition;
+import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
+import org.eclipse.serializer.afs.types.AWritableFile;
+import org.eclipse.serializer.chars.VarString;
+import org.eclipse.serializer.collections.EqHashTable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /*-
  * #%L
  * Eclipse Data Grid Cluster Nodelibrary
@@ -15,17 +26,6 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  */
 
 import static org.eclipse.serializer.util.X.notNull;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
-import org.apache.kafka.common.TopicPartition;
-import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
-import org.eclipse.serializer.afs.types.AWritableFile;
-import org.eclipse.serializer.chars.VarString;
-import org.eclipse.serializer.collections.EqHashTable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public interface StoredMessageIndexManager extends AutoCloseable
 {

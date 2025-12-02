@@ -18,5 +18,5 @@ import org.quartz.Job;
 
 public interface QuartzCronJobManager
 {
-    Job create();
+	Job create();
 }
