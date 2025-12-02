@@ -23,29 +23,28 @@ import org.eclipse.serializer.persistence.types.PersistenceTarget;
 public interface StorageBinaryTargetDistributing extends PersistenceTarget<Binary>
 {
 	public static StorageBinaryTargetDistributing New(
-		final PersistenceTarget<Binary>    delegate   ,
+		final PersistenceTarget<Binary> delegate,
 		final StorageBinaryDataDistributor distributor
 	)
 	{
 		return new StorageBinaryTargetDistributing.Default(
-			notNull(delegate   ),
+			notNull(delegate),
 			notNull(distributor)
 		);
 	}
-	
+
 	public static class Default implements StorageBinaryTargetDistributing
 	{
-		private final PersistenceTarget<Binary>    delegate   ;
+		private final PersistenceTarget<Binary> delegate;
 		private final StorageBinaryDataDistributor distributor;
-		
 
 		Default(
-			final PersistenceTarget<Binary>    delegate   ,
+			final PersistenceTarget<Binary> delegate,
 			final StorageBinaryDataDistributor distributor
 		)
 		{
 			super();
-			this.delegate    = delegate   ;
+			this.delegate = delegate;
 			this.distributor = distributor;
 		}
 
@@ -53,11 +52,11 @@ public interface StorageBinaryTargetDistributing extends PersistenceTarget<Binar
 		public void write(final Binary data) throws PersistenceExceptionTransfer
 		{
 			data.iterateChannelChunks(Binary::mark);
-			
+
 			this.delegate.write(data);
-			
+
 			data.iterateChannelChunks(Binary::reset);
-			
+
 			this.distributor.distributeData(data);
 		}
 
@@ -66,7 +65,7 @@ public interface StorageBinaryTargetDistributing extends PersistenceTarget<Binar
 		{
 			return this.delegate.isWritable();
 		}
-		
+
 	}
-	
+
 }

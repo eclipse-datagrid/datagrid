@@ -23,10 +23,10 @@ import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestControll
 @Factory
 public class ClusterRestRequestControllerFactory
 {
-    @Singleton
-    @Bean(preDestroy = "close")
-    public ClusterRestRequestController clusterRequestController(final ClusterFoundation<?> foundation)
-    {
-        return foundation.startController();
-    }
+	@Singleton
+	@Bean(preDestroy = "close")
+	public ClusterRestRequestController clusterRequestController(final ClusterFoundation<?> foundation)
+	{
+		return foundation.startController();
+	}
 }

@@ -24,48 +24,47 @@ import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public interface StorageBackupQuartzCronJobManager extends QuartzCronJobManager
 {
-    static StorageBackupQuartzCronJobManager New(final StorageBackupManager backupManager)
-    {
-        return new Default(notNull(backupManager));
-    }
+	static StorageBackupQuartzCronJobManager New(final StorageBackupManager backupManager)
+	{
+		return new Default(notNull(backupManager));
+	}
 
-    final class Default implements StorageBackupQuartzCronJobManager
-    {
-        private static final Logger LOG = LoggerFactory.getLogger(StorageBackupQuartzCronJobManager.class);
-        private final StorageBackupManager backupManager;
+	final class Default implements StorageBackupQuartzCronJobManager
+	{
+		private static final Logger LOG = LoggerFactory.getLogger(StorageBackupQuartzCronJobManager.class);
+		private final StorageBackupManager backupManager;
 
-        private Default(final StorageBackupManager backupManager)
-        {
-            this.backupManager = backupManager;
-        }
+		private Default(final StorageBackupManager backupManager)
+		{
+			this.backupManager = backupManager;
+		}
 
-        @Override
-        public Job create()
-        {
-            LOG.debug("Instancing new storage backup quartz cron job");
-            return new StorageBackupQuartzCronJob(this.backupManager);
-        }
-    }
+		@Override
+		public Job create()
+		{
+			LOG.debug("Instancing new storage backup quartz cron job");
+			return new StorageBackupQuartzCronJob(this.backupManager);
+		}
+	}
 
-    @DisallowConcurrentExecution
-    final class StorageBackupQuartzCronJob implements Job
-    {
-        private static final Logger LOG = LoggerFactory.getLogger(StorageBackupQuartzCronJob.class);
-        private final StorageBackupManager backupManager;
+	@DisallowConcurrentExecution
+	final class StorageBackupQuartzCronJob implements Job
+	{
+		private static final Logger LOG = LoggerFactory.getLogger(StorageBackupQuartzCronJob.class);
+		private final StorageBackupManager backupManager;
 
-        private StorageBackupQuartzCronJob(final StorageBackupManager backupManager)
-        {
-            this.backupManager = backupManager;
-        }
+		private StorageBackupQuartzCronJob(final StorageBackupManager backupManager)
+		{
+			this.backupManager = backupManager;
+		}
 
-        @Override
-        public void execute(final JobExecutionContext context) throws JobExecutionException
-        {
-            LOG.info("Issuing full backup");
-            this.backupManager.createStorageBackup(false);
-        }
-    }
+		@Override
+		public void execute(final JobExecutionContext context) throws JobExecutionException
+		{
+			LOG.info("Issuing full backup");
+			this.backupManager.createStorageBackup(false);
+		}
+	}
 }

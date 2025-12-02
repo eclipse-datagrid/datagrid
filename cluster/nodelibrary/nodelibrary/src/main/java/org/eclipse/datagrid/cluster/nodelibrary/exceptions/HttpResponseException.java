@@ -26,40 +26,40 @@ import java.util.Collections;
  */
 public abstract class HttpResponseException extends NodelibraryException
 {
-    protected HttpResponseException()
-    {
-        super();
-    }
+	protected HttpResponseException()
+	{
+		super();
+	}
 
-    protected HttpResponseException(final String message)
-    {
-        super(message);
-    }
+	protected HttpResponseException(final String message)
+	{
+		super(message);
+	}
 
-    protected HttpResponseException(final Throwable cause)
-    {
-        super(cause);
-    }
+	protected HttpResponseException(final Throwable cause)
+	{
+		super(cause);
+	}
 
-    protected HttpResponseException(final String message, final Throwable cause)
-    {
-        super(message, cause);
-    }
+	protected HttpResponseException(final String message, final Throwable cause)
+	{
+		super(message, cause);
+	}
 
-    protected HttpResponseException(
-        final String message,
-        final Throwable cause,
-        final boolean enableSuppression,
-        final boolean writableStackTrace
-    )
-    {
-        super(message, cause, enableSuppression, writableStackTrace);
-    }
+	protected HttpResponseException(
+		final String message,
+		final Throwable cause,
+		final boolean enableSuppression,
+		final boolean writableStackTrace
+	)
+	{
+		super(message, cause, enableSuppression, writableStackTrace);
+	}
 
-    public abstract int statusCode();
+	public abstract int statusCode();
 
-    public Collection<HttpHeader> extraHeaders()
-    {
-        return Collections.emptyList();
-    }
+	public Collection<HttpHeader> extraHeaders()
+	{
+		return Collections.emptyList();
+	}
 }

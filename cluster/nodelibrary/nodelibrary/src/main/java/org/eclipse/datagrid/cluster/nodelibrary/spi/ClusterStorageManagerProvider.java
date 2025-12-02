@@ -14,10 +14,9 @@ package org.eclipse.datagrid.cluster.nodelibrary.spi;
  * #L%
  */
 
-
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
 
 public interface ClusterStorageManagerProvider
 {
-    ClusterStorageManager<?> provideClusterStorageManager();
+	ClusterStorageManager<?> provideClusterStorageManager();
 }

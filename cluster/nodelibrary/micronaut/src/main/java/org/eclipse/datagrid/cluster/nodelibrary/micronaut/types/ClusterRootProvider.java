@@ -20,18 +20,17 @@ import io.micronaut.eclipsestore.DefaultRootProvider;
 import io.micronaut.eclipsestore.RootProvider;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
 
-
 @EachBean(ClusterStorageManager.class)
 @Replaces(DefaultRootProvider.class)
 public class ClusterRootProvider<T> implements RootProvider<T>
 {
 	private final ClusterStorageManager<T> storageManager;
-	
+
 	public ClusterRootProvider(final ClusterStorageManager<T> storageManager)
 	{
 		this.storageManager = storageManager;
 	}
-	
+
 	@Override
 	public T root()
 	{
