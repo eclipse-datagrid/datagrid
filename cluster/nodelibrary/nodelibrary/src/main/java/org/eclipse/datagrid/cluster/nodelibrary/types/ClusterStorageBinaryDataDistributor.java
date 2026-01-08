@@ -9,11 +9,10 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  * #L%
  */
-
 
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataDistributor;
 import org.eclipse.serializer.persistence.binary.types.Binary;
@@ -22,74 +21,74 @@ import static org.eclipse.serializer.util.X.notNull;
 
 public interface ClusterStorageBinaryDataDistributor extends StorageBinaryDataDistributor
 {
-	void messageIndex(long index);
+    void messageIndex(long index);
 
-	long messageIndex();
+    long messageIndex();
 
-	void ignoreDistribution(boolean ignore);
+    void ignoreDistribution(boolean ignore);
 
-	boolean ignoreDistribution();
+    boolean ignoreDistribution();
 
-	static ClusterStorageBinaryDataDistributor Caching(final ClusterStorageBinaryDataDistributor delegate)
-	{
-		return new Caching(notNull(delegate));
-	}
+    static ClusterStorageBinaryDataDistributor Caching(final ClusterStorageBinaryDataDistributor delegate)
+    {
+        return new Caching(notNull(delegate));
+    }
 
-	public static final class Caching implements ClusterStorageBinaryDataDistributor
-	{
-		private final ClusterStorageBinaryDataDistributor delegate;
-		private String typeDictionaryData;
+    public static final class Caching implements ClusterStorageBinaryDataDistributor
+    {
+        private final ClusterStorageBinaryDataDistributor delegate;
+        private String typeDictionaryData;
 
-		private Caching(final ClusterStorageBinaryDataDistributor delegate)
-		{
-			this.delegate = delegate;
-		}
+        private Caching(final ClusterStorageBinaryDataDistributor delegate)
+        {
+            this.delegate = delegate;
+        }
 
-		@Override
-		public synchronized void distributeData(final Binary data)
-		{
-			if (this.typeDictionaryData != null)
-			{
-				this.delegate.distributeTypeDictionary(this.typeDictionaryData);
-				this.typeDictionaryData = null;
-			}
-			this.delegate.distributeData(data);
-		}
+        @Override
+        public synchronized void distributeData(final Binary data)
+        {
+            if (this.typeDictionaryData != null)
+            {
+                this.delegate.distributeTypeDictionary(this.typeDictionaryData);
+                this.typeDictionaryData = null;
+            }
+            this.delegate.distributeData(data);
+        }
 
-		@Override
-		public synchronized void distributeTypeDictionary(final String typeDictionaryData)
-		{
-			this.typeDictionaryData = typeDictionaryData;
-		}
+        @Override
+        public synchronized void distributeTypeDictionary(final String typeDictionaryData)
+        {
+            this.typeDictionaryData = typeDictionaryData;
+        }
 
-		@Override
-		public void messageIndex(final long index)
-		{
-			this.delegate.messageIndex(index);
-		}
+        @Override
+        public void messageIndex(final long index)
+        {
+            this.delegate.messageIndex(index);
+        }
 
-		@Override
-		public long messageIndex()
-		{
-			return this.delegate.messageIndex();
-		}
+        @Override
+        public long messageIndex()
+        {
+            return this.delegate.messageIndex();
+        }
 
-		@Override
-		public boolean ignoreDistribution()
-		{
-			return this.delegate.ignoreDistribution();
-		}
+        @Override
+        public boolean ignoreDistribution()
+        {
+            return this.delegate.ignoreDistribution();
+        }
 
-		@Override
-		public void ignoreDistribution(final boolean ignore)
-		{
-			this.delegate.ignoreDistribution(ignore);
-		}
+        @Override
+        public void ignoreDistribution(final boolean ignore)
+        {
+            this.delegate.ignoreDistribution(ignore);
+        }
 
-		@Override
-		public void dispose()
-		{
-			this.delegate.dispose();
-		}
-	}
+        @Override
+        public void dispose()
+        {
+            this.delegate.dispose();
+        }
+    }
 }

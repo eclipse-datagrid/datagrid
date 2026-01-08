@@ -9,29 +9,27 @@ package org.eclipse.datagrid.cluster.nodelibrary.micronaut.types;
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  * #L%
  */
-
-
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterFoundation;
-import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
-import org.eclipse.store.storage.types.StorageManager;
 
 import io.micronaut.context.annotation.Bean;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Replaces;
 import jakarta.inject.Singleton;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterFoundation;
+import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterStorageManager;
+import org.eclipse.store.storage.types.StorageManager;
 
 @Factory
 public class ClusterStorageManagerFactory
 {
-	@Replaces(StorageManager.class)
-	@Bean(preDestroy = "shutdown")
-	@Singleton
-	public ClusterStorageManager<?> clusterStorageManager(final ClusterFoundation<?> foundation)
-	{
-		return foundation.startStorageManager();
-	}
+    @Replaces(StorageManager.class)
+    @Bean(preDestroy = "shutdown")
+    @Singleton
+    public ClusterStorageManager<?> clusterStorageManager(final ClusterFoundation<?> foundation)
+    {
+        return foundation.startStorageManager();
+    }
 }

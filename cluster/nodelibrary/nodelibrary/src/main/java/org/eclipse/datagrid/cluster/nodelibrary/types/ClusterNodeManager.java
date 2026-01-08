@@ -9,26 +9,25 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  * #L%
  */
-
 
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 
 public interface ClusterNodeManager extends AutoCloseable
 {
-	@Override
-	void close();
+    @Override
+    void close();
 
-	void startStorageChecks();
+    void startStorageChecks();
 
-	boolean isRunningStorageChecks();
+    boolean isRunningStorageChecks();
 
-	boolean isReady() throws NodelibraryException;
+    boolean isReady() throws NodelibraryException;
 
-	boolean isHealthy();
+    boolean isHealthy();
 
-	long readStorageSizeBytes() throws NodelibraryException;
+    long readStorageSizeBytes() throws NodelibraryException;
 }

@@ -9,11 +9,10 @@ package org.eclipse.datagrid.cluster.nodelibrary.springboot;
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  * #L%
  */
-
 
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterFoundation;
 import org.eclipse.datagrid.cluster.nodelibrary.types.ClusterRestRequestController;
@@ -29,41 +28,41 @@ import org.springframework.context.annotation.Import;
 @Import(SpringBootClusterController.class)
 public class EclipseDataGridCluster
 {
-	@Bean
-	public ObjectGraphUpdateHandler objectGraphUpdateHandler(final LockedExecutor executor)
-	{
-		return updater -> executor.write(updater::updateObjectGraph);
-	}
+    @Bean
+    public ObjectGraphUpdateHandler objectGraphUpdateHandler(final LockedExecutor executor)
+    {
+        return updater -> executor.write(updater::updateObjectGraph);
+    }
 
-	@Bean
-	public LockedExecutor lockedExecutor()
-	{
-		return LockedExecutor.New();
-	}
+    @Bean
+    public LockedExecutor lockedExecutor()
+    {
+        return LockedExecutor.New();
+    }
 
-	@Bean
-	public ClusterFoundation<?> clusterFoundation(
-		final RootProvider<?> rootProvider,
-		final ObjectGraphUpdateHandler objectGraphUpdateHandler,
-		@Value("${eclipsestore.distribution.kafka.async:false}") final boolean async
-	)
-	{
-		return ClusterFoundation.New()
-			.setEnableAsyncDistribution(async)
-			.setObjectGraphUpdateHandler(objectGraphUpdateHandler)
-			.setRootSupplier(rootProvider::root);
-	}
+    @Bean
+    public ClusterFoundation<?> clusterFoundation(
+        final RootProvider<?> rootProvider,
+        final ObjectGraphUpdateHandler objectGraphUpdateHandler,
+        @Value("${eclipsestore.distribution.kafka.async:false}") final boolean async
+    )
+    {
+        return ClusterFoundation.New()
+            .setEnableAsyncDistribution(async)
+            .setObjectGraphUpdateHandler(objectGraphUpdateHandler)
+            .setRootSupplier(rootProvider::root);
+    }
 
-	@Bean
-	public ClusterRestRequestController nodelibraryClusterController(final ClusterFoundation<?> foundation)
-	{
-		return foundation.startController();
-	}
+    @Bean
+    public ClusterRestRequestController nodelibraryClusterController(final ClusterFoundation<?> foundation)
+    {
+        return foundation.startController();
+    }
 
-	@Bean
-	public ClusterStorageManager<?> clusterStorageManager(final ClusterFoundation<?> foundation)
-	{
-		return foundation.startStorageManager();
-	}
+    @Bean
+    public ClusterStorageManager<?> clusterStorageManager(final ClusterFoundation<?> foundation)
+    {
+        return foundation.startStorageManager();
+    }
 
 }

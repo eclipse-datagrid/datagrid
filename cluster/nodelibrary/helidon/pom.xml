@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>org.eclipse.datagrid</groupId>
-		<artifactId>cluster-nodelibrary-parent</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
-		<relativePath>../pom.xml</relativePath>
-	</parent>
+    <parent>
+        <groupId>org.eclipse.datagrid</groupId>
+        <artifactId>cluster-nodelibrary-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
 
-	<artifactId>cluster-nodelibrary-helidon</artifactId>
+    <artifactId>cluster-nodelibrary-helidon</artifactId>
 
-	<name>Eclipse Data Grid Cluster Nodelibrary Helidon</name>
-	<description>Eclipse Data Grid Cluster Nodelibrary Helidon Implementation</description>
-	<url>https://projects.eclipse.org/projects/technology.datagrid</url>
+    <name>Eclipse Data Grid Cluster Nodelibrary Helidon</name>
+    <description>Eclipse Data Grid Cluster Nodelibrary Helidon Implementation</description>
+    <url>https://projects.eclipse.org/projects/technology.datagrid</url>
 
     <dependencyManagement>
         <dependencies>
@@ -30,16 +30,16 @@
         </dependencies>
     </dependencyManagement>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.eclipse.datagrid</groupId>
-			<artifactId>cluster-nodelibrary</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>io.helidon.microprofile.openapi</groupId>
-			<artifactId>helidon-microprofile-openapi</artifactId>
-		</dependency>
-	</dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>org.eclipse.datagrid</groupId>
+            <artifactId>cluster-nodelibrary</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>io.helidon.microprofile.openapi</groupId>
+            <artifactId>helidon-microprofile-openapi</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>
