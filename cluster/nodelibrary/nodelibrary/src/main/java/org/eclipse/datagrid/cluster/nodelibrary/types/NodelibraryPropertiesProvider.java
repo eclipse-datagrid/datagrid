@@ -65,30 +65,51 @@ public interface NodelibraryPropertiesProvider
     /**
      * Returns the absolute path to the storage parent directory, containing the backup directory, storage directory and
      * message index file.
+     *
+     * @return The storage parent path or {@code null} if absent.
      */
     Path storageParentPath() throws InvalidPathException;
 
     /**
      * Returns the relative path to the storage directory usually relative to the {@link #storageParentPath()}.
+     *
+     * @return The storage path or {@code null} if absent.
+     * @throws InvalidPathException if the {@link Path} could not be converted.
      */
     Path storagePath() throws InvalidPathException;
 
     /**
      * Returns the relative path to the storage backup directory usually relative to the {@link #storageParentPath()}.
+     *
+     * @return The storage backup path or {@code null} if absent.
+     * @throws InvalidPathException if the {@link Path} could not be converted.
      */
     Path backupPath() throws InvalidPathException;
 
     /**
      * Returns the relative path to the stored message index used by the storage distribution. This directory is usually
      * relative to the {@link #storageParentPath()}.
+     *
+     * @return The message index path or {@code null} if absent.
+     * @throws InvalidPathException if the {@link Path} could not be converted.
      */
     Path messageIndexPath() throws InvalidPathException;
+
+    /**
+     * Returns the relative path to the lucene directory that that should be used for any lucene index. This directory
+     * is usually relative to the {@link #storageParentPath()}.
+     *
+     * @return The lucene directory path or {@code null} if absent.
+     * @throws InvalidPathException if the {@link Path} could not be converted.
+     */
+    Path luceneDirectoryPath() throws InvalidPathException;
 
     /**
      * Convenience method for resolving the {@link #storagePath()} relative to {@link #storageParentPath()}.
      *
      * @return Returns the resolved {@link Path} or {@code null} if either the parent path or the storage path is
      * {@code null}.
+     * @throws InvalidPathException if any {@link Path} could not be converted.
      */
     default Path resolvedStoragePath()
     {
@@ -106,6 +127,7 @@ public interface NodelibraryPropertiesProvider
      *
      * @return Returns the resolved {@link Path} or {@code null} if either the parent path or the storage backup path is
      * {@code null}.
+     * @throws InvalidPathException if any {@link Path} could not be converted.
      */
     default Path resolvedBackupPath()
     {
@@ -123,6 +145,7 @@ public interface NodelibraryPropertiesProvider
      *
      * @return Returns the resolved {@link Path} or {@code null} if either the parent path or the message index path is
      * {@code null}.
+     * @throws InvalidPathException if any {@link Path} could not be converted.
      */
     default Path resolvedMessageIndexPath()
     {
@@ -135,6 +158,24 @@ public interface NodelibraryPropertiesProvider
         return parent.resolve(index);
     }
 
+    /**
+     * Convenience method for resolving the {@link #luceneDirectoryPath()} relative to {@link #storageParentPath()}.
+     *
+     * @return Returns the resolved {@link Path} or {@code null} if either the parent path or the message index path is
+     * {@code null}.
+     * @throws InvalidPathException if any {@link Path} could not be converted.
+     */
+    default Path resolvedLuceneDirectoryPath()
+    {
+        final Path parent = storageParentPath();
+        final Path lucene = luceneDirectoryPath();
+        if (parent == null || lucene == null)
+        {
+            return null;
+        }
+        return parent.resolve(lucene);
+    }
+
     static NodelibraryPropertiesProvider Env()
     {
         return new Env();
@@ -144,9 +185,11 @@ public interface NodelibraryPropertiesProvider
     {
         public static final class EnvKeys
         {
-            public static final String SECURE_KAFKA = "MSCNL_SECURE_KAFKA";
+            private static final String PREFIX = "MSCNL_";
+
+            public static final String SECURE_KAFKA = PREFIX + "SECURE_KAFKA";
             public static final String KAFKA_BOOTSTRAP_SERVERS = "KAFKA_BOOTSTRAP_SERVERS";
-            public static final String KAFKA_TOPIC_NAME = "MSCNL_KAFKA_TOPIC_NAME";
+            public static final String KAFKA_TOPIC_NAME = PREFIX + "KAFKA_TOPIC_NAME";
             public static final String IS_BACKUP_NODE = "IS_BACKUP_NODE";
             public static final String BACKUP_TARGET = "BACKUP_TARGET";
             public static final String KEPT_BACKUPS_COUNT = "KEPT_BACKUPS_COUNT";
@@ -158,18 +201,19 @@ public interface NodelibraryPropertiesProvider
                 "STORAGE_LIMIT_CHECKER_INTERVAL_MINUTES";
             public static final String STORAGE_LIMIT_CHECKER_PERCENT = "STORAGE_LIMIT_CHECKER_PERCENT";
             public static final String STORAGE_LIMIT_GB = "STORAGE_LIMIT_GB";
-            public static final String IS_MICRO = "MSCNL_IS_MICRO";
-            public static final String KAFKA_USERNAME = "MSCNL_KAFKA_USERNAME";
-            public static final String KAFKA_PASSWORD = "MSCNL_KAFKA_PASSWORD";
+            public static final String IS_MICRO = PREFIX + "IS_MICRO";
+            public static final String KAFKA_USERNAME = PREFIX + "KAFKA_USERNAME";
+            public static final String KAFKA_PASSWORD = PREFIX + "KAFKA_PASSWORD";
             public static final String MY_POD_NAME = "MY_POD_NAME";
             public static final String MY_NAMESPACE = "MY_NAMESPACE";
-            public static final String IS_PROD_MODE = "MSCNL_PROD_MODE";
-            public static final String DATA_MERGER_TIMEOUT_MS = "MSCNL_DATA_MERGER_TIMEOUT";
-            public static final String DATA_MERGER_LIMIT = "MSCNL_DATA_MERGER_LIMIT";
-            public static final String STORAGE_PARENT_PATH = "MSCNL_STORAGE_PARENT_PATH";
-            public static final String STORAGE_PATH = "MSCNL_STORAGE_PATH";
-            public static final String BACKUP_PATH = "MSCNL_BACKUP_PATH";
-            public static final String MESSAGE_INDEX_PATH = "MSCNL_MESSAGE_INDEX_PATH";
+            public static final String IS_PROD_MODE = PREFIX + "PROD_MODE";
+            public static final String DATA_MERGER_TIMEOUT_MS = PREFIX + "DATA_MERGER_TIMEOUT";
+            public static final String DATA_MERGER_LIMIT = PREFIX + "DATA_MERGER_LIMIT";
+            public static final String STORAGE_PARENT_PATH = PREFIX + "STORAGE_PARENT_PATH";
+            public static final String STORAGE_PATH = PREFIX + "STORAGE_PATH";
+            public static final String BACKUP_PATH = PREFIX + "BACKUP_PATH";
+            public static final String MESSAGE_INDEX_PATH = PREFIX + "MESSAGE_INDEX_PATH";
+            public static final String LUCENE_DIRECTORY_PATH = PREFIX + "LUCENE_DIRECTORY_PATH";
 
             private EnvKeys()
             {
@@ -325,6 +369,12 @@ public interface NodelibraryPropertiesProvider
         public Path messageIndexPath() throws InvalidPathException
         {
             return this.envPath(EnvKeys.MESSAGE_INDEX_PATH);
+        }
+
+        @Override
+        public Path luceneDirectoryPath() throws InvalidPathException
+        {
+            return this.envPath(EnvKeys.LUCENE_DIRECTORY_PATH);
         }
 
         private Integer envInteger(final String envkey)
