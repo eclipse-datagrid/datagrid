@@ -14,6 +14,10 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * #L%
  */
 
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 public interface NodelibraryPropertiesProvider
 {
     boolean secureKafka();
@@ -58,6 +62,79 @@ public interface NodelibraryPropertiesProvider
 
     Long dataMergerCachedDataLimit();
 
+    /**
+     * Returns the absolute path to the storage parent directory, containing the backup directory, storage directory and
+     * message index file.
+     */
+    Path storageParentPath() throws InvalidPathException;
+
+    /**
+     * Returns the relative path to the storage directory usually relative to the {@link #storageParentPath()}.
+     */
+    Path storagePath() throws InvalidPathException;
+
+    /**
+     * Returns the relative path to the storage backup directory usually relative to the {@link #storageParentPath()}.
+     */
+    Path backupPath() throws InvalidPathException;
+
+    /**
+     * Returns the relative path to the stored message index used by the storage distribution. This directory is usually
+     * relative to the {@link #storageParentPath()}.
+     */
+    Path messageIndexPath() throws InvalidPathException;
+
+    /**
+     * Convenience method for resolving the {@link #storagePath()} relative to {@link #storageParentPath()}.
+     *
+     * @return Returns the resolved {@link Path} or {@code null} if either the parent path or the storage path is
+     * {@code null}.
+     */
+    default Path resolvedStoragePath()
+    {
+        final Path parent = storageParentPath();
+        final Path storage = storagePath();
+        if (parent == null || storage == null)
+        {
+            return null;
+        }
+        return parent.resolve(storage);
+    }
+
+    /**
+     * Convenience method for resolving the {@link #backupPath()} relative to {@link #storageParentPath()}.
+     *
+     * @return Returns the resolved {@link Path} or {@code null} if either the parent path or the storage backup path is
+     * {@code null}.
+     */
+    default Path resolvedBackupPath()
+    {
+        final Path parent = storageParentPath();
+        final Path backup = backupPath();
+        if (parent == null || backup == null)
+        {
+            return null;
+        }
+        return parent.resolve(backup);
+    }
+
+    /**
+     * Convenience method for resolving the {@link #messageIndexPath()} relative to {@link #storageParentPath()}.
+     *
+     * @return Returns the resolved {@link Path} or {@code null} if either the parent path or the message index path is
+     * {@code null}.
+     */
+    default Path resolvedMessageIndexPath()
+    {
+        final Path parent = storageParentPath();
+        final Path index = messageIndexPath();
+        if (parent == null || index == null)
+        {
+            return null;
+        }
+        return parent.resolve(index);
+    }
+
     static NodelibraryPropertiesProvider Env()
     {
         return new Env();
@@ -89,6 +166,10 @@ public interface NodelibraryPropertiesProvider
             public static final String IS_PROD_MODE = "MSCNL_PROD_MODE";
             public static final String DATA_MERGER_TIMEOUT_MS = "MSCNL_DATA_MERGER_TIMEOUT";
             public static final String DATA_MERGER_LIMIT = "MSCNL_DATA_MERGER_LIMIT";
+            public static final String STORAGE_PARENT_PATH = "MSCNL_STORAGE_PARENT_PATH";
+            public static final String STORAGE_PATH = "MSCNL_STORAGE_PATH";
+            public static final String BACKUP_PATH = "MSCNL_BACKUP_PATH";
+            public static final String MESSAGE_INDEX_PATH = "MSCNL_MESSAGE_INDEX_PATH";
 
             private EnvKeys()
             {
@@ -222,6 +303,30 @@ public interface NodelibraryPropertiesProvider
             return this.envLong(EnvKeys.DATA_MERGER_LIMIT);
         }
 
+        @Override
+        public Path storageParentPath() throws InvalidPathException
+        {
+            return this.envPath(EnvKeys.STORAGE_PARENT_PATH);
+        }
+
+        @Override
+        public Path storagePath() throws InvalidPathException
+        {
+            return this.envPath(EnvKeys.STORAGE_PATH);
+        }
+
+        @Override
+        public Path backupPath() throws InvalidPathException
+        {
+            return this.envPath(EnvKeys.BACKUP_PATH);
+        }
+
+        @Override
+        public Path messageIndexPath() throws InvalidPathException
+        {
+            return this.envPath(EnvKeys.MESSAGE_INDEX_PATH);
+        }
+
         private Integer envInteger(final String envkey)
         {
             final String env = this.envString(envkey);
@@ -238,6 +343,12 @@ public interface NodelibraryPropertiesProvider
         {
             final String env = this.envString(envkey);
             return env == null ? null : Double.parseDouble(env);
+        }
+
+        private Path envPath(final String envkey) throws InvalidPathException
+        {
+            final String env = envString(envkey);
+            return env == null ? null : Paths.get(env);
         }
 
         private boolean envBoolean(final String envkey)

@@ -218,13 +218,12 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
         protected StorageBackupBackend ensureBackupBackend()
         {
-            // TODO: Hardcoded path
             final var props = this.getNodelibraryPropertiesProvider();
             final StoredMessageIndexManager.Creator messageIndexManagerCreator = StoredMessageIndexManager::New;
 
             if (props.backupTarget() == BackupTarget.SAAS)
             {
-                final var scratchSpace = Paths.get("/storage/backup/");
+                final Path scratchSpace = props.resolvedBackupPath();
                 if (!Files.exists(scratchSpace))
                 {
                     try
@@ -324,8 +323,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
         protected StoredMessageIndexManager ensureStoredMessageIndexManager()
         {
-            // TODO: Hardcoded path
-            final var messageInfoPath = Paths.get("/storage/offset");
+            final var messageInfoPath = this.getNodelibraryPropertiesProvider().resolvedMessageIndexPath();
             LOG.trace("Creating stored offset manager for offset file at {}", messageInfoPath);
             return StoredMessageIndexManager.New(NioFileSystem.New().ensureFile(messageInfoPath).tryUseWriting());
         }
@@ -1049,9 +1047,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
             this.getKafkaMessageInfoProvider().init();
 
-            // TODO: Hardcoded paths
-            final var storageParentPath = Paths.get("/storage/");
-            final var storageRootPath = storageParentPath.resolve("storage");
+            final var props = this.getNodelibraryPropertiesProvider();
+            final var storageParentPath = props.storageParentPath();
+            final var storageRootPath = props.resolvedStoragePath();
 
             // if we use a downloaded storage, always scroll to the latest message so we don't read old messages
             boolean useLatestMessageIndex = false;
@@ -1191,10 +1189,10 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         {
             LOG.info("Starting storage cluster node");
 
-            // TODO: Hardcoded paths
-            final var storageParentPath = Paths.get("/storage/");
-            final var storageRootPath = storageParentPath.resolve("storage");
-            final var messageInfoPath = storageParentPath.resolve("offset");
+            final var props = this.getNodelibraryPropertiesProvider();
+            final var storageParentPath = props.storageParentPath();
+            final var storageRootPath = props.resolvedStoragePath();
+            final var messageInfoPath = props.resolvedMessageIndexPath();
 
             if (Files.exists(storageRootPath))
             {
@@ -1335,12 +1333,10 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
         }
 
         protected void startMicroNode() throws NodelibraryException
-
         {
             LOG.info("Starting micro cluster node");
 
-            // TODO: Hardcoded paths
-            final var storagePath = Paths.get("/storage/storage");
+            final var storagePath = this.getNodelibraryPropertiesProvider().resolvedStoragePath();
             final EmbeddedStorageFoundation<?> embeddedStorageFoundation = this.getEmbeddedStorageFoundation();
 
             // replace the storage live file provider from the provided embedded storage foundation
