@@ -31,10 +31,21 @@ public interface FilesystemVolumeBackupBackend extends StorageBackupBackend
 {
     static FilesystemVolumeBackupBackend New(
         final Path backupVolumePath,
-        final StoredMessageIndexManager.Creator storedmessageIndexManagerCreator
+        final StoredMessageIndexManager.Creator storedmessageIndexManagerCreator,
+        final Path relativeMessageIndexPath,
+        final Path relativeStoragePath,
+        final Path relativeLucenePath,
+        final Path storageParentPath
     )
     {
-        return new Default(notNull(backupVolumePath), notNull(storedmessageIndexManagerCreator));
+        return new Default(
+            notNull(backupVolumePath),
+            notNull(storedmessageIndexManagerCreator),
+            notNull(relativeMessageIndexPath),
+            notNull(relativeStoragePath),
+            notNull(relativeLucenePath),
+            notNull(storageParentPath)
+        );
     }
 
     static class Default implements FilesystemVolumeBackupBackend
@@ -43,14 +54,27 @@ public interface FilesystemVolumeBackupBackend extends StorageBackupBackend
         private final Path userUploadedStorageFolderPath;
         private final StoredMessageIndexManager.Creator messageIndexManagerCreator;
 
+        private final Path relativeMessageIndexPath;
+        private final Path relativeStoragePath;
+        private final Path relativeLucenePath;
+        private final Path storageParentPath;
+
         private Default(
             final Path backupVolumePath,
-            final StoredMessageIndexManager.Creator storedMessageIndexManagerCreator
+            final StoredMessageIndexManager.Creator storedMessageIndexManagerCreator,
+            final Path relativeMessageIndexPath,
+            final Path relativeStoragePath,
+            final Path relativeLucenePath,
+            final Path storageParentPath
         )
         {
             this.backupVolumePath = backupVolumePath;
             this.userUploadedStorageFolderPath = backupVolumePath.resolve("user-uploaded-storage");
             this.messageIndexManagerCreator = storedMessageIndexManagerCreator;
+            this.relativeMessageIndexPath = relativeMessageIndexPath;
+            this.relativeStoragePath = relativeStoragePath;
+            this.relativeLucenePath = relativeLucenePath;
+            this.storageParentPath = storageParentPath;
         }
 
         @Override
@@ -79,15 +103,29 @@ public interface FilesystemVolumeBackupBackend extends StorageBackupBackend
             final Path backupRootPath = this.toBackupFolderPath(backup);
             final var fs = Storage.DefaultFileSystem();
 
-            connection.issueFullBackup(fs.ensureDirectory(backupRootPath.resolve("storage")));
-            // TODO: Hardcoded offset file name
+            connection.issueFullBackup(fs.ensureDirectory(backupRootPath.resolve(this.relativeStoragePath)));
             try (
                 final var infoWriter = this.messageIndexManagerCreator.create(
-                    fs.ensureFile(backupRootPath.resolve("offset")).tryUseWriting()
+                    fs.ensureFile(backupRootPath.resolve(this.relativeLucenePath)).tryUseWriting()
                 )
             )
             {
                 infoWriter.set(messageInfo);
+            }
+            final var luceneSourcePath = this.storageParentPath.resolve(this.relativeLucenePath);
+            if (Files.exists(luceneSourcePath))
+            {
+                try
+                {
+                    Files.walkFileTree(
+                        luceneSourcePath,
+                        new CopyVisitor(luceneSourcePath, backupRootPath)
+                    );
+                }
+                catch (final IOException e)
+                {
+                    throw new NodelibraryException("Failed to walk files at " + luceneSourcePath, e);
+                }
             }
             try
             {

@@ -238,12 +238,22 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 return NetworkArchiveBackupBackend.New(
                     scratchSpace,
                     this.getBackupProxyHttpClient(),
-                    messageIndexManagerCreator
+                    messageIndexManagerCreator,
+                    props.storageParentPath(),
+                    props.storagePath(),
+                    props.messageIndexPath(),
+                    props.luceneDirectoryPath()
                 );
             }
             else
             {
-                return FilesystemVolumeBackupBackend.New(Paths.get("/backups"), messageIndexManagerCreator);
+                return FilesystemVolumeBackupBackend.New(
+                    Paths.get("/backups"), messageIndexManagerCreator,
+                    props.storageParentPath(),
+                    props.storagePath(),
+                    props.messageIndexPath(),
+                    props.luceneDirectoryPath()
+                );
             }
         }
 
@@ -1064,7 +1074,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
             /*
              * If there are backups already available, use those instead as a fresh cluster
-             * has none, but a upgraded cluster has the previous storage backed up
+             * has none, but an upgraded cluster has the previous storage backed up
              */
 
             // user uploaded a new storage
@@ -1073,7 +1083,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
                 LOG.info("Downloading user uploaded storage");
 
                 useLatestMessageIndex = true;
-                // since the storage is now different than before the storage nodes
+                // since the storage is now different from before the storage nodes
                 // also need the exact same storage
                 requiresStorageUpload = true;
                 this.deleteDirectory(storageRootPath);

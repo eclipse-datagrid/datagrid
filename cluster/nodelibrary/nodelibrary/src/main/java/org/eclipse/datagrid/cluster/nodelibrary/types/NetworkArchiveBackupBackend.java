@@ -34,13 +34,21 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
     static NetworkArchiveBackupBackend New(
         final Path storageExportScratchSpacePath,
         final BackupProxyHttpClient backupProxyHttpClient,
-        final StoredMessageIndexManager.Creator storedMessageInfoManagerCreator
+        final StoredMessageIndexManager.Creator storedMessageInfoManagerCreator,
+        final Path storageParentPath,
+        final Path relativeStoragePath,
+        final Path relativeMessageIndexPath,
+        final Path relativeLucenePath
     )
     {
         return new Default(
             notNull(storageExportScratchSpacePath),
             notNull(backupProxyHttpClient),
-            notNull(storedMessageInfoManagerCreator)
+            notNull(storedMessageInfoManagerCreator),
+            notNull(relativeMessageIndexPath),
+            notNull(relativeStoragePath),
+            notNull(relativeLucenePath),
+            notNull(storageParentPath)
         );
     }
 
@@ -53,15 +61,28 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
         private final BackupProxyHttpClient http;
         private final StoredMessageIndexManager.Creator messageInfoManagerCreator;
 
+        private final Path relativeMessageIndexPath;
+        private final Path relativeStoragePath;
+        private final Path relativeLucenePath;
+        private final Path storageParentPath;
+
         private Default(
             final Path storageExportScratchSpacePath,
             final BackupProxyHttpClient backupProxyHttpClient,
-            final StoredMessageIndexManager.Creator storedMessageInfoManagerCreator
+            final StoredMessageIndexManager.Creator storedMessageInfoManagerCreator,
+            final Path relativeMessageIndexPath,
+            final Path relativeStoragePath,
+            final Path relativeLucenePath,
+            final Path storageParentPath
         )
         {
             this.storageExportScratchSpacePath = storageExportScratchSpacePath;
             this.http = backupProxyHttpClient;
             this.messageInfoManagerCreator = storedMessageInfoManagerCreator;
+            this.relativeMessageIndexPath = relativeMessageIndexPath;
+            this.relativeStoragePath = relativeStoragePath;
+            this.relativeLucenePath = relativeLucenePath;
+            this.storageParentPath = storageParentPath;
         }
 
         @Override
@@ -108,15 +129,30 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
 
             this.clearScratchSpace();
 
-            connection.issueFullBackup(fs.ensureDirectory(this.storageExportScratchSpacePath.resolve("storage")));
-            // TODO: Hardcoded offset file name
+            connection.issueFullBackup(fs.ensureDirectory(this.storageExportScratchSpacePath.resolve(this.relativeStoragePath)));
             try (
                 final var infoWriter = this.messageInfoManagerCreator.create(
-                    fs.ensureFile(this.storageExportScratchSpacePath.resolve("offset")).tryUseWriting()
+                    fs.ensureFile(this.storageExportScratchSpacePath.resolve(this.relativeMessageIndexPath))
+                        .tryUseWriting()
                 )
             )
             {
                 infoWriter.set(messageInfo);
+            }
+            final var luceneSourcePath = this.storageParentPath.resolve(this.relativeLucenePath);
+            if (Files.exists(luceneSourcePath))
+            {
+                try
+                {
+                    Files.walkFileTree(
+                        luceneSourcePath,
+                        new CopyVisitor(luceneSourcePath, storageExportScratchSpacePath)
+                    );
+                }
+                catch (final IOException e)
+                {
+                    throw new NodelibraryException("Failed to walk files at " + luceneSourcePath, e);
+                }
             }
 
             this.compressStorage(this.storageExportScratchSpacePath.toString(), archiveFilePath);
