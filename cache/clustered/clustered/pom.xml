@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.eclipse.datagrid</groupId>
+        <artifactId>cache-clustered-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>cache-clustered</artifactId>
+
+    <name>Eclipse Data Grid Cache Clustered</name>
+    <description>Eclipse Data Grid Cache Clustered Implementation</description>
+    <url>https://projects.eclipse.org/projects/technology.datagrid</url>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.eclipse.store</groupId>
+            <artifactId>cache-hibernate</artifactId>
+            <version>${eclipse-store.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>7.2.3.Final</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+</project>
