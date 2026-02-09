@@ -48,6 +48,7 @@
 	</properties>
 
 	<modules>
+		<module>cache</module>
 		<module>cluster</module>
 		<module>storage</module>
 	</modules>
