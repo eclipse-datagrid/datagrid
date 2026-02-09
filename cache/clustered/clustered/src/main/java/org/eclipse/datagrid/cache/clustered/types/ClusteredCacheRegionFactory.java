@@ -15,22 +15,14 @@ package org.eclipse.datagrid.cache.clustered.types;
  */
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.serializer.Serializer;
 import org.eclipse.serializer.SerializerFoundation;
-import org.eclipse.serializer.util.X;
 import org.eclipse.store.cache.hibernate.types.CacheRegionFactory;
 import org.eclipse.store.cache.hibernate.types.StorageAccess;
+import org.hibernate.boot.spi.SessionFactoryOptions;
+import org.hibernate.cache.CacheException;
 import org.hibernate.cache.cfg.spi.DomainDataRegionBuildingContext;
 import org.hibernate.cache.cfg.spi.DomainDataRegionConfig;
-import org.hibernate.cache.internal.BasicCacheKeyImplementation;
-import org.hibernate.cache.internal.CacheKeyImplementation;
 import org.hibernate.cache.internal.DefaultCacheKeysFactory;
 import org.hibernate.cache.spi.CacheKeysFactory;
 import org.hibernate.cache.spi.support.DomainDataStorageAccess;
@@ -38,20 +30,17 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.cache.configuration.CacheEntryListenerConfiguration;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 public class ClusteredCacheRegionFactory extends CacheRegionFactory
 {
     private static final Logger logger = LoggerFactory.getLogger(ClusteredCacheRegionFactory.class);
 
-    private final CacheEntryListenerConfiguration<Object, Object> cacheEntryListenerConfiguration;
-    private final CacheInvalidationReceiver cacheInvalidationReceiver;
-    private final CacheInvalidationSender<Object, Object> cacheInvalidationSender;
-
-    private String timestampsRegionCacheName;
+    private ClusteredCacheEntryListenerConfiguration<Object, Object> cacheEntryListenerConfiguration;
+    private ClusteredCacheMessageReceiver cacheMessageReceiver;
 
     public ClusteredCacheRegionFactory()
     {
@@ -61,68 +50,37 @@ public class ClusteredCacheRegionFactory extends CacheRegionFactory
     public ClusteredCacheRegionFactory(final CacheKeysFactory cacheKeysFactory)
     {
         super(cacheKeysFactory);
+    }
 
+    @Override
+    protected void prepareForUse(final SessionFactoryOptions settings, final Map cacheProperties)
+    {
+        super.prepareForUse(settings, cacheProperties);
+
+        final var typesProvider = this.resolveSerializationTypesProvider(settings, cacheProperties);
         final var topicName = "cache-invalidation";
-        final var serializer = Serializer.Bytes(SerializerFoundation.New().registerEntityTypes(
-            UUID.class,
-            CacheKeyImplementation.class, BasicCacheKeyImplementation.class,
-            InvalidationMessage.class, FullInvalidationMessage.class
-        ));
+        final var serializer =
+            Serializer.Bytes(SerializerFoundation.New().registerEntityTypes(typesProvider.provideTypes()));
         final var clientId = UUID.randomUUID().toString();
 
-        final var properties = new Properties();
-        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        properties.put(ConsumerConfig.GROUP_ID_CONFIG, clientId);
-        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+        final var kafkaProperties = new Properties();
+        kafkaProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 
-        final var kafkaProducer = new KafkaProducer<String, byte[]>(properties);
-        this.cacheInvalidationSender = new CacheInvalidationSender<>(
-            kafkaProducer,
+        final var cacheManager = this.resolveCacheManager(settings, cacheProperties);
+        final var messageAcceptor = new ClusteredCacheMessageAcceptor(cacheManager);
+        this.cacheMessageReceiver = new ClusteredCacheMessageReceiver(
+            kafkaProperties,
             topicName,
             clientId,
-            serializer,
-            () -> this.timestampsRegionCacheName
+            messageAcceptor,
+            serializer
+        );
+        this.cacheEntryListenerConfiguration = new ClusteredCacheEntryListenerConfiguration<>(
+            ClusteredCacheMessageSender.UpdateTimestamps(kafkaProperties, topicName, clientId, serializer),
+            ClusteredCacheMessageSender.CacheInvalidation(kafkaProperties, topicName, clientId, serializer)
         );
 
-        final var kafkaConsumer = new KafkaConsumer<String, byte[]>(properties);
-        final Consumer<InvalidationMessage> onInvalidationMessageReceived = message ->
-        {
-            final var cacheManager = X.notNull(this.getCacheManager());
-            final var cache = cacheManager.getCache(message.cacheName());
-            if (cache == null)
-            {
-                return;
-            }
-            if (cache.getName().equals(this.timestampsRegionCacheName))
-            {
-                final var timestampsMessage = (FullInvalidationMessage)message;
-                System.out.printf(
-                    "Adding new timestamp for %s %s %n",
-                    timestampsMessage.key(),
-                    timestampsMessage.value()
-                );
-                cache.putSilent(timestampsMessage.key(), timestampsMessage.value());
-            }
-            else
-            {
-                System.out.printf("Removing cache=%s, key=%s %n", message.cacheName(), message.key());
-                cache.remove(message.key());
-            }
-        };
-
-        this.cacheInvalidationReceiver = new CacheInvalidationReceiver(
-            kafkaConsumer,
-            clientId,
-            serializer,
-            onInvalidationMessageReceived,
-            topicName
-        );
-        this.cacheEntryListenerConfiguration = new ClusteredCacheEntryListenerConfiguration<>(cacheInvalidationSender);
-
-        cacheInvalidationReceiver.start();
+        cacheMessageReceiver.start();
     }
 
     @Override
@@ -131,14 +89,14 @@ public class ClusteredCacheRegionFactory extends CacheRegionFactory
         final SessionFactoryImplementor sessionFactory
     )
     {
-        this.timestampsRegionCacheName = this.defaultRegionName(
+        final String defaultedRegionName = this.defaultRegionName(
             regionName,
             sessionFactory,
             DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME,
             LEGACY_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAMES
         );
-        final var cache = this.getOrCreateCache(this.timestampsRegionCacheName, sessionFactory);
-        cache.registerCacheEntryListener(this.cacheEntryListenerConfiguration);
+        final var cache = this.getOrCreateCache(defaultedRegionName, sessionFactory);
+        cache.registerCacheEntryListener(this.cacheEntryListenerConfiguration.getUpdateTimestampsCacheEntryListenerConfiguration());
         return StorageAccess.New(cache);
     }
 
@@ -149,8 +107,45 @@ public class ClusteredCacheRegionFactory extends CacheRegionFactory
     )
     {
         final var cache = this.getOrCreateCache(regionConfig.getRegionName(), buildingContext.getSessionFactory());
-        cache.registerCacheEntryListener(this.cacheEntryListenerConfiguration);
+        cache.registerCacheEntryListener(this.cacheEntryListenerConfiguration.getCacheInvalidationCacheEntryListenerConfiguration());
         return StorageAccess.New(cache);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected SerializationTypesProvider resolveSerializationTypesProvider(
+        final SessionFactoryOptions settings,
+        @SuppressWarnings("rawtypes") // superclass uses raw type
+        final Map properties
+    )
+    {
+        final Object setting = properties.get(ConfigurationPropertyNames.SERIALIZATION_TYPES_PROVIDER);
+        if (setting == null)
+        {
+            return new SerializationTypesProvider.Default();
+        }
+        if (setting instanceof final SerializationTypesProvider p)
+        {
+            return p;
+        }
+
+        try
+        {
+            final Class<? extends SerializationTypesProvider> typesProviderClass;
+            if (setting instanceof Class)
+            {
+                typesProviderClass = (Class<? extends SerializationTypesProvider>)setting;
+            }
+            else
+            {
+                typesProviderClass = this.loadClass(setting.toString(), settings);
+            }
+            return typesProviderClass.getDeclaredConstructor().newInstance();
+        }
+        catch (final ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
+            InvocationTargetException e)
+        {
+            throw new CacheException("Could not use explicit CacheManager : " + setting, e);
+        }
     }
 
     @Override
@@ -158,16 +153,16 @@ public class ClusteredCacheRegionFactory extends CacheRegionFactory
     {
         try
         {
-            this.cacheInvalidationSender.close();
+            this.cacheEntryListenerConfiguration.dispose();
         }
         catch (final Exception e)
         {
-            logger.error("Failed to close invalidation sender.", e);
+            logger.error("Failed to close entry listeners.", e);
         }
 
         try
         {
-            this.cacheInvalidationReceiver.close();
+            this.cacheMessageReceiver.dispose();
         }
         catch (final Exception e)
         {

@@ -14,41 +14,90 @@ package org.eclipse.datagrid.cache.clustered.types;
  * #L%
  */
 
+import org.eclipse.serializer.typing.Disposable;
+
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListener;
 
-public class ClusteredCacheEntryListenerConfiguration<K, V> implements CacheEntryListenerConfiguration<K, V>
+public class ClusteredCacheEntryListenerConfiguration<K, V> implements Disposable
 {
-    private final CacheInvalidationSender<K, V> cacheInvalidationSender;
+    private final CacheEntryListenerConfig updateTimestamps;
+    private final CacheEntryListenerConfig cacheInvalidation;
 
-    public ClusteredCacheEntryListenerConfiguration(final CacheInvalidationSender<K, V> cacheInvalidationSender)
+    public ClusteredCacheEntryListenerConfiguration(
+        final ClusteredCacheMessageSender<K, V> updateTimestampsSender,
+        final ClusteredCacheMessageSender<K, V> cacheInvalidationSender
+    )
     {
-        this.cacheInvalidationSender = cacheInvalidationSender;
+        this.updateTimestamps = new CacheEntryListenerConfig(updateTimestampsSender);
+        this.cacheInvalidation = new CacheEntryListenerConfig(cacheInvalidationSender);
     }
 
-    @Override
-    public Factory<CacheEntryListener<? super K, ? super V>> getCacheEntryListenerFactory()
+    public CacheEntryListenerConfiguration<K, V> getUpdateTimestampsCacheEntryListenerConfiguration()
     {
-        return () -> cacheInvalidationSender;
+        return this.updateTimestamps;
     }
 
-    @Override
-    public boolean isOldValueRequired()
+    public CacheEntryListenerConfiguration<K, V> getCacheInvalidationCacheEntryListenerConfiguration()
+    {
+        return this.cacheInvalidation;
+    }
+
+    private boolean isOldValueRequired()
     {
         return false;
     }
 
-    @Override
-    public Factory<CacheEntryEventFilter<? super K, ? super V>> getCacheEntryEventFilterFactory()
+    private Factory<CacheEntryEventFilter<? super K, ? super V>> getCacheEntryEventFilterFactory()
     {
         return null;
     }
 
-    @Override
-    public boolean isSynchronous()
+    private boolean isSynchronous()
     {
         return true;
+    }
+
+    @Override
+    public void dispose()
+    {
+        this.updateTimestamps.sender.dispose();
+        this.cacheInvalidation.sender.dispose();
+    }
+
+    public class CacheEntryListenerConfig implements CacheEntryListenerConfiguration<K, V>
+    {
+        private final ClusteredCacheMessageSender<K, V> sender;
+
+        private CacheEntryListenerConfig(final ClusteredCacheMessageSender<K, V> sender)
+        {
+            this.sender = sender;
+        }
+
+        @Override
+        public Factory<CacheEntryListener<? super K, ? super V>> getCacheEntryListenerFactory()
+        {
+            return () -> this.sender;
+        }
+
+        @Override
+        public boolean isOldValueRequired()
+        {
+            return ClusteredCacheEntryListenerConfiguration.this.isOldValueRequired();
+        }
+
+        @Override
+        public Factory<CacheEntryEventFilter<? super K, ? super V>> getCacheEntryEventFilterFactory()
+        {
+            return ClusteredCacheEntryListenerConfiguration.this.getCacheEntryEventFilterFactory();
+        }
+
+        @Override
+        public boolean isSynchronous()
+        {
+            return ClusteredCacheEntryListenerConfiguration.this.isSynchronous();
+        }
     }
 }
