@@ -14,8 +14,11 @@ package org.eclipse.datagrid.cache.clustered.types;
  * #L%
  */
 
-public interface ConfigurationPropertyNames
+import org.eclipse.store.cache.hibernate.types.ConfigurationPropertyNames;
+
+public interface ClusteredConfigurationPropertyNames
 {
-    String PREFIX = org.eclipse.store.cache.hibernate.types.ConfigurationPropertyNames.PREFIX + "clustered.";
+    String PREFIX = ConfigurationPropertyNames.PREFIX + "clustered.";
     String SERIALIZATION_TYPES_PROVIDER = PREFIX + "serialization-types-provider";
+    String COM_PROVIDER = PREFIX + "com-provider";
 }

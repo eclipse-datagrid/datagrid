@@ -14,12 +14,12 @@ package org.eclipse.datagrid.cache.clustered.types;
  * #L%
  */
 
-import org.eclipse.serializer.typing.Disposable;
-
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListener;
+
+import org.eclipse.serializer.typing.Disposable;
 
 public class ClusteredCacheEntryListenerConfiguration<K, V> implements Disposable
 {

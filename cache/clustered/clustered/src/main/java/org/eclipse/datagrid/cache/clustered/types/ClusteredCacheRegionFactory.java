@@ -14,7 +14,9 @@ package org.eclipse.datagrid.cache.clustered.types;
  * #L%
  */
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
+
 import org.eclipse.serializer.Serializer;
 import org.eclipse.serializer.SerializerFoundation;
 import org.eclipse.store.cache.hibernate.types.CacheRegionFactory;
@@ -29,11 +31,6 @@ import org.hibernate.cache.spi.support.DomainDataStorageAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
 
 public class ClusteredCacheRegionFactory extends CacheRegionFactory
 {
@@ -52,35 +49,67 @@ public class ClusteredCacheRegionFactory extends CacheRegionFactory
         super(cacheKeysFactory);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    protected void prepareForUse(final SessionFactoryOptions settings, final Map cacheProperties)
+    protected void prepareForUse(final SessionFactoryOptions settings, final Map properties)
     {
-        super.prepareForUse(settings, cacheProperties);
+        super.prepareForUse(settings, properties);
 
-        final var typesProvider = this.resolveSerializationTypesProvider(settings, cacheProperties);
-        final var topicName = "cache-invalidation";
-        final var serializer =
-            Serializer.Bytes(SerializerFoundation.New().registerEntityTypes(typesProvider.provideTypes()));
-        final var clientId = UUID.randomUUID().toString();
+        final var typesProvider = this.resolveSerializationTypesProvider(settings, properties);
+        final var serializer = Serializer.Bytes(SerializerFoundation.New()
+            .registerEntityTypes(typesProvider.provideTypes()));
 
-        final var kafkaProperties = new Properties();
-        kafkaProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        final var comProviderSetting = properties.get(ClusteredConfigurationPropertyNames.COM_PROVIDER);
+        final var comProvider =
+            (ClusteredCacheMessageComProvider<Object, Object>)this.resolveComProvider(settings, comProviderSetting);
 
-        final var cacheManager = this.resolveCacheManager(settings, cacheProperties);
+        final var cacheManager = this.resolveCacheManager(settings, properties);
         final var messageAcceptor = new ClusteredCacheMessageAcceptor(cacheManager);
-        this.cacheMessageReceiver = new ClusteredCacheMessageReceiver(
-            kafkaProperties,
-            topicName,
-            clientId,
-            messageAcceptor,
-            serializer
-        );
-        this.cacheEntryListenerConfiguration = new ClusteredCacheEntryListenerConfiguration<>(
-            ClusteredCacheMessageSender.UpdateTimestamps(kafkaProperties, topicName, clientId, serializer),
-            ClusteredCacheMessageSender.CacheInvalidation(kafkaProperties, topicName, clientId, serializer)
-        );
 
-        cacheMessageReceiver.start();
+        this.cacheMessageReceiver = comProvider.provideMessageReceiver(properties, serializer, messageAcceptor);
+        this.cacheEntryListenerConfiguration =
+            createEntryListenerConfiguration(comProvider, properties, serializer);
+
+        this.cacheMessageReceiver.start();
+    }
+
+    private static <K, V> ClusteredCacheEntryListenerConfiguration<K, V> createEntryListenerConfiguration(
+        final ClusteredCacheMessageComProvider<K, V> comProvider,
+        @SuppressWarnings("rawtypes") final Map properties,
+        final Serializer<byte[]> serializer
+    )
+    {
+        return new ClusteredCacheEntryListenerConfiguration<>(
+            comProvider.provideUpdateTimestampsCacheMessageSender(properties, serializer),
+            comProvider.provideUpdateCacheInvalidationMessageSender(properties, serializer)
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    protected ClusteredCacheMessageComProvider<?, ?> resolveComProvider(
+        final SessionFactoryOptions settings,
+        final Object comProviderSetting
+    )
+    {
+        if (comProviderSetting instanceof final ClusteredCacheMessageComProvider<?, ?> comProvider)
+        {
+            return comProvider;
+        }
+
+        try
+        {
+            final Class<? extends ClusteredCacheMessageComProvider<?, ?>> comProviderClass;
+            comProviderClass = comProviderSetting instanceof Class
+                               ? (Class<? extends ClusteredCacheMessageComProvider<?, ?>>)comProviderSetting
+                               : this.loadClass(comProviderSetting.toString(), settings);
+
+            return comProviderClass.getDeclaredConstructor().newInstance();
+        }
+        catch (final ClassNotFoundException | InstantiationException | IllegalAccessException
+            | NoSuchMethodException | InvocationTargetException e)
+        {
+            throw new CacheException("Could not use ClusteredCacheMessageComProvider: " + comProviderSetting, e);
+        }
     }
 
     @Override
@@ -118,7 +147,7 @@ public class ClusteredCacheRegionFactory extends CacheRegionFactory
         final Map properties
     )
     {
-        final Object setting = properties.get(ConfigurationPropertyNames.SERIALIZATION_TYPES_PROVIDER);
+        final Object setting = properties.get(ClusteredConfigurationPropertyNames.SERIALIZATION_TYPES_PROVIDER);
         if (setting == null)
         {
             return new SerializationTypesProvider.Default();

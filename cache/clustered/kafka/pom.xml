@@ -12,23 +12,22 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>cache-clustered</artifactId>
+    <artifactId>cache-clustered-kafka</artifactId>
 
-    <name>Eclipse Data Grid Cache Clustered</name>
-    <description>Eclipse Data Grid Cache Clustered Implementation</description>
+    <name>Eclipse Data Grid Cache Clustered Kafka</name>
+    <description>Eclipse Data Grid Cache Clustered Kafka Implementation</description>
     <url>https://projects.eclipse.org/projects/technology.datagrid</url>
 
     <dependencies>
         <dependency>
-            <groupId>org.eclipse.store</groupId>
-            <artifactId>cache-hibernate</artifactId>
-            <version>${eclipse-store.version}</version>
+            <groupId>org.eclipse.datagrid</groupId>
+            <artifactId>cache-clustered</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <version>7.2.3.Final</version>
-            <scope>provided</scope>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>4.1.1</version>
         </dependency>
     </dependencies>
 

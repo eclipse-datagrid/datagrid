@@ -22,6 +22,7 @@
 
     <modules>
         <module>clustered</module>
+        <module>kafka</module>
     </modules>
 
     <dependencyManagement>

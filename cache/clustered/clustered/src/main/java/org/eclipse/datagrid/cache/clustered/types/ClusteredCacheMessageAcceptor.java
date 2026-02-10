@@ -46,7 +46,7 @@ public class ClusteredCacheMessageAcceptor
 
     public void acceptTimestampsRegionUpdate(final TimestampsRegionUpdateMessage message)
     {
-        final var cache = cacheManager.getCache(message.cacheName());
+        final var cache = this.cacheManager.getCache(message.cacheName());
 
         if (cache == null)
         {
@@ -65,7 +65,7 @@ public class ClusteredCacheMessageAcceptor
 
     public void acceptCacheInvalidation(final CacheInvalidationMessage message)
     {
-        final var cache = cacheManager.getCache(message.cacheName());
+        final var cache = this.cacheManager.getCache(message.cacheName());
 
         if (cache == null)
         {
