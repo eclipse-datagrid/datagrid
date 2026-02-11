@@ -21,6 +21,7 @@ import org.eclipse.serializer.Serializer;
 import org.eclipse.serializer.SerializerFoundation;
 import org.eclipse.store.cache.hibernate.types.CacheRegionFactory;
 import org.eclipse.store.cache.hibernate.types.StorageAccess;
+import org.eclipse.store.cache.types.CacheManager;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.cfg.spi.DomainDataRegionBuildingContext;
@@ -38,6 +39,7 @@ public class ClusteredCacheRegionFactory extends CacheRegionFactory
 
     private ClusteredCacheEntryListenerConfiguration<Object, Object> cacheEntryListenerConfiguration;
     private ClusteredCacheMessageReceiver cacheMessageReceiver;
+    private CacheManager cacheManager;
 
     public ClusteredCacheRegionFactory()
     {
@@ -63,14 +65,20 @@ public class ClusteredCacheRegionFactory extends CacheRegionFactory
         final var comProvider =
             (ClusteredCacheMessageComProvider<Object, Object>)this.resolveComProvider(settings, comProviderSetting);
 
-        final var cacheManager = this.resolveCacheManager(settings, properties);
-        final var messageAcceptor = new ClusteredCacheMessageAcceptor(cacheManager);
+        final var messageAcceptor = new ClusteredCacheMessageAcceptor(this.cacheManager);
 
         this.cacheMessageReceiver = comProvider.provideMessageReceiver(properties, serializer, messageAcceptor);
         this.cacheEntryListenerConfiguration =
             createEntryListenerConfiguration(comProvider, properties, serializer);
 
         this.cacheMessageReceiver.start();
+    }
+
+    @Override
+    protected CacheManager resolveCacheManager(final SessionFactoryOptions settings, final Map properties)
+    {
+        this.cacheManager = super.resolveCacheManager(settings, properties);
+        return this.cacheManager;
     }
 
     private static <K, V> ClusteredCacheEntryListenerConfiguration<K, V> createEntryListenerConfiguration(

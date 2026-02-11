@@ -14,7 +14,6 @@ package org.eclipse.datagrid.cache.clustered.kafka.types;
  * #L%
  */
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
@@ -122,10 +121,7 @@ public class KafkaClusteredCacheMessageReceiver implements ClusteredCacheMessage
     {
         for (final var record : records)
         {
-            final String senderId = new String(
-                record.headers().lastHeader("Sender-Id").value(),
-                StandardCharsets.UTF_8
-            );
+            final String senderId = this.serializer.deserialize(record.headers().lastHeader("Sender-Id").value());
             if (senderId.equals(this.clientId))
             {
                 continue;

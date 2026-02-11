@@ -14,14 +14,10 @@ package org.eclipse.datagrid.cache.clustered.kafka.types;
  * #L%
  */
 
-import java.util.Properties;
 import javax.cache.event.*;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.VoidSerializer;
 import org.eclipse.datagrid.cache.clustered.types.CacheInvalidationMessage;
 import org.eclipse.datagrid.cache.clustered.types.ClusteredCacheMessage;
 import org.eclipse.datagrid.cache.clustered.types.ClusteredCacheMessageSender;
@@ -36,14 +32,14 @@ import static org.eclipse.serializer.util.X.notNull;
 public interface KafkaClusteredCacheMessageSender<K, V> extends CacheEntryListener<K, V>, Disposable
 {
     static <K, V> ClusteredCacheMessageSender<K, V> UpdateTimestamps(
-        final Properties kafkaProperties,
+        final KafkaProducer<String, byte[]> producer,
         final String topicName,
         final String clientId,
         final Serializer<byte[]> serializer
     )
     {
         return new UpdateTimestamps<>(
-            notNull(kafkaProperties),
+            notNull(producer),
             notNull(topicName),
             notNull(clientId),
             notNull(serializer)
@@ -51,14 +47,14 @@ public interface KafkaClusteredCacheMessageSender<K, V> extends CacheEntryListen
     }
 
     static <K, V> ClusteredCacheMessageSender<K, V> CacheInvalidation(
-        final Properties kafkaProperties,
+        final KafkaProducer<String, byte[]> producer,
         final String topicName,
         final String clientId,
         final Serializer<byte[]> serializer
     )
     {
         return new CacheInvalidation<>(
-            notNull(kafkaProperties),
+            notNull(producer),
             notNull(topicName),
             notNull(clientId),
             notNull(serializer)
@@ -68,39 +64,21 @@ public interface KafkaClusteredCacheMessageSender<K, V> extends CacheEntryListen
     abstract class Abstract<K, V> implements ClusteredCacheMessageSender<K, V>
     {
         private static final Logger logger = LoggerFactory.getLogger(KafkaClusteredCacheMessageSender.Abstract.class);
-        private final Properties kafkaProperties;
+        private final KafkaProducer<String, byte[]> producer;
         private final String topicName;
         private final String clientId;
         private final Serializer<byte[]> serializer;
 
-        private KafkaProducer<String, byte[]> producer;
-
         protected Abstract(
-            final Properties kafkaProperties,
+            final KafkaProducer<String, byte[]> producer,
             final String topicName, final String clientId,
             final Serializer<byte[]> serializer
         )
         {
-            this.kafkaProperties = kafkaProperties;
+            this.producer = producer;
             this.topicName = topicName;
             this.clientId = clientId;
             this.serializer = serializer;
-        }
-
-        private KafkaProducer<String, byte[]> ensureProducer()
-        {
-            if (this.producer == null)
-            {
-                final Properties properties = new Properties();
-                properties.putAll(this.kafkaProperties);
-                properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, VoidSerializer.class.getName());
-                properties.setProperty(
-                    ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                    ByteArraySerializer.class.getName()
-                );
-                this.producer = new KafkaProducer<>(properties);
-            }
-            return this.producer;
         }
 
         protected abstract ClusteredCacheMessage createMessage(CacheEntryEvent<? extends K, ? extends V> event);
@@ -133,8 +111,7 @@ public interface KafkaClusteredCacheMessageSender<K, V> extends CacheEntryListen
 
         private void sendRecord(final ProducerRecord<String, byte[]> record) throws CacheEntryListenerException
         {
-            final var producer = this.ensureProducer();
-            final var future = producer.send(record);
+            final var future = this.producer.send(record);
             try
             {
                 future.get();
@@ -166,13 +143,13 @@ public interface KafkaClusteredCacheMessageSender<K, V> extends CacheEntryListen
         implements CacheEntryUpdatedListener<K, V>, CacheEntryCreatedListener<K, V>
     {
         public UpdateTimestamps(
-            final Properties kafkaProperties,
+            final KafkaProducer<String, byte[]> producer,
             final String topicName,
             final String clientId,
             final Serializer<byte[]> serializer
         )
         {
-            super(kafkaProperties, topicName, clientId, serializer);
+            super(producer, topicName, clientId, serializer);
         }
 
         @Override
@@ -209,13 +186,13 @@ public interface KafkaClusteredCacheMessageSender<K, V> extends CacheEntryListen
     class CacheInvalidation<K, V> extends Abstract<K, V> implements CacheEntryUpdatedListener<K, V>
     {
         public CacheInvalidation(
-            final Properties kafkaProperties,
+            final KafkaProducer<String, byte[]> producer,
             final String topicName,
             final String clientId,
             final Serializer<byte[]> serializer
         )
         {
-            super(kafkaProperties, topicName, clientId, serializer);
+            super(producer, topicName, clientId, serializer);
         }
 
         @Override
