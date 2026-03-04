@@ -19,8 +19,10 @@ import org.eclipse.datagrid.cache.clustered.types.ClusteredConfigurationProperty
 public interface KafkaClusteredConfigurationPropertyNames
 {
     String PREFIX = ClusteredConfigurationPropertyNames.PREFIX + "kafka.";
+
+    String TOPIC = PREFIX + "topic";
     String KAFKA_CONFIG_PREFIX = PREFIX + "config.";
+
     String KAFKA_PRODUCER_CONFIG_PREFIX = KAFKA_CONFIG_PREFIX + "producer.";
     String KAFKA_CONSUMER_CONFIG_PREFIX = KAFKA_CONFIG_PREFIX + "consumer.";
-    String TOPIC = PREFIX + "topic";
 }
