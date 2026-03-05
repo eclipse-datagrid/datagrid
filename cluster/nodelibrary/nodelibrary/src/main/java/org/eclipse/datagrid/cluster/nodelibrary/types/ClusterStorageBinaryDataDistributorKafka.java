@@ -14,19 +14,15 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * #L%
  */
 
-
-import static org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
-import static org.eclipse.serializer.chars.XChars.notEmpty;
-
 import java.nio.ByteBuffer;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -39,6 +35,8 @@ import org.eclipse.serializer.persistence.binary.types.ChunksWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.kafka.clients.producer.ProducerConfig.*;
+import static org.eclipse.serializer.chars.XChars.notEmpty;
 import static org.eclipse.serializer.util.X.notNull;
 
 public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorageBinaryDataDistributor
@@ -166,7 +164,27 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
 				{
 					LOG.debug("Sending kafka packet at message index {}", this.messageIndex);
 				}
-				this.producer.send(kafkaRecord);
+
+				try
+				{
+					this.producer.send(kafkaRecord).get();
+				}
+				catch (final InterruptedException e)
+				{
+					throw new InterruptException("Interrupted while sending the Kafka record", e);
+				}
+				catch (final ExecutionException e)
+				{
+					final var cause = e.getCause();
+					if (cause instanceof final RuntimeException rte)
+					{
+						throw rte;
+					}
+					else
+					{
+						throw new RuntimeException(cause);
+					}
+				}
 
 				packetIndex++;
 			}
