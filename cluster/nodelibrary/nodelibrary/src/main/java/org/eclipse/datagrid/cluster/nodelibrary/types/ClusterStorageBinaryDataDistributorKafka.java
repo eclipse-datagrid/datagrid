@@ -22,7 +22,6 @@ import java.util.concurrent.Executors;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -106,7 +105,7 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
 			}
 		}
 
-		private void executeDistribution(final MessageType messageType, final Binary data)
+		private void executeDistribution(final MessageType messageType, final Binary data) throws InterruptedException
 		{
 			final ByteBuffer[] buffers = this.allBuffers(data);
 			int messageSize = 0;
@@ -171,8 +170,7 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
 				}
 				catch (final InterruptedException e)
 				{
-					Thread.currentThread().interrupt();
-					throw new InterruptException(e);
+					throw e;
 				}
 				catch (final ExecutionException e)
 				{
