@@ -14,28 +14,28 @@ package org.eclipse.datagrid.storage.distributed.kafka.types;
  * #L%
  */
 
-
-import static org.eclipse.serializer.chars.XChars.notEmpty;
-import static org.eclipse.serializer.util.X.notNull;
-
 import java.nio.ByteBuffer;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataDistributor;
+import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.MessageType;
 import org.eclipse.serializer.collections.BulkList;
 import org.eclipse.serializer.collections.types.XList;
 import org.eclipse.serializer.memory.XMemory;
 import org.eclipse.serializer.persistence.binary.types.Binary;
 import org.eclipse.serializer.persistence.binary.types.ChunksWrapper;
 
-import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataDistributor;
-import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataMessage.MessageType;
+import static org.eclipse.serializer.chars.XChars.notEmpty;
+import static org.eclipse.serializer.util.X.notNull;
 
 public interface StorageBinaryDataDistributorKafka
 	extends
@@ -156,7 +156,27 @@ public interface StorageBinaryDataDistributorKafka
 					packetIndex,
 					packetCount
 				);
-				producer.send(record);
+
+				try
+				{
+					producer.send(record).get();
+				}
+				catch (final InterruptedException e)
+				{
+					throw new InterruptException("Interrupted while sending the Kafka record", e);
+				}
+				catch (final ExecutionException e)
+				{
+					final var cause = e.getCause();
+					if (cause instanceof final RuntimeException rte)
+					{
+						throw rte;
+					}
+					else
+					{
+						throw new RuntimeException(cause);
+					}
+				}
 
 				packetIndex++;
 			}
