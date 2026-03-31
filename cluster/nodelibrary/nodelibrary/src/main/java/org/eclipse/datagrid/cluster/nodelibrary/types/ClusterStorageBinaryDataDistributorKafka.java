@@ -168,10 +168,6 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
 				{
 					this.producer.send(kafkaRecord).get();
 				}
-				catch (final InterruptedException e)
-				{
-					throw e;
-				}
 				catch (final ExecutionException e)
 				{
 					// Kafka only throws RuntimeException's
