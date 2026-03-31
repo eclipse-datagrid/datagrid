@@ -22,7 +22,6 @@ import java.util.concurrent.Executors;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -106,7 +105,7 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
 			}
 		}
 
-		private void executeDistribution(final MessageType messageType, final Binary data)
+		private void executeDistribution(final MessageType messageType, final Binary data) throws InterruptedException
 		{
 			final ByteBuffer[] buffers = this.allBuffers(data);
 			int messageSize = 0;
@@ -169,21 +168,10 @@ public interface ClusterStorageBinaryDataDistributorKafka extends ClusterStorage
 				{
 					this.producer.send(kafkaRecord).get();
 				}
-				catch (final InterruptedException e)
-				{
-					throw new InterruptException("Interrupted while sending the Kafka record", e);
-				}
 				catch (final ExecutionException e)
 				{
-					final var cause = e.getCause();
-					if (cause instanceof final RuntimeException rte)
-					{
-						throw rte;
-					}
-					else
-					{
-						throw new RuntimeException(cause);
-					}
+					// Kafka only throws RuntimeException's
+					throw (RuntimeException)e.getCause();
 				}
 
 				packetIndex++;
