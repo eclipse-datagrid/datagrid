@@ -14,7 +14,6 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * #L%
  */
 
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Supplier;
@@ -26,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.serializer.math.XMath.positive;
-
 import static org.eclipse.serializer.util.X.notNull;
 
 public interface StorageBackupManager
@@ -101,7 +99,7 @@ public interface StorageBackupManager
 		}
 
 		@Override
-		public void createStorageBackup(final boolean useManualSlot) throws NodelibraryException
+		public synchronized void createStorageBackup(final boolean useManualSlot) throws NodelibraryException
 		{
 			LOG.trace("Creating new storage backup");
 
@@ -127,15 +125,21 @@ public interface StorageBackupManager
 				}
 			}
 
+			final boolean isRunning = this.dataClient.isRunning();
+
 			this.stopDataClient();
 
 			this.backend.createAndUploadBackup(this.storageConnection, this.messageInfoSupplier.get(), newBackup);
 
-			this.dataClient.resume();
+			// only resume if the data client was running previously
+			if (isRunning)
+			{
+				this.dataClient.resume();
+			}
 		}
 
 		@Override
-		public void downloadLatestBackup(final Path targetRootPath)
+		public synchronized void downloadLatestBackup(final Path targetRootPath)
 		{
 			final var backup = this.latestBackup(false);
 			if (backup == null)
@@ -146,13 +150,13 @@ public interface StorageBackupManager
 		}
 
 		@Override
-		public void deleteBackup(final BackupMetadata backup) throws NodelibraryException
+		public synchronized void deleteBackup(final BackupMetadata backup) throws NodelibraryException
 		{
 			this.backend.deleteBackup(backup);
 		}
 
 		@Override
-		public void deleteUserUploadedStorage() throws NodelibraryException
+		public synchronized void deleteUserUploadedStorage() throws NodelibraryException
 		{
 			this.backend.deleteUserUploadedStorage();
 		}
@@ -165,19 +169,20 @@ public interface StorageBackupManager
 		}
 
 		@Override
-		public void downloadUserUploadedStorage(final Path storageDestinationParentPath) throws NodelibraryException
+		public synchronized void downloadUserUploadedStorage(final Path storageDestinationParentPath)
+			throws NodelibraryException
 		{
 			this.backend.downloadUserUploadedStorage(storageDestinationParentPath);
 		}
 
 		@Override
-		public boolean hasUserUploadedStorage() throws NodelibraryException
+		public synchronized boolean hasUserUploadedStorage() throws NodelibraryException
 		{
 			return this.backend.hasUserUploadedStorage();
 		}
 
 		@Override
-		public List<BackupMetadata> listBackups() throws NodelibraryException
+		public synchronized List<BackupMetadata> listBackups() throws NodelibraryException
 		{
 			return this.backend.listBackups();
 		}
@@ -193,7 +198,6 @@ public interface StorageBackupManager
 		}
 
 		private BackupMetadata oldestBackup(final List<BackupMetadata> backups)
-
 		{
 			return backups.stream().min((a, b) -> Long.compare(a.timestamp(), b.timestamp())).orElse(null);
 		}
