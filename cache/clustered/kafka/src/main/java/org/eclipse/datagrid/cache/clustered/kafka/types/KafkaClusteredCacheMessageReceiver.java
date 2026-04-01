@@ -25,7 +25,6 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
-import org.eclipse.datagrid.cache.clustered.types.ClusteredCacheMessage;
 import org.eclipse.datagrid.cache.clustered.types.ClusteredCacheMessageAcceptor;
 import org.eclipse.datagrid.cache.clustered.types.ClusteredCacheMessageReceiver;
 import org.eclipse.serializer.Serializer;
@@ -126,8 +125,7 @@ public class KafkaClusteredCacheMessageReceiver implements ClusteredCacheMessage
             {
                 continue;
             }
-            final ClusteredCacheMessage message = this.serializer.deserialize(record.value());
-            this.messageAcceptor.accept(message);
+            this.messageAcceptor.accept(this.serializer.deserialize(record.value()));
         }
     }
 

@@ -51,18 +51,6 @@ public class KafkaClusteredCacheMessageComProvider<K, V> implements ClusteredCac
     }
 
     @Override
-    public ClusteredCacheMessageSender<K, V> provideUpdateCacheInvalidationMessageSender(
-        @SuppressWarnings("rawtypes") final Map properties,
-        final Serializer<byte[]> serializer
-    )
-    {
-        final var topicName = this.getTopicName(properties);
-        final var clientId = this.ensureClientId();
-        final var producer = this.ensureProducer(properties);
-        return KafkaClusteredCacheMessageSender.CacheInvalidation(producer, topicName, clientId, serializer);
-    }
-
-    @Override
     public ClusteredCacheMessageReceiver provideMessageReceiver(
         @SuppressWarnings("rawtypes") final Map properties,
         final Serializer<byte[]> serializer,

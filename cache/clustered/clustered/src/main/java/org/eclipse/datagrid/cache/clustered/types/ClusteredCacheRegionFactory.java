@@ -24,11 +24,8 @@ import org.eclipse.store.cache.hibernate.types.StorageAccess;
 import org.eclipse.store.cache.types.CacheManager;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
-import org.hibernate.cache.cfg.spi.DomainDataRegionBuildingContext;
-import org.hibernate.cache.cfg.spi.DomainDataRegionConfig;
 import org.hibernate.cache.internal.DefaultCacheKeysFactory;
 import org.hibernate.cache.spi.CacheKeysFactory;
-import org.hibernate.cache.spi.support.DomainDataStorageAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,10 +84,10 @@ public class ClusteredCacheRegionFactory extends CacheRegionFactory
         final Serializer<byte[]> serializer
     )
     {
-        return new ClusteredCacheEntryListenerConfiguration<>(
-            comProvider.provideUpdateTimestampsCacheMessageSender(properties, serializer),
-            comProvider.provideUpdateCacheInvalidationMessageSender(properties, serializer)
-        );
+        return new ClusteredCacheEntryListenerConfiguration<>(comProvider.provideUpdateTimestampsCacheMessageSender(
+            properties,
+            serializer
+        ));
     }
 
     @SuppressWarnings("unchecked")
@@ -134,17 +131,6 @@ public class ClusteredCacheRegionFactory extends CacheRegionFactory
         );
         final var cache = this.getOrCreateCache(defaultedRegionName, sessionFactory);
         cache.registerCacheEntryListener(this.cacheEntryListenerConfiguration.getUpdateTimestampsCacheEntryListenerConfiguration());
-        return StorageAccess.New(cache);
-    }
-
-    @Override
-    protected DomainDataStorageAccess createDomainDataStorageAccess(
-        final DomainDataRegionConfig regionConfig,
-        final DomainDataRegionBuildingContext buildingContext
-    )
-    {
-        final var cache = this.getOrCreateCache(regionConfig.getRegionName(), buildingContext.getSessionFactory());
-        cache.registerCacheEntryListener(this.cacheEntryListenerConfiguration.getCacheInvalidationCacheEntryListenerConfiguration());
         return StorageAccess.New(cache);
     }
 

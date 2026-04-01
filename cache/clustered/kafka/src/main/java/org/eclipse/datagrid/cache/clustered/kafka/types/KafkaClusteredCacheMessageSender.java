@@ -18,8 +18,6 @@ import javax.cache.event.*;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.eclipse.datagrid.cache.clustered.types.CacheInvalidationMessage;
-import org.eclipse.datagrid.cache.clustered.types.ClusteredCacheMessage;
 import org.eclipse.datagrid.cache.clustered.types.ClusteredCacheMessageSender;
 import org.eclipse.datagrid.cache.clustered.types.TimestampsRegionUpdateMessage;
 import org.eclipse.serializer.Serializer;
@@ -39,21 +37,6 @@ public interface KafkaClusteredCacheMessageSender<K, V> extends CacheEntryListen
     )
     {
         return new UpdateTimestamps<>(
-            notNull(producer),
-            notNull(topicName),
-            notNull(clientId),
-            notNull(serializer)
-        );
-    }
-
-    static <K, V> ClusteredCacheMessageSender<K, V> CacheInvalidation(
-        final KafkaProducer<String, byte[]> producer,
-        final String topicName,
-        final String clientId,
-        final Serializer<byte[]> serializer
-    )
-    {
-        return new CacheInvalidation<>(
             notNull(producer),
             notNull(topicName),
             notNull(clientId),
@@ -81,7 +64,7 @@ public interface KafkaClusteredCacheMessageSender<K, V> extends CacheEntryListen
             this.serializer = serializer;
         }
 
-        protected abstract ClusteredCacheMessage createMessage(CacheEntryEvent<? extends K, ? extends V> event);
+        protected abstract TimestampsRegionUpdateMessage createMessage(CacheEntryEvent<? extends K, ? extends V> event);
 
         protected void handleEvents(final Iterable<CacheEntryEvent<? extends K, ? extends V>> cacheEntryEvents)
             throws CacheEntryListenerException
@@ -167,7 +150,7 @@ public interface KafkaClusteredCacheMessageSender<K, V> extends CacheEntryListen
         }
 
         @Override
-        protected ClusteredCacheMessage createMessage(final CacheEntryEvent<? extends K, ? extends V> event)
+        protected TimestampsRegionUpdateMessage createMessage(final CacheEntryEvent<? extends K, ? extends V> event)
         {
             final var eventKey = event.getKey();
             final var eventValue = event.getValue();
@@ -180,32 +163,6 @@ public interface KafkaClusteredCacheMessageSender<K, V> extends CacheEntryListen
                 throw new IllegalArgumentException("Event value is not of type " + Long.class.getName());
             }
             return new TimestampsRegionUpdateMessage(event.getSource().getName(), key, value);
-        }
-    }
-
-    class CacheInvalidation<K, V> extends Abstract<K, V> implements CacheEntryUpdatedListener<K, V>
-    {
-        public CacheInvalidation(
-            final KafkaProducer<String, byte[]> producer,
-            final String topicName,
-            final String clientId,
-            final Serializer<byte[]> serializer
-        )
-        {
-            super(producer, topicName, clientId, serializer);
-        }
-
-        @Override
-        public void onUpdated(final Iterable<CacheEntryEvent<? extends K, ? extends V>> cacheEntryEvents)
-            throws CacheEntryListenerException
-        {
-            this.handleEvents(cacheEntryEvents);
-        }
-
-        @Override
-        protected ClusteredCacheMessage createMessage(final CacheEntryEvent<? extends K, ? extends V> event)
-        {
-            return new CacheInvalidationMessage(event.getSource().getName(), event.getKey());
         }
     }
 }

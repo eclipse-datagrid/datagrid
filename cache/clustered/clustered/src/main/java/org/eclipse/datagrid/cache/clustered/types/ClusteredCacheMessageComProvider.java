@@ -25,11 +25,6 @@ public interface ClusteredCacheMessageComProvider<K, V>
         Serializer<byte[]> serializer
     );
 
-    ClusteredCacheMessageSender<K, V> provideUpdateCacheInvalidationMessageSender(
-        @SuppressWarnings("rawtypes") Map properties,
-        Serializer<byte[]> serializer
-    );
-
     ClusteredCacheMessageReceiver provideMessageReceiver(
         @SuppressWarnings("rawtypes") Map properties,
         Serializer<byte[]> serializer,

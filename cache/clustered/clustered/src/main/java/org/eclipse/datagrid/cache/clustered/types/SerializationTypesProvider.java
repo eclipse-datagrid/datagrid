@@ -14,12 +14,12 @@ package org.eclipse.datagrid.cache.clustered.types;
  * #L%
  */
 
-import org.hibernate.cache.internal.BasicCacheKeyImplementation;
-import org.hibernate.cache.internal.CacheKeyImplementation;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+
+import org.hibernate.cache.internal.BasicCacheKeyImplementation;
+import org.hibernate.cache.internal.CacheKeyImplementation;
 
 public interface SerializationTypesProvider
 {
@@ -35,8 +35,6 @@ public interface SerializationTypesProvider
                 CacheKeyImplementation.class,
                 BasicCacheKeyImplementation.class,
                 // message types
-                ClusteredCacheMessage.class,
-                CacheInvalidationMessage.class,
                 TimestampsRegionUpdateMessage.class,
                 // common cache key id types
                 UUID.class
