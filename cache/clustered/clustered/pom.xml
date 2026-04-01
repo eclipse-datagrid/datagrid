@@ -30,6 +30,11 @@
             <version>7.2.3.Final</version>
             <scope>provided</scope>
         </dependency>
+		<dependency>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka-clients</artifactId>
+            <version>4.2.0</version>
+		</dependency>
     </dependencies>
 
 </project>
