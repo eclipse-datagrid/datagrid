@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 public class KafkaClusteredCacheMessageComProvider<K, V> implements ClusteredCacheMessageComProvider<K, V>
 {
-    // TODO (MS 10.02.2026): Use same KafkaProducer for the message senders and the same client id for everything.
     private static final Logger logger = LoggerFactory.getLogger(KafkaClusteredCacheMessageComProvider.class);
 
     private String clientId;
