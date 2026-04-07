@@ -14,35 +14,25 @@ package org.eclipse.datagrid.cache.clustered.types;
  * #L%
  */
 
-import org.eclipse.serializer.typing.Disposable;
-
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListener;
 
+import org.eclipse.serializer.typing.Disposable;
+
 public class ClusteredCacheEntryListenerConfiguration<K, V> implements Disposable
 {
     private final CacheEntryListenerConfig updateTimestamps;
-    private final CacheEntryListenerConfig cacheInvalidation;
 
-    public ClusteredCacheEntryListenerConfiguration(
-        final ClusteredCacheMessageSender<K, V> updateTimestampsSender,
-        final ClusteredCacheMessageSender<K, V> cacheInvalidationSender
-    )
+    public ClusteredCacheEntryListenerConfiguration(final ClusteredCacheMessageSender<K, V> updateTimestampsSender)
     {
         this.updateTimestamps = new CacheEntryListenerConfig(updateTimestampsSender);
-        this.cacheInvalidation = new CacheEntryListenerConfig(cacheInvalidationSender);
     }
 
     public CacheEntryListenerConfiguration<K, V> getUpdateTimestampsCacheEntryListenerConfiguration()
     {
         return this.updateTimestamps;
-    }
-
-    public CacheEntryListenerConfiguration<K, V> getCacheInvalidationCacheEntryListenerConfiguration()
-    {
-        return this.cacheInvalidation;
     }
 
     private boolean isOldValueRequired()
@@ -64,7 +54,6 @@ public class ClusteredCacheEntryListenerConfiguration<K, V> implements Disposabl
     public void dispose()
     {
         this.updateTimestamps.sender.dispose();
-        this.cacheInvalidation.sender.dispose();
     }
 
     public class CacheEntryListenerConfig implements CacheEntryListenerConfiguration<K, V>

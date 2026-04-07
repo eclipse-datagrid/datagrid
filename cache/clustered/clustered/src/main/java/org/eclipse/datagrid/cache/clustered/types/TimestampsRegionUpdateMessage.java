@@ -15,6 +15,5 @@ package org.eclipse.datagrid.cache.clustered.types;
  */
 
 public record TimestampsRegionUpdateMessage(String cacheName, String tableName, long timestamp)
-    implements ClusteredCacheMessage
 {
 }

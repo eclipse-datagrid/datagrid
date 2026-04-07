@@ -9,7 +9,7 @@ package org.eclipse.datagrid.cache.clustered.types;
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  * #L%
  */
@@ -28,29 +28,26 @@ public class ClusteredCacheMessageAcceptor
         this.cacheManager = cacheManager;
     }
 
-    public void accept(final ClusteredCacheMessage message)
+    public void accept(final TimestampsRegionUpdateMessage message)
     {
-        if (message instanceof final TimestampsRegionUpdateMessage m)
-        {
-            this.acceptTimestampsRegionUpdate(m);
-        }
-        else if (message instanceof final CacheInvalidationMessage m)
-        {
-            this.acceptCacheInvalidation(m);
-        }
-        else
-        {
-            throw new IllegalArgumentException("Received unexpected message of type: " + message.getClass().getName());
-        }
-    }
-
-    public void acceptTimestampsRegionUpdate(final TimestampsRegionUpdateMessage message)
-    {
-        final var cache = cacheManager.getCache(message.cacheName());
+        final var cache = this.cacheManager.getCache(message.cacheName());
 
         if (cache == null)
         {
             // we don't have this cache loaded
+            return;
+        }
+
+        final Long previousTimestamp = (Long)cache.get(message.tableName());
+        if (previousTimestamp != null && previousTimestamp > message.timestamp())
+        {
+            // we received an outdated message
+            logger.debug(
+                "Received outdated query-cache timestamp table={}, timestamp={}. Currently stored timestamp={}",
+                message.tableName(),
+                message.timestamp(),
+                previousTimestamp
+            );
             return;
         }
 
@@ -61,22 +58,5 @@ public class ClusteredCacheMessageAcceptor
         );
 
         cache.putSilent(message.tableName(), message.timestamp());
-    }
-
-    public void acceptCacheInvalidation(final CacheInvalidationMessage message)
-    {
-        final var cache = cacheManager.getCache(message.cacheName());
-
-        if (cache == null)
-        {
-            // we don't have this cache loaded
-            return;
-        }
-
-        final var removed = cache.remove(message.key());
-        if(removed)
-        {
-            logger.debug("Removed cache entry cacheName={}, key={}.", message.cacheName(), message.key());
-        }
     }
 }
