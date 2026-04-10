@@ -84,7 +84,6 @@ public interface StorageBackupManager
 
 		private Default(
 			final StorageConnection storageConnection,
-
 			final int maxBackupCount,
 			final StorageBackupBackend backupBackend,
 			final Supplier<MessageInfo> messageInfoSupplier,
