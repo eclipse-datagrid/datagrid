@@ -30,6 +30,9 @@ import org.eclipse.serializer.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.datagrid.cache.clustered.kafka.types.KafkaClusteredConfigurationPropertyNames.KAFKA_CONSUMER_CONFIG_PREFIX;
+import static org.eclipse.datagrid.cache.clustered.kafka.types.KafkaClusteredConfigurationPropertyNames.KAFKA_PRODUCER_CONFIG_PREFIX;
+
 public class KafkaClusteredCacheMessageComProvider<K, V> implements ClusteredCacheMessageComProvider<K, V>
 {
     private static final Logger logger = LoggerFactory.getLogger(KafkaClusteredCacheMessageComProvider.class);
@@ -58,7 +61,7 @@ public class KafkaClusteredCacheMessageComProvider<K, V> implements ClusteredCac
     {
         final var kafkaProperties = this.readKafkaConfigProperties(
             properties,
-            KafkaClusteredConfigurationPropertyNames.KAFKA_CONSUMER_CONFIG_PREFIX
+            KAFKA_CONSUMER_CONFIG_PREFIX
         );
         final var topicName = this.getTopicName(properties);
         final var clientId = this.ensureClientId();
@@ -86,7 +89,7 @@ public class KafkaClusteredCacheMessageComProvider<K, V> implements ClusteredCac
         {
             final var kafkaProperties = this.readKafkaConfigProperties(
                 properties,
-                KafkaClusteredConfigurationPropertyNames.KAFKA_PRODUCER_CONFIG_PREFIX
+                KAFKA_PRODUCER_CONFIG_PREFIX
             );
             kafkaProperties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, VoidSerializer.class.getName());
             kafkaProperties.setProperty(
@@ -114,6 +117,16 @@ public class KafkaClusteredCacheMessageComProvider<K, V> implements ClusteredCac
         {
             if (rawKey instanceof final String prefixedKey)
             {
+                // skip the key if we are a producer and it's a consumer key and vice versa
+                if (specificPrefix.equals(KAFKA_CONSUMER_CONFIG_PREFIX)
+                    && prefixedKey.startsWith(KAFKA_PRODUCER_CONFIG_PREFIX)
+                    || specificPrefix.equals(KAFKA_PRODUCER_CONFIG_PREFIX)
+                    && prefixedKey.startsWith(KAFKA_CONSUMER_CONFIG_PREFIX))
+                {
+                    logger.trace("Ignoring Kafka config with key={}", prefixedKey);
+                    continue;
+                }
+
                 final var key = this.removePrefixIfConfigKey(prefixedKey, specificPrefix);
                 if (key != null)
                 {
