@@ -23,13 +23,9 @@ import java.util.Comparator;
 import java.util.function.Supplier;
 
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
-import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.GcWorkaroundQuartzCronJobManager;
+import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.*;
 import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.GcWorkaroundQuartzCronJobManager.GcWorkaroundQuartzCronJob;
-import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.QuartzCronJobJobFactory;
-import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.QuartzCronJobScheduler;
-import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.StorageBackupQuartzCronJobManager;
 import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.StorageBackupQuartzCronJobManager.StorageBackupQuartzCronJob;
-import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.StorageLimitCheckerQuartzCronJobManager;
 import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.StorageLimitCheckerQuartzCronJobManager.StorageLimitCheckerQuartzCronJob;
 import org.eclipse.datagrid.storage.distributed.types.DistributedStorage;
 import org.eclipse.datagrid.storage.distributed.types.ObjectGraphUpdateHandler;
@@ -43,12 +39,7 @@ import org.eclipse.store.storage.exceptions.StorageException;
 import org.eclipse.store.storage.types.StorageConfiguration;
 import org.eclipse.store.storage.types.StorageExceptionHandler;
 import org.eclipse.store.storage.types.StorageLiveFileProvider;
-import org.quartz.CronScheduleBuilder;
-import org.quartz.JobBuilder;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.SimpleScheduleBuilder;
-import org.quartz.TriggerBuilder;
+import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -328,7 +319,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 		protected KafkaPropertiesProvider ensureKafkaPropertiesProvider()
 		{
-			return KafkaPropertiesProvider.New(this.getNodelibraryPropertiesProvider());
+			final var props = KafkaPropertiesProvider.ConfigDirectory();
+			props.init();
+			return props;
 		}
 
 		protected StoredMessageIndexManager ensureStoredMessageIndexManager()
@@ -380,7 +373,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 			return StorageBackupManager.New(
 				this.clusterStorageManager,
-
 				maxBackupCount,
 				this.getStorageBackupBackend(),
 				messageInfoProvider,
@@ -1336,7 +1328,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 							this.getNodelibraryPropertiesProvider().storageLimitCheckerIntervalMinutes()
 						)
 					)
-
 					.build()
 			);
 
