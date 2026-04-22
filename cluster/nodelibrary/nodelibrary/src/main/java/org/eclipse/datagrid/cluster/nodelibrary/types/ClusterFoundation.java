@@ -130,10 +130,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 	F setClusterStorageBinaryDataDistributor(ClusterStorageBinaryDataDistributor distributor);
 
-	MicroNodeManager getMicroNodeManager();
-
-	F setMicroNodeManager(MicroNodeManager manager);
-
 	StorageNodeHealthCheck getStorageNodeHealthCheck();
 
 	F setStorageNodeHealthCheck(StorageNodeHealthCheck check);
@@ -184,7 +180,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 		private BackupNodeManager backupNodeManager;
 		private ClusterStorageBinaryDataClient dataClient;
 		private ClusterStorageBinaryDataDistributor dataDistributor;
-		private MicroNodeManager microNodeManager;
 		private StorageNodeHealthCheck healthCheck;
 		private NodelibraryPropertiesProvider propertiesProvider;
 		private StorageTaskExecutor storageTaskExecutor;
@@ -433,16 +428,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 				this.getStoredMessageIndexManager().get(),
 				this.getKafkaPropertiesProvider(),
 				doCommitOffset
-			);
-		}
-
-		protected MicroNodeManager ensureMicroNodeManager()
-		{
-			return MicroNodeManager.New(
-				this.getStorageTaskExecutor(),
-				this.clusterStorageManager,
-				this.getStorageBackupManager(),
-				this.getStorageDiskSpaceReader()
 			);
 		}
 
@@ -831,23 +816,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 		}
 
 		@Override
-		public MicroNodeManager getMicroNodeManager()
-		{
-			if (this.microNodeManager == null)
-			{
-				this.microNodeManager = this.dispatch(this.ensureMicroNodeManager());
-			}
-			return this.microNodeManager;
-		}
-
-		@Override
-		public F setMicroNodeManager(final MicroNodeManager manager)
-		{
-			this.microNodeManager = manager;
-			return this.$();
-		}
-
-		@Override
 		public StorageNodeHealthCheck getStorageNodeHealthCheck()
 		{
 			if (this.healthCheck == null)
@@ -1030,10 +998,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			{
 				this.startDevNode();
 			}
-			else if (properties.isMicro())
-			{
-				this.startMicroNode();
-			}
 			else if (properties.isBackupNode())
 			{
 				this.startBackupNode();
@@ -1067,7 +1031,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 			/*
 			 * If there are backups already available, use those instead as a fresh cluster
-			 * has none, but a upgraded cluster has the previous storage backed up
+			 * has none, but an upgraded cluster has the previous storage backed up
 			 */
 
 			// user uploaded a new storage
@@ -1076,8 +1040,8 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 				LOG.info("Downloading user uploaded storage");
 
 				useLatestMessageIndex = true;
-				// since the storage is now different than before the storage nodes
-				// also need the exact same storage
+				// since the storage is now different from before,
+				// the storage nodes also need the exact same storage
 				requiresStorageUpload = true;
 				this.deleteDirectory(storageRootPath);
 				backend.downloadUserUploadedStorage(storageParentPath);
@@ -1334,90 +1298,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			scheduler.start();
 		}
 
-		protected void startMicroNode() throws NodelibraryException
-
-		{
-			LOG.info("Starting micro cluster node");
-
-			// TODO: Hardcoded paths
-			final var storagePath = Paths.get("/storage/storage");
-			final EmbeddedStorageFoundation<?> embeddedStorageFoundation = this.getEmbeddedStorageFoundation();
-
-			// replace the storage live file provider from the provided embedded storage foundation
-			StorageConfiguration storageConfig = embeddedStorageFoundation.getConfiguration();
-			storageConfig = StorageConfiguration.Builder()
-				.setBackupSetup(storageConfig.backupSetup())
-				.setChannelCountProvider(storageConfig.channelCountProvider())
-				.setDataFileEvaluator(storageConfig.dataFileEvaluator())
-				.setEntityCacheEvaluator(storageConfig.entityCacheEvaluator())
-				.setHousekeepingController(storageConfig.housekeepingController())
-				.setStorageFileProvider(StorageLiveFileProvider.New(NioFileSystem.New().ensureDirectory(storagePath)))
-				.createConfiguration();
-			embeddedStorageFoundation.setConfiguration(storageConfig);
-
-			embeddedStorageFoundation.setExceptionHandler((throwable, channel) ->
-			{
-				try
-				{
-					StorageExceptionHandler.defaultHandleException(throwable, channel);
-				}
-				catch (final StorageException exception)
-				{
-					GlobalErrorHandling.handleFatalError(exception);
-				}
-			});
-
-			final var embeddedStorageManager = embeddedStorageFoundation.start();
-
-			if (embeddedStorageManager.root() == null)
-			{
-				final var root = this.rootSupplier.get();
-				if (root instanceof Lazy)
-				{
-					embeddedStorageManager.setRoot(root);
-				}
-				else
-				{
-					embeddedStorageManager.setRoot(Lazy.Reference(root));
-				}
-				embeddedStorageManager.storeRoot();
-			}
-
-			final var scheduler = this.getQuartzCronJobScheduler();
-
-			this.clusterStorageManager = ClusterStorageManager.New(
-				embeddedStorageManager,
-				() -> this.getStorageLimitCheckerQuartzCronJobManager().limitReached(),
-				scheduler::shutdown
-			);
-			this.clusterRequestController = ClusterRestRequestController.MicroNode(
-				this.getMicroNodeManager(),
-
-				this.getNodelibraryPropertiesProvider()
-			);
-
-			final var jobFactory = this.getQuartzCronJobJobFactory();
-
-			final var limitChecker = this.getStorageLimitCheckerQuartzCronJobManager();
-			jobFactory.setJobFactory(StorageLimitCheckerQuartzCronJob.class, limitChecker::create);
-
-			scheduler.setFactory(jobFactory);
-
-			scheduler.schedule(
-				JobBuilder.newJob(StorageLimitCheckerQuartzCronJob.class).withIdentity("StorageLimitChecker").build(),
-				TriggerBuilder.newTrigger()
-					.withSchedule(
-						SimpleScheduleBuilder.repeatMinutelyForever(
-							this.getNodelibraryPropertiesProvider().storageLimitCheckerIntervalMinutes()
-						)
-					)
-					.startNow()
-					.build()
-			);
-
-			scheduler.start();
-		}
-
 		protected void startDevNode() throws NodelibraryException
 		{
 			LOG.info("Starting dev cluster node");
@@ -1462,7 +1342,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 					}
 					catch (final IOException e)
 					{
-						throw new NodelibraryException("Failed to delete file at " + f.toString(), e);
+						throw new NodelibraryException("Failed to delete file at " + f, e);
 					}
 				});
 			}
