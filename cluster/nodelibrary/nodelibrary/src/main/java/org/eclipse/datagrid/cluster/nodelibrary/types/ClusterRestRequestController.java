@@ -72,14 +72,6 @@ public interface ClusterRestRequestController extends AutoCloseable
 		return new DevNode();
 	}
 
-	static ClusterRestRequestController MicroNode(
-		final MicroNodeManager microNodeManager,
-		final NodelibraryPropertiesProvider properties
-	)
-	{
-		return new MicroNode(notNull(microNodeManager), notNull(properties));
-	}
-
 	static ClusterRestRequestController BackupNode(
 		final BackupNodeManager backupNodeManager,
 		final NodelibraryPropertiesProvider properties
@@ -341,57 +333,6 @@ public interface ClusterRestRequestController extends AutoCloseable
 		{
 			this.backupNodeManager.close();
 
-		}
-	}
-
-	final class MicroNode extends Abstract
-	{
-		private static final Logger LOG = LoggerFactory.getLogger(MicroNode.class);
-		private final MicroNodeManager microNodeManager;
-
-		private MicroNode(final MicroNodeManager microNodeManager, final NodelibraryPropertiesProvider properties)
-		{
-			super(microNodeManager, properties);
-			this.microNodeManager = microNodeManager;
-		}
-
-		@Override
-		public boolean postActivateDistributorFinish() throws HttpResponseException
-		{
-			// micro nodes are always the distributor
-			return true;
-		}
-
-		@Override
-		public boolean getDistributor() throws HttpResponseException
-		{
-			// micro nodes are always the distributor
-			return true;
-		}
-
-		@Override
-		public void postActivateDistributorStart() throws HttpResponseException
-		{
-			// micro nodes are always the distributor
-		}
-
-		@Override
-		public void postBackup(PostBackup.Body body) throws HttpResponseException
-		{
-			LOG.trace("Handling postDataGridBackup request");
-			this.handleRequest(this.microNodeManager::createStorageBackup);
-		}
-
-		@Override
-		public boolean getBackup() throws HttpResponseException
-		{
-			return this.handleRequest(this.microNodeManager::isBackupRunning);
-		}
-
-		@Override
-		public void close()
-		{
-			this.microNodeManager.close();
 		}
 	}
 
