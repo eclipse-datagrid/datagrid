@@ -14,9 +14,10 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  * #L%
  */
 
-
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.store.storage.types.StorageConnection;
@@ -26,6 +27,8 @@ public interface StorageBackupBackend
 	List<BackupMetadata> listBackups() throws NodelibraryException;
 
 	void downloadLatestBackup(Path targetRootPath) throws NodelibraryException;
+
+	Optional<MessageInfo> getMessageInfoFromPreviousBackup() throws NodelibraryException;
 
 	default boolean containsBackups() throws NodelibraryException
 	{
@@ -37,7 +40,7 @@ public interface StorageBackupBackend
 		return this.listBackups()
 			.stream()
 			.filter(b -> !ignoreManualSlot || !b.manualSlot())
-			.max((a, b) -> Long.compare(a.timestamp(), b.timestamp()))
+			.max(Comparator.comparingLong(BackupMetadata::timestamp))
 			.orElse(null);
 	}
 

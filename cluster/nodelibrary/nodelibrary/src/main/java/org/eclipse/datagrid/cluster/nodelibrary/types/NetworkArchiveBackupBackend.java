@@ -15,13 +15,17 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  */
 
 import java.io.IOException;
+import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.kafka.common.TopicPartition;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
+import org.eclipse.serializer.collections.EqHashTable;
 import org.eclipse.store.storage.types.Storage;
 import org.eclipse.store.storage.types.StorageConnection;
 import org.slf4j.Logger;
@@ -87,6 +91,99 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
         }
 
         @Override
+        public Optional<MessageInfo> getMessageInfoFromPreviousBackup() throws NodelibraryException
+        {
+            final var latestBackupMetadata = this.latestBackup(false);
+
+            if (latestBackupMetadata == null)
+            {
+                // no previous storage
+                return Optional.empty();
+            }
+
+            final Path scratchSpacePath = this.storageExportScratchSpacePath.resolve("messageInfoDl");
+            final String archiveFileName = this.toArchiveFileName(latestBackupMetadata);
+            final Path archiveFilePath = scratchSpacePath.resolve(archiveFileName);
+
+            try
+            {
+                Files.createDirectories(scratchSpacePath);
+            }
+            catch (final IOException e)
+            {
+                throw new NodelibraryException(e);
+            }
+
+            final String offsetFileContent;
+
+            try
+            {
+                this.http.download(archiveFileName, archiveFilePath);
+                offsetFileContent = this.readFileFromArchive(scratchSpacePath.toString(), "offset", archiveFilePath);
+            }
+            finally
+            {
+                try
+                {
+                    this.deleteDirectory(scratchSpacePath);
+                }
+                catch (final NodelibraryException e)
+                {
+                    LOG.warn("Failed to clean up message info scratch storage at {}.", scratchSpacePath, e);
+                }
+            }
+
+            return Optional.of(this.parseMessageInfo(offsetFileContent));
+        }
+
+        // TODO: Deduplicate this code (Copied from StoredMessageIndexManager.java)
+        private MessageInfo parseMessageInfo(final String offsetFileContent) throws NodelibraryException
+        {
+            final String[] rows = offsetFileContent.trim().split("\n");
+            try
+            {
+                // parse message index
+                final long messageIndex = Long.parseLong(rows[0]);
+
+                // parse partition offsets
+                final EqHashTable<TopicPartition, Long> partitionOffsets = EqHashTable.New();
+                for (int i = 1; i < rows.length; i++)
+                {
+                    final String[] cols = rows[i].split(",");
+                    if (cols.length != 3)
+                    {
+                        throw new NodelibraryException(
+                            "Offset Partition column formatting wrong, excpeted 3 comma separated columns: " + rows[i]
+                        );
+                    }
+
+                    final String topic = cols[0];
+                    final int partition = Integer.parseInt(cols[1]);
+                    final long offset = Long.parseLong(cols[2]);
+
+                    final var topicPartition = new TopicPartition(topic, partition);
+
+                    LOG.debug("Parsed partition {} at offset {}", topicPartition, offset);
+                    if (partitionOffsets.get(topicPartition) != null)
+                    {
+                        throw new NodelibraryException("Offset file contains duplicate partition " + partition);
+                    }
+                    partitionOffsets.put(topicPartition, offset);
+                }
+
+                return MessageInfo.New(messageIndex, partitionOffsets.immure());
+            }
+            catch (final NumberFormatException | IndexOutOfBoundsException | NodelibraryException e)
+            {
+                if (e instanceof NodelibraryException)
+                {
+                    throw e;
+                }
+                throw new NodelibraryException("Failed to parse message info file", e);
+            }
+        }
+
+        @Override
         public void deleteBackup(final BackupMetadata backup) throws NodelibraryException
         {
             this.http.delete(this.toArchiveFileName(backup));
@@ -108,20 +205,34 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
             this.clearScratchSpace();
 
             connection.issueFullBackup(fs.ensureDirectory(this.storageExportScratchSpacePath.resolve("storage")));
-            // TODO: Hardcoded offset file name
-            try (
-                final var infoWriter = this.messageInfoManagerCreator.create(
-                    fs.ensureFile(this.storageExportScratchSpacePath.resolve("offset")).tryUseWriting()
-                )
-            )
-            {
-                infoWriter.set(messageInfo);
-            }
 
-            this.compressStorage(this.storageExportScratchSpacePath.toString(), archiveFilePath);
-            final String s3Key = archiveFileName;
-            this.http.upload(s3Key, archiveFilePath);
-            this.deleteFile(archiveFilePath);
+            try
+            {
+                // TODO: Hardcoded offset file name
+                try (
+                    final var infoWriter = this.messageInfoManagerCreator.create(
+                        fs.ensureFile(this.storageExportScratchSpacePath.resolve("offset")).tryUseWriting()
+                    )
+                )
+                {
+                    infoWriter.set(messageInfo);
+                }
+
+                this.compressStorage(this.storageExportScratchSpacePath.toString(), archiveFilePath);
+                final String s3Key = archiveFileName;
+                this.http.upload(s3Key, archiveFilePath);
+            }
+            finally
+            {
+                try
+                {
+                    this.deleteFile(archiveFilePath);
+                }
+                catch (final NodelibraryException e)
+                {
+                    LOG.warn("Failed to clean up exported storage at {}", archiveFilePath, e);
+                }
+            }
         }
 
         @Override
@@ -282,6 +393,50 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
             {
                 throw new NodelibraryException("Failed to extract storage. Exit code: " + exitCode);
             }
+        }
+
+        private String readFileFromArchive(
+            final String workingDir,
+            final String fileToExtract,
+            final Path archiveFilePath
+        )
+            throws NodelibraryException
+        {
+            LOG.trace("Reading file from storage archive");
+
+            final int exitCode;
+            final String fileContent;
+
+            try
+            {
+                // -C parentPath is so the archive contains a 'storage' folder and nothing else
+                final var process = new ProcessBuilder(
+                    "tar",
+                    "-C",
+                    workingDir,
+                    "-OJxf",
+                    archiveFilePath.toString(),
+                    fileToExtract
+                ).redirectError(Redirect.INHERIT).start();
+
+                try (final var reader = process.inputReader())
+                {
+                    fileContent = reader.lines().collect(Collectors.joining());
+                }
+
+                exitCode = process.waitFor();
+            }
+            catch (final Exception e)
+            {
+                throw new NodelibraryException("Failed to extract storage", e);
+            }
+
+            if (exitCode != 0)
+            {
+                throw new NodelibraryException("Failed to extract storage. Exit code: " + exitCode);
+            }
+
+            return fileContent;
         }
 
         private String toArchiveFileName(final BackupMetadata backup)
