@@ -1,11 +1,25 @@
 package org.eclipse.datagrid.cluster.nodelibrary.types;
 
+/*-
+ * #%L
+ * Eclipse Data Grid Cluster Nodelibrary
+ * %%
+ * Copyright (C) 2025 - 2026 MicroStream Software
+ * %%
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ * #L%
+ */
+
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.kafka.clients.admin.KafkaAdminClient;
+import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.RecordsToDelete;
 import org.apache.kafka.common.TopicPartition;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
@@ -15,22 +29,22 @@ import org.slf4j.LoggerFactory;
 
 import static org.eclipse.serializer.util.X.notNull;
 
-public interface KafkaMessageDeleter
+public interface KafkaRecordDeleter
 {
-    static KafkaMessageDeleter New(final KafkaAdminClient kafkaAdminClient)
+    static KafkaRecordDeleter New(final AdminClient kafkaAdminClient)
     {
         return new Default(notNull(kafkaAdminClient));
     }
 
     void deleteUntilOffsets(XImmutableMap<TopicPartition, Long> partitionOffsets) throws NodelibraryException;
 
-    class Default implements KafkaMessageDeleter
+    class Default implements KafkaRecordDeleter
     {
-        private static final Logger LOG = LoggerFactory.getLogger(KafkaMessageDeleter.class);
+        private static final Logger LOG = LoggerFactory.getLogger(KafkaRecordDeleter.class);
 
-        private final KafkaAdminClient kafkaAdminClient;
+        private final AdminClient kafkaAdminClient;
 
-        private Default(final KafkaAdminClient kafkaAdminClient)
+        private Default(final AdminClient kafkaAdminClient)
         {
             this.kafkaAdminClient = kafkaAdminClient;
         }

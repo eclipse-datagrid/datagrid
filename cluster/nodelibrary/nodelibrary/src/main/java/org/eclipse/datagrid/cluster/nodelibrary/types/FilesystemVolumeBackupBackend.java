@@ -15,16 +15,20 @@ package org.eclipse.datagrid.cluster.nodelibrary.types;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.store.storage.types.Storage;
 import org.eclipse.store.storage.types.StorageConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.serializer.util.X.notNull;
 
@@ -32,26 +36,64 @@ public interface FilesystemVolumeBackupBackend extends StorageBackupBackend
 {
     static FilesystemVolumeBackupBackend New(
         final Path backupVolumePath,
-        final StoredMessageIndexManager.Creator storedmessageIndexManagerCreator
+        final StoredMessageInfoManager.Creator storedMessageInfoManagerCreator,
+        final MessageInfoParser messageInfoParser
     )
     {
-        return new Default(notNull(backupVolumePath), notNull(storedmessageIndexManagerCreator));
+        return new Default(
+            notNull(backupVolumePath),
+            notNull(storedMessageInfoManagerCreator),
+            notNull(messageInfoParser)
+        );
     }
 
     class Default implements FilesystemVolumeBackupBackend
     {
+        private static final Logger LOG = LoggerFactory.getLogger(FilesystemVolumeBackupBackend.class);
+
         private final Path backupVolumePath;
         private final Path userUploadedStorageFolderPath;
-        private final StoredMessageIndexManager.Creator messageIndexManagerCreator;
+        private final StoredMessageInfoManager.Creator messageInfoManagerCreator;
+        private final MessageInfoParser messageInfoParser;
 
         private Default(
             final Path backupVolumePath,
-            final StoredMessageIndexManager.Creator storedMessageIndexManagerCreator
+            final StoredMessageInfoManager.Creator storedMessageInfoManagerCreator,
+            final MessageInfoParser messageInfoParser
         )
         {
             this.backupVolumePath = backupVolumePath;
             this.userUploadedStorageFolderPath = backupVolumePath.resolve("user-uploaded-storage");
-            this.messageIndexManagerCreator = storedMessageIndexManagerCreator;
+            this.messageInfoManagerCreator = storedMessageInfoManagerCreator;
+            this.messageInfoParser = messageInfoParser;
+        }
+
+        @Override
+        public Optional<MessageInfo> getMessageInfoFromPreviousBackup(final int skip) throws NodelibraryException
+        {
+            LOG.trace("Getting backup metadata info of latest-{}", skip);
+
+            final var previousBackupMetadata = this.getLastBackup(skip).orElse(null);
+            if (previousBackupMetadata == null)
+            {
+                return Optional.empty();
+            }
+
+            final String offsetFileContent;
+
+            try
+            {
+                offsetFileContent = Files.readString(
+                    this.backupVolumePath.resolve(previousBackupMetadata.timestamp() + "/offset"),
+                    StandardCharsets.UTF_8
+                );
+            }
+            catch (final IOException e)
+            {
+                throw new NodelibraryException("Failed to read offset file", e);
+            }
+
+            return Optional.of(this.messageInfoParser.parseMessageInfo(offsetFileContent));
         }
 
         @Override
@@ -83,7 +125,7 @@ public interface FilesystemVolumeBackupBackend extends StorageBackupBackend
             connection.issueFullBackup(fs.ensureDirectory(backupRootPath.resolve("storage")));
             // TODO: Hardcoded offset file name
             try (
-                final var infoWriter = this.messageIndexManagerCreator.create(
+                final var infoWriter = this.messageInfoManagerCreator.create(
                     fs.ensureFile(backupRootPath.resolve("offset")).tryUseWriting()
                 )
             )

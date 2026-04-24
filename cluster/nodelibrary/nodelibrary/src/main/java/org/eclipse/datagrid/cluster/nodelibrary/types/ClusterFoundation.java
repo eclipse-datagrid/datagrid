@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.function.Supplier;
 
+import org.apache.kafka.clients.admin.AdminClient;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.*;
 import org.eclipse.datagrid.cluster.nodelibrary.types.cronjob.GcWorkaroundQuartzCronJobManager.GcWorkaroundQuartzCronJob;
@@ -98,9 +99,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 	F setAfterDataMessageConsumedListener(AfterDataMessageConsumedListener listener);
 
-	StoredMessageIndexManager getStoredMessageIndexManager();
+	StoredMessageInfoManager getStoredMessageInfoManager();
 
-	F setStoredMessageIndexManager(StoredMessageIndexManager manager);
+	F setStoredMessageInfoManager(StoredMessageInfoManager manager);
 
 	StorageBackupManager getStorageBackupManager();
 
@@ -158,6 +159,14 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 	F setKafkaMessageInfoProvider(KafkaMessageInfoProvider provider);
 
+	KafkaRecordDeleter getKafkaRecordDeleter();
+
+	F setKafkaRecordDeleter(KafkaRecordDeleter deleter);
+
+	MessageInfoParser getMessageInfoParser();
+
+	F setMessageInfoParser(MessageInfoParser parser);
+
 	static ClusterFoundation<?> New()
 	{
 		return new Default<>();
@@ -167,9 +176,8 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 	ClusterStorageManager<?> startStorageManager() throws NodelibraryException;
 
-	class Default<F extends Default<?>> extends InstanceDispatcher.Default implements
-		ClusterFoundation<F>,
-		Unpersistable
+	class Default<F extends Default<?>> extends InstanceDispatcher.Default
+		implements ClusterFoundation<F>, Unpersistable
 	{
 		private static final Logger LOG = LoggerFactory.getLogger(ClusterFoundation.class);
 
@@ -198,9 +206,11 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 		private AfterDataMessageConsumedListener afterDataMessageConsumedListener;
 		private ClusterStorageBinaryDataMerger dataMerger;
 		private ClusterStorageBinaryDataPacketAcceptor dataPacketAcceptor;
-		private StoredMessageIndexManager storedMessageInfoManager;
+		private StoredMessageInfoManager storedMessageInfoManager;
 		private KafkaPropertiesProvider kafkaPropertiesProvider;
 		private KafkaMessageInfoProvider kafkaMessageInfoProvider;
+		private KafkaRecordDeleter kafkaRecordDeleter;
+		private MessageInfoParser messageInfoParser;
 
 		// cached created types
 		private ClusterStorageManager<?> clusterStorageManager;
@@ -220,7 +230,8 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 		{
 			// TODO: Hardcoded path
 			final var props = this.getNodelibraryPropertiesProvider();
-			final StoredMessageIndexManager.Creator messageIndexManagerCreator = StoredMessageIndexManager::New;
+			final StoredMessageInfoManager.Creator messageInfoManagerCreator =
+				messageInfoFile -> StoredMessageInfoManager.New(messageInfoFile, this.getMessageInfoParser());
 
 			if (props.backupTarget() == BackupTarget.SAAS)
 			{
@@ -239,12 +250,16 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 				return NetworkArchiveBackupBackend.New(
 					scratchSpace,
 					this.getBackupProxyHttpClient(),
-					messageIndexManagerCreator
+					messageInfoManagerCreator,
+					this.getMessageInfoParser()
 				);
 			}
 			else
 			{
-				return FilesystemVolumeBackupBackend.New(Paths.get("/backups"), messageIndexManagerCreator);
+				return FilesystemVolumeBackupBackend.New(
+					Paths.get("/backups"), messageInfoManagerCreator,
+					this.getMessageInfoParser()
+				);
 			}
 		}
 
@@ -324,12 +339,15 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			return props;
 		}
 
-		protected StoredMessageIndexManager ensureStoredMessageIndexManager()
+		protected StoredMessageInfoManager ensureStoredMessageInfoManager()
 		{
 			// TODO: Hardcoded path
 			final var messageInfoPath = Paths.get("/storage/offset");
-			LOG.trace("Creating stored offset manager for offset file at {}", messageInfoPath);
-			return StoredMessageIndexManager.New(NioFileSystem.New().ensureFile(messageInfoPath).tryUseWriting());
+			LOG.trace("Creating StoredMessageInfoManager for offset file at {}", messageInfoPath);
+			return StoredMessageInfoManager.New(
+				NioFileSystem.New().ensureFile(messageInfoPath).tryUseWriting(),
+				this.getMessageInfoParser()
+			);
 		}
 
 		protected AfterDataMessageConsumedListener ensureAfterDataMessageConsumedListener()
@@ -338,8 +356,8 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 			final var storedMessageInfoUpdater = new AfterDataMessageConsumedListener()
 			{
-				final StoredMessageIndexManager delegate = ClusterFoundation.Default.this
-					.getStoredMessageIndexManager();
+				final StoredMessageInfoManager delegate = ClusterFoundation.Default.this
+					.getStoredMessageInfoManager();
 
 				@Override
 				public void onChange(final MessageInfo messageInfo) throws NodelibraryException
@@ -376,7 +394,8 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 				maxBackupCount,
 				this.getStorageBackupBackend(),
 				messageInfoProvider,
-				this.getClusterStorageBinaryDataClient()
+				this.getClusterStorageBinaryDataClient(),
+				this.getKafkaRecordDeleter()
 			);
 		}
 
@@ -430,7 +449,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 				topic,
 				groupId,
 				this.getAfterDataMessageConsumedListener(),
-				this.getStoredMessageIndexManager().get(),
+				this.getStoredMessageInfoManager().get(),
 				this.getKafkaPropertiesProvider(),
 				doCommitOffset
 			);
@@ -526,6 +545,18 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 		protected ClusterStorageBinaryDataPacketAcceptor ensureDataPacketAcceptor()
 		{
 			return ClusterStorageBinaryDataPacketAcceptor.New(this.getClusterStorageBinaryDataMerger());
+		}
+
+		protected KafkaRecordDeleter ensureKafkaRecordDeleter()
+		{
+			final var provider = this.getKafkaPropertiesProvider();
+			provider.init();
+			return KafkaRecordDeleter.New(AdminClient.create(provider.provide()));
+		}
+
+		protected MessageInfoParser ensureMessageInfoParser()
+		{
+			return MessageInfoParser.New();
 		}
 
 		@Override
@@ -967,17 +998,17 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 		}
 
 		@Override
-		public StoredMessageIndexManager getStoredMessageIndexManager()
+		public StoredMessageInfoManager getStoredMessageInfoManager()
 		{
 			if (this.storedMessageInfoManager == null)
 			{
-				this.storedMessageInfoManager = this.dispatch(this.ensureStoredMessageIndexManager());
+				this.storedMessageInfoManager = this.dispatch(this.ensureStoredMessageInfoManager());
 			}
 			return this.storedMessageInfoManager;
 		}
 
 		@Override
-		public F setStoredMessageIndexManager(final StoredMessageIndexManager manager)
+		public F setStoredMessageInfoManager(final StoredMessageInfoManager manager)
 		{
 			this.storedMessageInfoManager = manager;
 			return this.$();
@@ -997,6 +1028,40 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 		public F setKafkaMessageInfoProvider(final KafkaMessageInfoProvider provider)
 		{
 			this.kafkaMessageInfoProvider = provider;
+			return this.$();
+		}
+
+		@Override
+		public KafkaRecordDeleter getKafkaRecordDeleter()
+		{
+			if (this.kafkaRecordDeleter == null)
+			{
+				this.kafkaRecordDeleter = this.dispatch(this.ensureKafkaRecordDeleter());
+			}
+			return this.kafkaRecordDeleter;
+		}
+
+		@Override
+		public F setKafkaRecordDeleter(final KafkaRecordDeleter kafkaRecordDeleter)
+		{
+			this.kafkaRecordDeleter = kafkaRecordDeleter;
+			return this.$();
+		}
+
+		@Override
+		public MessageInfoParser getMessageInfoParser()
+		{
+			if (this.messageInfoParser == null)
+			{
+				this.messageInfoParser = this.dispatch(this.ensureMessageInfoParser());
+			}
+			return this.messageInfoParser;
+		}
+
+		@Override
+		public F setMessageInfoParser(final MessageInfoParser messageInfoParser)
+		{
+			this.messageInfoParser = messageInfoParser;
 			return this.$();
 		}
 
@@ -1055,7 +1120,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			final var storageRootPath = storageParentPath.resolve("storage");
 
 			// if we use a downloaded storage, always scroll to the latest message so we don't read old messages
-			boolean useLatestMessageIndex = false;
+			boolean useLatestMessageInfo = false;
 			boolean requiresStorageUpload = false;
 
 			// don't send messages generated by starting the storage and storing the empty root
@@ -1075,7 +1140,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			{
 				LOG.info("Downloading user uploaded storage");
 
-				useLatestMessageIndex = true;
+				useLatestMessageInfo = true;
 				// since the storage is now different than before the storage nodes
 				// also need the exact same storage
 				requiresStorageUpload = true;
@@ -1093,11 +1158,11 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 				LOG.info("Starting with local storage");
 			}
 
-			if (useLatestMessageIndex)
+			if (useLatestMessageInfo)
 			{
 				final var info = this.getKafkaMessageInfoProvider().provideLatestMessageInfo();
 				LOG.debug("Set starting message info to: {}", info);
-				this.getStoredMessageIndexManager().set(info);
+				this.getStoredMessageInfoManager().set(info);
 			}
 
 			LOG.info("Creating nodelibrary cluster controller");
@@ -1462,7 +1527,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 					}
 					catch (final IOException e)
 					{
-						throw new NodelibraryException("Failed to delete file at " + f.toString(), e);
+						throw new NodelibraryException("Failed to delete file at " + f, e);
 					}
 				});
 			}

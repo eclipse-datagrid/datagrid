@@ -22,13 +22,15 @@ import java.util.Optional;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.store.storage.types.StorageConnection;
 
+import static org.eclipse.serializer.math.XMath.positive;
+
 public interface StorageBackupBackend
 {
 	List<BackupMetadata> listBackups() throws NodelibraryException;
 
 	void downloadLatestBackup(Path targetRootPath) throws NodelibraryException;
 
-	Optional<MessageInfo> getMessageInfoFromPreviousBackup() throws NodelibraryException;
+	Optional<MessageInfo> getMessageInfoFromPreviousBackup(int skip) throws NodelibraryException;
 
 	default boolean containsBackups() throws NodelibraryException
 	{
@@ -42,6 +44,23 @@ public interface StorageBackupBackend
 			.filter(b -> !ignoreManualSlot || !b.manualSlot())
 			.max(Comparator.comparingLong(BackupMetadata::timestamp))
 			.orElse(null);
+	}
+
+	default Optional<BackupMetadata> getLastBackup(final int skip) throws NodelibraryException
+	{
+		positive(skip);
+
+		final var backups = this.listBackups();
+
+		if (backups.size() <= skip)
+		{
+			// no previous storage
+			return Optional.empty();
+		}
+
+		backups.sort(Comparator.comparingLong(BackupMetadata::timestamp));
+
+		return Optional.of(backups.get(backups.size() - 1 - skip));
 	}
 
 	void deleteBackup(BackupMetadata backup) throws NodelibraryException;

@@ -23,9 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.apache.kafka.common.TopicPartition;
 import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
-import org.eclipse.serializer.collections.EqHashTable;
 import org.eclipse.store.storage.types.Storage;
 import org.eclipse.store.storage.types.StorageConnection;
 import org.slf4j.Logger;
@@ -38,13 +36,15 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
     static NetworkArchiveBackupBackend New(
         final Path storageExportScratchSpacePath,
         final BackupProxyHttpClient backupProxyHttpClient,
-        final StoredMessageIndexManager.Creator storedMessageInfoManagerCreator
+        final StoredMessageInfoManager.Creator storedMessageInfoManagerCreator,
+        final MessageInfoParser messageInfoParser
     )
     {
         return new Default(
             notNull(storageExportScratchSpacePath),
             notNull(backupProxyHttpClient),
-            notNull(storedMessageInfoManagerCreator)
+            notNull(storedMessageInfoManagerCreator),
+            notNull(messageInfoParser)
         );
     }
 
@@ -55,17 +55,20 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
 
         private final Path storageExportScratchSpacePath;
         private final BackupProxyHttpClient http;
-        private final StoredMessageIndexManager.Creator messageInfoManagerCreator;
+        private final StoredMessageInfoManager.Creator messageInfoManagerCreator;
+        private final MessageInfoParser messageInfoParser;
 
         private Default(
             final Path storageExportScratchSpacePath,
             final BackupProxyHttpClient backupProxyHttpClient,
-            final StoredMessageIndexManager.Creator storedMessageInfoManagerCreator
+            final StoredMessageInfoManager.Creator storedMessageInfoManagerCreator,
+            final MessageInfoParser messageInfoParser
         )
         {
             this.storageExportScratchSpacePath = storageExportScratchSpacePath;
             this.http = backupProxyHttpClient;
             this.messageInfoManagerCreator = storedMessageInfoManagerCreator;
+            this.messageInfoParser = messageInfoParser;
         }
 
         @Override
@@ -91,18 +94,18 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
         }
 
         @Override
-        public Optional<MessageInfo> getMessageInfoFromPreviousBackup() throws NodelibraryException
+        public Optional<MessageInfo> getMessageInfoFromPreviousBackup(final int skip) throws NodelibraryException
         {
-            final var latestBackupMetadata = this.latestBackup(false);
+            LOG.trace("Getting backup metadata info of latest-{}", skip);
 
-            if (latestBackupMetadata == null)
+            final var previousBackupMetadata = this.getLastBackup(skip).orElse(null);
+            if (previousBackupMetadata == null)
             {
-                // no previous storage
                 return Optional.empty();
             }
 
             final Path scratchSpacePath = this.storageExportScratchSpacePath.resolve("messageInfoDl");
-            final String archiveFileName = this.toArchiveFileName(latestBackupMetadata);
+            final String archiveFileName = this.toArchiveFileName(previousBackupMetadata);
             final Path archiveFilePath = scratchSpacePath.resolve(archiveFileName);
 
             try
@@ -133,54 +136,7 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
                 }
             }
 
-            return Optional.of(this.parseMessageInfo(offsetFileContent));
-        }
-
-        // TODO: Deduplicate this code (Copied from StoredMessageIndexManager.java)
-        private MessageInfo parseMessageInfo(final String offsetFileContent) throws NodelibraryException
-        {
-            final String[] rows = offsetFileContent.trim().split("\n");
-            try
-            {
-                // parse message index
-                final long messageIndex = Long.parseLong(rows[0]);
-
-                // parse partition offsets
-                final EqHashTable<TopicPartition, Long> partitionOffsets = EqHashTable.New();
-                for (int i = 1; i < rows.length; i++)
-                {
-                    final String[] cols = rows[i].split(",");
-                    if (cols.length != 3)
-                    {
-                        throw new NodelibraryException(
-                            "Offset Partition column formatting wrong, excpeted 3 comma separated columns: " + rows[i]
-                        );
-                    }
-
-                    final String topic = cols[0];
-                    final int partition = Integer.parseInt(cols[1]);
-                    final long offset = Long.parseLong(cols[2]);
-
-                    final var topicPartition = new TopicPartition(topic, partition);
-
-                    LOG.debug("Parsed partition {} at offset {}", topicPartition, offset);
-                    if (partitionOffsets.get(topicPartition) != null)
-                    {
-                        throw new NodelibraryException("Offset file contains duplicate partition " + partition);
-                    }
-                    partitionOffsets.put(topicPartition, offset);
-                }
-
-                return MessageInfo.New(messageIndex, partitionOffsets.immure());
-            }
-            catch (final NumberFormatException | IndexOutOfBoundsException | NodelibraryException e)
-            {
-                if (e instanceof NodelibraryException)
-                {
-                    throw e;
-                }
-                throw new NodelibraryException("Failed to parse message info file", e);
-            }
+            return Optional.of(this.messageInfoParser.parseMessageInfo(offsetFileContent));
         }
 
         @Override
@@ -421,7 +377,7 @@ public interface NetworkArchiveBackupBackend extends StorageBackupBackend
 
                 try (final var reader = process.inputReader())
                 {
-                    fileContent = reader.lines().collect(Collectors.joining());
+                    fileContent = reader.lines().collect(Collectors.joining("\n"));
                 }
 
                 exitCode = process.waitFor();
