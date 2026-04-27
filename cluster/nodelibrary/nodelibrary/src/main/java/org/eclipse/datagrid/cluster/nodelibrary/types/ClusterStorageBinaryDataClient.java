@@ -32,6 +32,7 @@ import org.eclipse.datagrid.cluster.nodelibrary.exceptions.NodelibraryException;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataClient;
 import org.eclipse.datagrid.storage.distributed.types.StorageBinaryDataPacket;
 import org.eclipse.serializer.collections.EqHashTable;
+import org.eclipse.serializer.concurrency.XThreads;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,6 +189,7 @@ public interface ClusterStorageBinaryDataClient extends StorageBinaryDataClient
                     {
                         // ignored for partition assignment
                         LOG.trace("Ignoring invalid offset in partition assignment loop");
+                        XThreads.sleep(1000);
                     }
                 }
 
