@@ -97,7 +97,9 @@ public interface KafkaPropertiesProvider
             {
                 throw new IllegalStateException("Properties file has not been initialized yet");
             }
-            return this.properties;
+            final var newProps = new Properties();
+            newProps.putAll(this.properties);
+            return newProps;
         }
     }
 }
