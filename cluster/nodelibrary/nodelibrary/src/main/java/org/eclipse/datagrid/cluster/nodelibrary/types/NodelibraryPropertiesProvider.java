@@ -31,8 +31,6 @@ public interface NodelibraryPropertiesProvider
 
 	Integer storageLimitGB();
 
-	boolean isMicro();
-
 	String myPodName();
 
 	String myNamespace();
@@ -60,7 +58,6 @@ public interface NodelibraryPropertiesProvider
 			public static final String STORAGE_LIMIT_CHECKER_INTERVAL_MINUTES =
 				"STORAGE_LIMIT_CHECKER_INTERVAL_MINUTES";
 			public static final String STORAGE_LIMIT_GB = "STORAGE_LIMIT_GB";
-			public static final String IS_MICRO = "MSCNL_IS_MICRO";
 			public static final String MY_POD_NAME = "MY_POD_NAME";
 			public static final String MY_NAMESPACE = "MY_NAMESPACE";
 			public static final String IS_PROD_MODE = "MSCNL_PROD_MODE";
@@ -116,12 +113,6 @@ public interface NodelibraryPropertiesProvider
 		}
 
 		@Override
-		public boolean isMicro()
-		{
-			return this.envBoolean(EnvKeys.IS_MICRO);
-		}
-
-		@Override
 		public String myPodName()
 		{
 			return this.envString(EnvKeys.MY_POD_NAME);
@@ -151,32 +142,26 @@ public interface NodelibraryPropertiesProvider
 			return this.envLong(EnvKeys.DATA_MERGER_LIMIT);
 		}
 
-		private Integer envInteger(final String envkey)
+		private Integer envInteger(final String envKey)
 		{
-			final String env = this.envString(envkey);
+			final String env = this.envString(envKey);
 			return env == null ? null : Integer.parseInt(env);
 		}
 
-		private Long envLong(final String envkey)
+		private Long envLong(final String envKey)
 		{
-			final String env = this.envString(envkey);
+			final String env = this.envString(envKey);
 			return env == null ? null : Long.parseLong(env);
 		}
 
-		private Double envDouble(final String envkey)
+		private boolean envBoolean(final String envKey)
 		{
-			final String env = this.envString(envkey);
-			return env == null ? null : Double.parseDouble(env);
+			return Boolean.parseBoolean(this.envString(envKey));
 		}
 
-		private boolean envBoolean(final String envkey)
+		private String envString(final String envKey)
 		{
-			return Boolean.parseBoolean(this.envString(envkey));
-		}
-
-		private String envString(final String envkey)
-		{
-			return System.getenv(envkey);
+			return System.getenv(envKey);
 		}
 	}
 }

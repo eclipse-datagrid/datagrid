@@ -455,16 +455,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			);
 		}
 
-		protected MicroNodeManager ensureMicroNodeManager()
-		{
-			return MicroNodeManager.New(
-				this.getStorageTaskExecutor(),
-				this.clusterStorageManager,
-				this.getStorageBackupManager(),
-				this.getStorageDiskSpaceReader()
-			);
-		}
-
 		protected StorageNodeHealthCheck ensureStorageNodeHealthCheck()
 		{
 			final var properties = this.getNodelibraryPropertiesProvider();
@@ -862,23 +852,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 		}
 
 		@Override
-		public MicroNodeManager getMicroNodeManager()
-		{
-			if (this.microNodeManager == null)
-			{
-				this.microNodeManager = this.dispatch(this.ensureMicroNodeManager());
-			}
-			return this.microNodeManager;
-		}
-
-		@Override
-		public F setMicroNodeManager(final MicroNodeManager manager)
-		{
-			this.microNodeManager = manager;
-			return this.$();
-		}
-
-		@Override
 		public StorageNodeHealthCheck getStorageNodeHealthCheck()
 		{
 			if (this.healthCheck == null)
@@ -1095,10 +1068,6 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			{
 				this.startDevNode();
 			}
-			else if (properties.isMicro())
-			{
-				this.startMicroNode();
-			}
 			else if (properties.isBackupNode())
 			{
 				this.startBackupNode();
@@ -1132,7 +1101,7 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 
 			/*
 			 * If there are backups already available, use those instead as a fresh cluster
-			 * has none, but a upgraded cluster has the previous storage backed up
+			 * has none, but an upgraded cluster has the previous storage backed up
 			 */
 
 			// user uploaded a new storage
@@ -1140,9 +1109,9 @@ public interface ClusterFoundation<F extends ClusterFoundation<?>> extends Insta
 			{
 				LOG.info("Downloading user uploaded storage");
 
-				useLatestMessageInfo = true;
-				// since the storage is now different than before the storage nodes
-				// also need the exact same storage
+                useLatestMessageInfo = true;
+				// since the storage is now different from before,
+				// the storage nodes also need the exact same storage
 				requiresStorageUpload = true;
 				this.deleteDirectory(storageRootPath);
 				backend.downloadUserUploadedStorage(storageParentPath);
