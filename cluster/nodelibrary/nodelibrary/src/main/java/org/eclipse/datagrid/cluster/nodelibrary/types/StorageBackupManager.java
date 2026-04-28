@@ -137,9 +137,12 @@ public interface StorageBackupManager
             {
                 this.backend.createAndUploadBackup(this.storageConnection, this.messageInfoSupplier.get(), newBackup);
 
-                // delete up to the previous backup to save on Kafka log storage
-                this.backend.getMessageInfoFromPreviousBackup(1)
-                    .ifPresent(info -> this.kafkaRecordDeleter.deleteUntilOffsets(info.kafkaPartitionOffsets()));
+                if (!useManualSlot)
+                {
+                    // delete up to the previous backup to save on Kafka log storage
+                    this.backend.getMessageInfoFromPreviousBackup(1)
+                        .ifPresent(info -> this.kafkaRecordDeleter.deleteUntilOffsets(info.kafkaPartitionOffsets()));
+                }
             }
             finally
             {
